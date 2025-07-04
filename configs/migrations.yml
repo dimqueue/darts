@@ -1,4 +1,4 @@
 development:
   dialect: postgres
-  datasource: host=${localhost} port=${POSTGRES_PORT} user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} sslmode=disable
+  datasource: host=${POSTGRES_HOST} port=${POSTGRES_PORT} user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB_NAME} sslmode=${POSTGRES_SSLMODE}
   dir: pkg/data/migrations/postgres
