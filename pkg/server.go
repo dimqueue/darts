@@ -1,4 +1,4 @@
-package darts
+package pkg
 
 import (
 	"context"

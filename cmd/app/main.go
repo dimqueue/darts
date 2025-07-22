@@ -16,6 +16,12 @@ import (
 )
 
 func main() {
+	//for locally running uncomment this
+
+	if err := godotenv.Load(); err != nil {
+		logrus.Fatalf("failed to upload env variables: %v", err)
+	}
+
 	logrus.SetFormatter(new(logrus.JSONFormatter))
 	if err := initConfig(); err != nil {
 		logrus.Fatalf("error initializing configs %s", err.Error())
@@ -25,10 +31,6 @@ func main() {
 	if len(os.Args[1:]) != 1 {
 		err := errors.New("expected exactly one argument")
 		logrus.Fatalf("wrong CLI arguments: %v", err)
-	}
-
-	if err := godotenv.Load(); err != nil {
-		logrus.Fatalf("failed to initialize env variables: %s", err.Error())
 	}
 
 	db, err := repository.NewPostgresDB(repository.Config{
@@ -43,7 +45,6 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("failed to initialize db: %s", err.Error())
 	}
-	//switch
 
 	switch os.Args[1] {
 	case "migrates-up":

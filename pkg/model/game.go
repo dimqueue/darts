@@ -1,4 +1,4 @@
-package darts
+package model
 
 type Game struct {
 	Id     int `json:"id"`

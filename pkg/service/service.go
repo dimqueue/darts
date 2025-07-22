@@ -1,8 +1,14 @@
 package service
 
-import "darts/pkg/repository"
+import (
+	"github.com/dimqueue/darts/pkg/model"
+	"github.com/dimqueue/darts/pkg/repository"
+)
 
 type Authorization interface {
+	CreateUser(user model.User) (int, error)
+	GenerateToken(username, password string) (string, error)
+	ParseToken(token string) (int, error)
 }
 
 type Game interface {
@@ -13,6 +19,8 @@ type Service struct {
 	Game
 }
 
-func NewService(repository *repository.Repository) *Service {
-	return &Service{}
+func NewService(repos *repository.Repository) *Service {
+	return &Service{
+		Authorization: NewAuthService(repos.Authorization),
+	}
 }
