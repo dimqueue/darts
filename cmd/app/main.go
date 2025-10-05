@@ -8,7 +8,6 @@ import (
 	"github.com/dimqueue/darts/pkg/repository"
 	"github.com/dimqueue/darts/pkg/service"
 	"github.com/jmoiron/sqlx"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/siruspen/logrus"
 	"github.com/spf13/viper"
@@ -17,10 +16,10 @@ import (
 
 func main() {
 	//for locally running uncomment this
-
-	if err := godotenv.Load(); err != nil {
-		logrus.Fatalf("failed to upload env variables: %v", err)
-	}
+	//
+	//if err := godotenv.Load(); err != nil {
+	//	logrus.Fatalf("failed to upload env variables: %v", err)
+	//}
 
 	logrus.SetFormatter(new(logrus.JSONFormatter))
 	if err := initConfig(); err != nil {

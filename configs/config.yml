@@ -1,9 +1,8 @@
 port: "8080"
 
 db:
-  host: "localhost"
-  #host: "dartsdb"
+  host: "dartsdb"
   username: "admin"
   port: "5432"
   dbname: "dartsdb"
-  sslmode: "disable"  
+  sslmode: "disable"

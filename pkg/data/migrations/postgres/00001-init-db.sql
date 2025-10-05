@@ -8,6 +8,7 @@ CREATE TABLE "users"
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
 -- +migrate Down
 
 DROP TABLE IF EXISTS "users";

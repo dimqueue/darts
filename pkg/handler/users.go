@@ -6,10 +6,12 @@ import (
 )
 
 func (h *Handler) createUser(c *gin.Context) {
-	id, _ := c.Get("userCtx")
-	c.JSON(http.StatusOK, map[string]interface{}{
-		"id": id,
-	})
+	_, ok := c.Get("userCtx")
+	if !ok {
+		newErrorResponse(c, http.StatusInternalServerError, "user id not found")
+		return
+	}
+
 }
 
 func (h *Handler) getUser(c *gin.Context) {
