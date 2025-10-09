@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"github.com/dimqueue/darts/pkg"
 	"github.com/dimqueue/darts/pkg/data/migrations"
@@ -12,6 +13,8 @@ import (
 	"github.com/siruspen/logrus"
 	"github.com/spf13/viper"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -55,15 +58,32 @@ func main() {
 			logrus.Fatalf("failed to migrates-down: %v", err)
 		}
 	case "run-server":
-		if err := RunServer(db); err != nil {
-			logrus.Fatalf("failed to run-server: %v", err)
+		var srv *pkg.Server
+		go func() {
+			if srv, err = RunServer(db); err != nil {
+				logrus.Fatalf("failed to run-server: %v", err)
+			}
+		}()
+
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+		<-quit
+
+		logrus.Print("application shutting down")
+
+		if err := srv.Shutdown(context.Background()); err != nil {
+			logrus.Fatalf("error occured on server shutting down: %s", err.Error())
+		}
+
+		if err := db.Close(); err != nil {
+			logrus.Fatalf("error occured on db connection close: %s", err.Error())
 		}
 	}
 
 }
 
 // fix returning values
-func RunServer(db *sqlx.DB) error {
+func RunServer(db *sqlx.DB) (*pkg.Server, error) {
 	repos := repository.NewRepository(db)
 	services := service.NewService(repos)
 	handlers := handler.NewHandler(services)
@@ -72,7 +92,7 @@ func RunServer(db *sqlx.DB) error {
 	if err := srv.Run("8080", handlers.InitRoutes()); err != nil {
 		logrus.Fatalf("error occured while running http server: %s", err.Error())
 	}
-	return nil
+	return srv, nil
 }
 
 func initConfig() error {
