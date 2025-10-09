@@ -22,19 +22,19 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	}
 	api := router.Group("/api", h.userIdentity)
 	{
-		users := api.Group("/users")
+		games := api.Group("/games")
 		{
-			users.POST("/", h.createUser)
-			users.GET("/", h.getAllUser)
-			users.GET("/:id", h.getUserById)
-			users.PUT("/:id", h.updateUserById)
-			users.DELETE("/:id", h.deleteUserById)
+			games.POST("/", h.createGame)
+			games.GET("/", h.getAllGames)
+			games.GET("/:id", h.getGameById)
+			games.PUT("/:id", h.updateGame)
+			games.DELETE("/:id", h.deleteGame)
 
-			games := users.Group(":id/games")
+			guess := games.Group(":id/guess")
 			{
-				games.POST("/", h.createGame)
-				games.GET("/", h.getAllGame)
-				games.GET("/:game_id", h.getGameById)
+				guess.POST("/", h.createGuess)
+				guess.GET("/", h.getAllGuessByGame)
+				guess.GET("/:guess_id", h.getGuessById)
 
 			}
 		}

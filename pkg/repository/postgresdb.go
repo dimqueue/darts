@@ -7,6 +7,7 @@ import (
 
 const (
 	usersTable = "users"
+	gamesTable = "games"
 )
 
 type Config struct {
