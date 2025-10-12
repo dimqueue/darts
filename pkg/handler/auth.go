@@ -6,6 +6,17 @@ import (
 	"net/http"
 )
 
+// @Summary      SignUp
+// @Description  create account
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        input body model.User true "account info"
+// @Success      200  {integer}   integer 1
+// @Failure      400  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Router       /auth/sign-up [post]
 func (h *Handler) signUp(c *gin.Context) {
 	var input model.User
 

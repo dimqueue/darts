@@ -8,7 +8,9 @@ import (
 	"github.com/dimqueue/darts/pkg/handler"
 	"github.com/dimqueue/darts/pkg/repository"
 	"github.com/dimqueue/darts/pkg/service"
+	"github.com/dimqueue/darts/pkg/swagger"
 	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/siruspen/logrus"
 	"github.com/spf13/viper"
@@ -17,14 +19,27 @@ import (
 	"syscall"
 )
 
-func main() {
-	//for locally running uncomment this
-	//
-	//if err := godotenv.Load(); err != nil {
-	//	logrus.Fatalf("failed to upload env variables: %v", err)
-	//}
+// @title           Darts API
+// @version         1.0
+// @description     This is a sample server celler server.
+// @termsOfService  http://swagger.io/terms/
 
+// @host      localhost:8081
+// @BasePath  /
+
+// @securityDefinitions.apiKey ApiKeyAuth
+// @in header
+// @name Authorization
+
+func main() {
 	logrus.SetFormatter(new(logrus.JSONFormatter))
+
+	if os.Getenv("APP_ENV") != "production" {
+		if err := godotenv.Load(); err != nil {
+			logrus.Println("⚠️  No .env file found, using system vars")
+		}
+	}
+
 	if err := initConfig(); err != nil {
 		logrus.Fatalf("error initializing configs %s", err.Error())
 	}
@@ -82,16 +97,20 @@ func main() {
 
 }
 
-// fix returning values
 func RunServer(db *sqlx.DB) (*pkg.Server, error) {
 	repos := repository.NewRepository(db)
 	services := service.NewService(repos)
 	handlers := handler.NewHandler(services)
 
+	router := handlers.InitRoutes()
+
+	swagger.SetupSwagger(router)
+
 	srv := new(pkg.Server)
-	if err := srv.Run("8080", handlers.InitRoutes()); err != nil {
+	if err := srv.Run("8080", router); err != nil {
 		logrus.Fatalf("error occured while running http server: %s", err.Error())
 	}
+
 	return srv, nil
 }
 

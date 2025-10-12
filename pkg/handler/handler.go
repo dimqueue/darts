@@ -1,6 +1,7 @@
 package handler
 
 import (
+	_ "github.com/dimqueue/darts/docs"
 	"github.com/dimqueue/darts/pkg/service"
 	"github.com/gin-gonic/gin"
 )
@@ -15,6 +16,7 @@ func NewHandler(services *service.Service) *Handler {
 
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
+
 	auth := router.Group("/auth")
 	{
 		auth.POST("/sign-up", h.signUp)
@@ -30,7 +32,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			games.PUT("/:id", h.updateGame)
 			games.DELETE("/:id", h.deleteGame)
 
-			guess := games.Group(":id/guess")
+			guess := games.Group(":id/guesses")
 			{
 				guess.POST("/", h.createGuess)
 				guess.GET("/", h.getAllGuessByGame)
