@@ -1,4 +1,9 @@
-.PHONY: up-dev up-prod up-dev-b up-prod-b down logs
+.PHONY: swag-init up-dev up-prod up-dev-b up-prod-b down logs
+
+
+swag-init:
+	@echo "Init swagger"
+	swag init -g cmd/app/main.go
 
 up-dev:
 	@echo "🐳 Starting development services..."
@@ -10,6 +15,7 @@ up-prod:
 
 up-dev-b:
 	@echo "🐳 Starting development services -b"
+	swag init -g cmd/app/main.go
 	docker compose --profile dev build backend-dev db
 	docker compose --profile dev up -d backend-dev db
 

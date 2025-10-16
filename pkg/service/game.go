@@ -14,5 +14,6 @@ func NewGameService(repo repository.Game) *GameService {
 }
 
 func (s *GameService) CreateGame(userId int, game model.Game) (int, error) {
+
 	return s.repo.CreateGame(userId, game)
 }

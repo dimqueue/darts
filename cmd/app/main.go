@@ -44,7 +44,6 @@ func main() {
 		logrus.Fatalf("error initializing configs %s", err.Error())
 	}
 
-	//cmd arg
 	if len(os.Args[1:]) != 1 {
 		err := errors.New("expected exactly one argument")
 		logrus.Fatalf("wrong CLI arguments: %v", err)

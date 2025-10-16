@@ -6,14 +6,20 @@ import (
 	"net/http"
 )
 
-func (h *Handler) createGame(c *gin.Context) {
-	//like list
-	//id, ok := c.Get(userCtx)
-	//if !ok {
-	//	newErrorResponse(c, http.StatusInternalServerError, "user not found")
-	//}
-	//var input
+//fix input
 
+// @Summary      CreateGame
+// @Description  create game
+// @Tags         game
+// @Accept       json
+// @Produce      json
+// @Param        input body model.Game true "game info"
+// @Success      200  {integer}   integer 1
+// @Failure      400  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Router       /api/games/ [post]
+func (h *Handler) createGame(c *gin.Context) {
 	id, ok := c.Get(userCtx)
 	if !ok {
 		newErrorResponse(c, http.StatusInternalServerError, "user not found")

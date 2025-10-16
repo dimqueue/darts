@@ -42,6 +42,17 @@ type signInInput struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// @Summary      SignIn
+// @Description  sign in account
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        input body signInInput true "login data"
+// @Success      200  {string}   string 1
+// @Failure      400  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Router       /auth/sign-in [post]
 func (h *Handler) signIn(c *gin.Context) {
 	var input signInInput
 
