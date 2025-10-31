@@ -1,14 +1,14 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
-//fix input
-
 // @Summary      CreateGame
+// @Security     ApiKeyAuth
 // @Description  create game
 // @Tags         game
 // @Accept       json
@@ -20,19 +20,19 @@ import (
 // @Failure      500  {object}  errorResponse
 // @Router       /api/games/ [post]
 func (h *Handler) createGame(c *gin.Context) {
-	id, ok := c.Get(userCtx)
-	if !ok {
-		newErrorResponse(c, http.StatusInternalServerError, "user not found")
+	userId, err := getUserId(c)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, "user id not found")
 	}
 
-	var input model.Game
+	//var input createGameInput
 
-	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
-		return
-	}
+	//if err := c.BindJSON(&input); err != nil {
+	//	newErrorResponse(c, http.StatusBadRequest, err.Error())
+	//	return
+	//}
 
-	id, err := h.services.Game.CreateGame(id.(int), input)
+	userId, err = h.services.Game.CreateGame(userId)
 
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
@@ -40,11 +40,38 @@ func (h *Handler) createGame(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"id": id,
+		"id": userId,
 	})
 }
 
+type getAllGamesResponse struct {
+	Data []model.Game `json:"data"`
+}
+
+// @Summary      GetAllGames
+// @Security     ApiKeyAuth
+// @Description  getAllGames
+// @Tags         game
+// @Accept       json
+// @Produce      json
+// @Success      200  {integer}   integer 1
+// @Failure      500  {object}  errorResponse
+// @Router       /api/games/ [get]
 func (h *Handler) getAllGames(c *gin.Context) {
+	idUser, err := getUserId(c)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	games, err := h.services.GetAllGames(idUser)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+	}
+
+	c.JSON(http.StatusOK, getAllGamesResponse{
+		Data: games,
+	})
 
 }
 

@@ -36,7 +36,7 @@ func main() {
 
 	if os.Getenv("APP_ENV") != "production" {
 		if err := godotenv.Load(); err != nil {
-			logrus.Println("⚠️  No .env file found, using system vars")
+			logrus.Println("no .env file found, using system vars")
 		}
 	}
 
@@ -107,7 +107,7 @@ func RunServer(db *sqlx.DB) (*pkg.Server, error) {
 
 	srv := new(pkg.Server)
 	if err := srv.Run("8080", router); err != nil {
-		logrus.Fatalf("error occured while running http server: %s", err.Error())
+		logrus.Fatalf("error occured wh ile running http server: %s", err.Error())
 	}
 
 	return srv, nil

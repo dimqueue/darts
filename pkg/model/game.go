@@ -9,6 +9,8 @@ type Game struct {
 	Status    string    `db:"status" json:"status"`
 	StartedAt time.Time `db:"started_at" json:"started-at"`
 }
+type GameCreate struct {
+}
 
 type Guess struct {
 	Id        int       `db:"id" json:"id"`
@@ -17,8 +19,9 @@ type Guess struct {
 	Distance  int       `db:"distance" json:"distance"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }
-type ListGame struct {
-	Id     int
-	UserId int
-	GameId int
-}
+
+//type ListGame struct {
+//	Id     int
+//	UserId int
+//	GameId int
+//}

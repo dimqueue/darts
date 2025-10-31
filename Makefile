@@ -1,9 +1,4 @@
-.PHONY: swag-init up-dev up-prod up-dev-b up-prod-b down logs
-
-
-swag-init:
-	@echo "Init swagger"
-	swag init -g cmd/app/main.go
+.PHONY: up-dev up-prod up-dev-b up-prod-b down logs-dev local-run
 
 up-dev:
 	@echo "🐳 Starting development services..."
@@ -28,10 +23,9 @@ down:
 	@echo "🛑 Stopping all services..."
 	docker compose --profile dev down
 
-logs:
-	@echo "📋 Showing logs..."
-	docker compose logs -f
-
 logs-dev:
 	@echo "📋 Showing dev logs..."
 	docker compose logs -f backend-dev
+
+local-run:
+	go run -tags=dev ./cmd/app run-server
