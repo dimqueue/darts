@@ -3,3 +3,4 @@
 scripts
 configs/migrations.yml
 .docs
+.dev.env

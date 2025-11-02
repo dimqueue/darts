@@ -107,8 +107,8 @@ func RunServer(db *sqlx.DB) (*pkg.Server, error) {
 	swagger.SetupSwagger(router)
 
 	srv := new(pkg.Server)
-	if err := srv.Run("8080", router); err != nil {
-		logrus.Fatalf("error occured wh ile running http server: %s", err.Error())
+	if err := srv.Run(viper.GetString("port"), router); err != nil {
+		logrus.Fatalf("error occured while running http server: %s", err.Error())
 	}
 
 	return srv, nil

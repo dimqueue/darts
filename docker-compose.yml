@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        BUILD_MODE: ${BUILD_MODE:-prod}  # defaults to prod, override with env var
     depends_on:
       - db
     env_file:
@@ -13,23 +15,6 @@ services:
     command: run-server # migrates-up migrates-down run-server
     volumes:
       - ./configs/config.yml:/configs/config.yml:ro
-
-  backend-dev:
-    restart: on-failure
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    depends_on:
-      - db
-    env_file:
-      - ./.env
-    ports:
-      - "8080:8080"
-    command: run-server # migrates-up migrates-down run-server
-    volumes:
-      - ./configs/config.yml:/configs/config.yml:ro
-    profiles:
-      - dev
 
   db:
     restart: on-failure

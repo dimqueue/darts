@@ -1,19 +1,37 @@
-FROM golang:1.23 AS builder
+FROM golang:1.23-alpine AS builder
 
-WORKDIR /go/src/github.com/dimqueue/darts
+ARG BUILD_MODE=prod
+
+WORKDIR /app
+
+# Install swag only for dev mode
+RUN if [ "$BUILD_MODE" = "dev" ]; then \
+        go install github.com/swaggo/swag/cmd/swag@v1.16.3; \
+    fi
+
+COPY go.mod go.sum ./
+RUN go mod download
 
 COPY . .
 
-COPY go.mod go.sum ./
+# Generate swagger docs only for dev mode
+RUN if [ "$BUILD_MODE" = "dev" ]; then \
+        rm -rf docs/ && \
+        swag init -g cmd/app/main.go; \
+    fi
 
-RUN go mod download
-
-RUN CGO_ENABLED=0 GOOS=linux go build -o /usr/local/bin/darts github.com/dimqueue/darts/cmd/app
+# Build with dev tags only for dev mode
+RUN if [ "$BUILD_MODE" = "dev" ]; then \
+        CGO_ENABLED=0 GOOS=linux go build -tags dev -o /usr/local/bin/darts github.com/dimqueue/darts/cmd/app; \
+    else \
+        CGO_ENABLED=0 GOOS=linux go build -o /usr/local/bin/darts github.com/dimqueue/darts/cmd/app; \
+    fi
 
 FROM alpine:3.19
 
-COPY --from=builder /usr/local/bin/darts /usr/local/bin/darts
 RUN apk add --no-cache ca-certificates
+
+COPY --from=builder /usr/local/bin/darts /usr/local/bin/darts
 
 EXPOSE 8080
 
