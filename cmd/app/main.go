@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"errors"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/dimqueue/darts/pkg"
 	"github.com/dimqueue/darts/pkg/data/migrations"
 	"github.com/dimqueue/darts/pkg/handler"
@@ -14,9 +18,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/siruspen/logrus"
 	"github.com/spf13/viper"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 // @title           Darts API
@@ -24,7 +25,7 @@ import (
 // @description     This is a sample server celler server.
 // @termsOfService  http://swagger.io/terms/
 
-// @host      localhost:8081
+// @host      localhost:8080
 // @BasePath  /
 
 // @securityDefinitions.apiKey ApiKeyAuth

@@ -4,10 +4,11 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
 	"github.com/golang-jwt/jwt"
-	"time"
 )
 
 const (

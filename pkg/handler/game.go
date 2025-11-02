@@ -7,6 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// add details
+type CreateGameInput struct {
+	Language string `json:"language" binding:"required"`
+}
+
 // @Summary      CreateGame
 // @Security     ApiKeyAuth
 // @Description  create game
@@ -25,14 +30,14 @@ func (h *Handler) createGame(c *gin.Context) {
 		newErrorResponse(c, http.StatusInternalServerError, "user id not found")
 	}
 
-	//var input createGameInput
+	var input CreateGameInput
 
-	//if err := c.BindJSON(&input); err != nil {
-	//	newErrorResponse(c, http.StatusBadRequest, err.Error())
-	//	return
-	//}
+	if err := c.BindJSON(&input); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
 
-	userId, err = h.services.Game.CreateGame(userId)
+	userId, err = h.services.Game.CreateGame(userId, input.Language)
 
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())

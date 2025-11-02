@@ -12,7 +12,7 @@ type Authorization interface {
 }
 
 type Game interface {
-	CreateGame(userId int) (int, error)
+	CreateGame(userId int, lang string) (int, error)
 	GetAllGames(userId int) ([]model.Game, error)
 	GetGameById(gameId int) (model.Game, error)
 	UpdateGame(gameId int) (model.Game, error)

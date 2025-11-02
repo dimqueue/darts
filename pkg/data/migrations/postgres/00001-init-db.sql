@@ -11,7 +11,8 @@ CREATE TABLE "users"
 CREATE TABLE "words"
 (
     id   SERIAL PRIMARY KEY,
-    word VARCHAR(100) NOT NULL
+    word VARCHAR(100) NOT NULL,
+    language VARCHAR(3) NOT NULL
 );
 
 CREATE TABLE "games"
@@ -20,6 +21,7 @@ CREATE TABLE "games"
     user_id    INTEGER     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     word_id    INTEGER     NOT NULL REFERENCES words (id) ON DELETE CASCADE,
     status     VARCHAR(20) NOT NULL CHECK (status IN ('in_progress', 'won', 'lost')),
+    language   VARCHAR(3) NOT NULL,
     started_at TIMESTAMP DEFAULT NOW(),
     ended_at   TIMESTAMP
 );
@@ -34,7 +36,8 @@ CREATE TABLE guesses
 );
 -- +migrate Down
 
-DROP TABLE IF EXISTS "users";
-DROP TABLE IF EXISTS "words";
-DROP TABLE IF EXISTS "games";
 DROP TABLE IF EXISTS "guesses";
+DROP TABLE IF EXISTS "games";
+DROP TABLE IF EXISTS "words";
+DROP TABLE IF EXISTS "users";
+

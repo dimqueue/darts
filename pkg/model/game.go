@@ -7,9 +7,8 @@ type Game struct {
 	UserId    int       `db:"user_id" json:"user_id"`
 	WordId    int       `db:"word_id" json:"word_id"`
 	Status    string    `db:"status" json:"status"`
+	Language  string    `db:"language" json:"language"`
 	StartedAt time.Time `db:"started_at" json:"started-at"`
-}
-type GameCreate struct {
 }
 
 type Guess struct {

@@ -1,9 +1,10 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 // @Summary      SignUp
