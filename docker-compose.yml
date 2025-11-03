@@ -1,11 +1,11 @@
 services:
   backend:
     restart: on-failure
+    image: darts-backend:${BUILD_MODE:-prod}
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        BUILD_MODE: ${BUILD_MODE:-prod}  # defaults to prod, override with env var
+      target: ${BUILD_MODE:-prod}  # prod dev
     depends_on:
       - db
     env_file:

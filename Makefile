@@ -1,31 +1,37 @@
-.PHONY: up-dev up-prod up-dev-b up-prod-b down logs-dev local-run
+.PHONY: build swagger up-db migrates-up migrates-down run run-only dev-run dev-run-only down clean rebuild
 
-up-dev:
-	@echo "🐳 Starting development services..."
-	docker compose --profile dev up -d backend-dev db
+build:
+	docker compose build backend
 
-up-prod:
-	@echo "🐳 Starting production services..."
-	docker compose up -d backend db
-
-up-dev-b:
-	@echo "🐳 Starting development services -b"
+swagger:
 	swag init -g cmd/app/main.go
-	docker compose --profile dev build backend-dev db
-	docker compose --profile dev up -d backend-dev db
 
-up-prod-b:
-	@echo "🐳 Starting production services -b"
-	docker compose build backend db
-	docker compose up -d backend db
+up-db:
+	docker compose up -d db
+
+migrates-up: up-db
+	docker compose run --rm backend migrates-up
+
+migrates-down: up-db
+	docker compose run --rm backend migrates-down
+
+run: up-db build
+	docker compose up backend
+
+run-only: up-db
+	docker compose up backend
+
+dev-run:
+	BUILD_MODE=dev $(MAKE) run
+
+dev-run-only:
+	BUILD_MODE=dev $(MAKE) run-only
 
 down:
-	@echo "🛑 Stopping all services..."
-	docker compose --profile dev down
+	docker compose down
 
-logs-dev:
-	@echo "📋 Showing dev logs..."
-	docker compose logs -f backend-dev
+clean:
+	docker compose down -v
+	docker system prune -f
 
-local-run:
-	go run -tags=dev ./cmd/app run-server
+rebuild: clean build run
