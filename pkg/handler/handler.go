@@ -1,7 +1,6 @@
 package handler
 
 import (
-	//_ "github.com/dimqueue/darts/docs"
 	"github.com/dimqueue/darts/pkg/service"
 	"github.com/gin-gonic/gin"
 )

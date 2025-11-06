@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/dimqueue/darts/pkg"
 	"github.com/dimqueue/darts/pkg/data/migrations"
@@ -16,7 +17,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
-	"github.com/siruspen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -35,71 +36,150 @@ import (
 func main() {
 	logrus.SetFormatter(new(logrus.JSONFormatter))
 
+	if err := run(); err != nil {
+		logrus.Error(err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	// Load environment and config
+	if err := loadEnv(); err != nil {
+		return err
+	}
+
+	if err := loadConfig(); err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Parse command
+	cmd, err := parseCommand()
+	if err != nil {
+		return err
+	}
+
+	// Connect to database
+	db, err := connectDB()
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer db.Close()
+
+	// Execute command
+	return executeCommand(cmd, db)
+}
+
+// loadEnv loads .env file in non-production environments
+func loadEnv() error {
 	if os.Getenv("APP_ENV") != "production" {
 		if err := godotenv.Load(); err != nil {
-			logrus.Println("no .env file found, using system vars")
+			logrus.Info("No .env file found, using system environment variables")
 		}
 	}
+	return nil
+}
 
-	if err := initConfig(); err != nil {
-		logrus.Fatalf("error initializing configs %s", err.Error())
+func loadConfig() error {
+	viper.AutomaticEnv()
+	viper.AddConfigPath("configs")
+	viper.AddConfigPath(".")
+	viper.SetConfigName("config")
+	viper.SetConfigType("yml")
+
+	// Set defaults
+	viper.SetDefault("port", "8080")
+	viper.SetDefault("db.sslmode", "disable")
+
+	if err := viper.ReadInConfig(); err != nil {
+		return err
 	}
 
-	if len(os.Args[1:]) != 1 {
-		err := errors.New("expected exactly one argument")
-		logrus.Fatalf("wrong CLI arguments: %v", err)
-	}
+	logrus.Infof("Loaded config from: %s", viper.ConfigFileUsed())
+	return nil
+}
 
-	db, err := repository.NewPostgresDB(repository.Config{
+func connectDB() (*sqlx.DB, error) {
+	config := repository.Config{
 		Host:     viper.GetString("db.host"),
 		Username: viper.GetString("db.username"),
 		Port:     viper.GetString("db.port"),
 		DBName:   viper.GetString("db.dbname"),
 		SSLMode:  viper.GetString("db.sslmode"),
 		Password: os.Getenv("POSTGRES_PASSWORD"),
-	})
+	}
 
+	db, err := repository.NewPostgresDB(config)
 	if err != nil {
-		logrus.Fatalf("failed to initialize db: %s", err.Error())
+		return nil, err
 	}
 
-	switch os.Args[1] {
-	case "migrates-up":
-		if err := migrations.Up(db); err != nil {
-			logrus.Fatalf("failed to migrates-up: %v", err)
-		}
-	case "migrates-down":
-		if err := migrations.Down(db); err != nil {
-			logrus.Fatalf("failed to migrates-down: %v", err)
-		}
-	case "run-server":
-		var srv *pkg.Server
-		go func() {
-			if srv, err = RunServer(db); err != nil {
-				logrus.Fatalf("failed to run-server: %v", err)
-			}
-		}()
-
-		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
-		<-quit
-
-		logrus.Print("application shutting down")
-
-		if err := srv.Shutdown(context.Background()); err != nil {
-			logrus.Fatalf("error occured on server shutting down: %s", err.Error())
-		}
-
-		if err := db.Close(); err != nil {
-			logrus.Fatalf("error occured on db connection close: %s", err.Error())
-		}
-	}
-
+	logrus.Info("Database connection established")
+	return db, nil
 }
 
-func RunServer(db *sqlx.DB) (*pkg.Server, error) {
+type command string
+
+const (
+	cmdRunServer   command = "run-server"
+	cmdMigrateUp   command = "migrates-up"
+	cmdMigrateDown command = "migrates-down"
+)
+
+func parseCommand() (command, error) {
+	if len(os.Args) < 2 {
+		return "", fmt.Errorf("usage: %s <command>\n\nAvailable commands:\n  run-server    - Start the HTTP server\n  migrates-up   - Run database migrations\n  migrates-down - Rollback migrations", os.Args[0])
+	}
+
+	cmd := command(os.Args[1])
+
+	switch cmd {
+	case cmdRunServer, cmdMigrateUp, cmdMigrateDown:
+		return cmd, nil
+	default:
+		return "", fmt.Errorf("unknown command: %s\n\nAvailable commands:\n  run-server\n  migrates-up\n  migrates-down", os.Args[1])
+	}
+}
+
+func executeCommand(cmd command, db *sqlx.DB) error {
+	switch cmd {
+	case cmdMigrateUp:
+		return runMigrateUp(db)
+	case cmdMigrateDown:
+		return runMigrateDown(db)
+	case cmdRunServer:
+		return runServer(db)
+	default:
+		return fmt.Errorf("unknown command: %s", cmd)
+	}
+}
+
+func runMigrateUp(db *sqlx.DB) error {
+	logrus.Info("Running database migrations...")
+
+	if err := migrations.Up(db); err != nil {
+		return fmt.Errorf("migration failed: %w", err)
+	}
+
+	logrus.Info("Migrations completed successfully")
+	return nil
+}
+
+func runMigrateDown(db *sqlx.DB) error {
+	logrus.Info("Rolling back database migrations...")
+
+	if err := migrations.Down(db); err != nil {
+		return fmt.Errorf("rollback failed: %w", err)
+	}
+
+	logrus.Info("Migrations rolled back successfully")
+	return nil
+}
+
+func runServer(db *sqlx.DB) error {
 	repos := repository.NewRepository(db)
+
 	services := service.NewService(repos)
+
 	handlers := handler.NewHandler(services)
 
 	router := handlers.InitRoutes()
@@ -107,16 +187,33 @@ func RunServer(db *sqlx.DB) (*pkg.Server, error) {
 	swagger.SetupSwagger(router)
 
 	srv := new(pkg.Server)
-	if err := srv.Run(viper.GetString("port"), router); err != nil {
-		logrus.Fatalf("error occured while running http server: %s", err.Error())
+
+	serverErrors := make(chan error, 1)
+
+	go func() {
+		logrus.Infof("Starting server on port %s", viper.GetString("port"))
+		serverErrors <- srv.Run(viper.GetString("port"), router)
+	}()
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case err := <-serverErrors:
+		return fmt.Errorf("server error: %w", err)
+
+	case sig := <-shutdown:
+		logrus.Infof("Received signal: %v. Starting graceful shutdown...", sig)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := srv.Shutdown(ctx); err != nil {
+			return fmt.Errorf("server shutdown error: %w", err)
+		}
+
+		logrus.Info("Server stopped gracefully")
 	}
 
-	return srv, nil
-}
-
-func initConfig() error {
-	viper.AutomaticEnv()
-	viper.AddConfigPath("configs")
-	viper.SetConfigName("config")
-	return viper.ReadInConfig()
+	return nil
 }
