@@ -1,0 +1,4 @@
+word-service:
+  type: "http"
+  baseURL: "localhost:5000"
+  timeout: 30
