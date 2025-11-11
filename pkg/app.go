@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dimqueue/darts/pkg/connections"
 	"github.com/dimqueue/darts/pkg/data/migrations"
 	"github.com/dimqueue/darts/pkg/handler"
 	"github.com/dimqueue/darts/pkg/repository"
@@ -76,14 +77,19 @@ func runMigrateDown(db *sqlx.DB) error {
 }
 
 func runServer(db *sqlx.DB, config Config) error {
-	//computeClient, err := connections.NewClient(config.ComputeClient)
-	//if err != nil {
-	//	return fmt.Errorf("failed to create computeClient: %w", err)
-	//}
 
 	repos := repository.NewRepository(db)
 
-	services := service.NewService(repos)
+	computeClient, err := connections.NewClient(config.ComputeClient)
+	if err != nil {
+		return fmt.Errorf("failed to create computeClient: %w", err)
+	}
+
+	if err = computeClient.Call("GET", "/health", nil, nil); err != nil {
+		logrus.Warnf("Compute service not available: %v", err)
+	}
+
+	services := service.NewService(repos, computeClient)
 
 	handlers := handler.NewHandler(services)
 

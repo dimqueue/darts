@@ -1,8 +1,13 @@
 port: "8080"
 
 db:
-  host: "dartsdb" # dartsdb localhost
+  host: "localhost" # dartsdb localhost
   username: "admin"
   port: "5432"
   dbname: "dartsdb"
   sslmode: "disable"
+
+word-service:
+  type: "http"
+  baseURL: "http://localhost:5000"
+  timeout: 30
