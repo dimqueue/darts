@@ -21,7 +21,7 @@ type Game interface {
 }
 
 type Guess interface {
-	CreateGuess(i int) error
+	CreateGuess(userId, gameId int, guess string) (int, error)
 	GetAllGuessByGame(i int) error
 	GetGuessById(i int) error
 }
@@ -36,6 +36,6 @@ func NewService(repos *repository.Repository, computeClient connections.Client) 
 	return &Service{
 		Authorization: NewAuthService(repos.Authorization),
 		Game:          NewGameService(repos.Game),
-		Guess:         NewGuessService(repos.Guess, computeClient),
+		Guess:         NewGuessService(repos.Guess, repos.Game, computeClient),
 	}
 }

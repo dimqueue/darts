@@ -12,7 +12,7 @@ func NewGuessPostgres(db *sqlx.DB) *GuessPostgres {
 	return &GuessPostgres{db: db}
 }
 
-func (r *GuessPostgres) CreateGuess(i int) error {
+func (r *GuessPostgres) CreateGuess(gameId int, guess string, distance int) error {
 	return nil
 }
 

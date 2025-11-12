@@ -13,15 +13,15 @@ type Authorization interface {
 type Game interface {
 	CreateGame(userId int, game *model.Game) (int, error)
 	GetAllGames(userId int) ([]model.Game, error)
-	GetGameById(userId, gameId int) (*model.Game, error)
+	GetGameById(gameId int) (*model.Game, error)
 	UpdateGame(gameId int) (*model.Game, error)
 	DeleteGame(gameId int) (*model.Game, error)
 }
 
 type Guess interface {
-	CreateGuess(i int) error
-	GetAllGuessByGame(i int) error
-	GetGuessById(i int) error
+	CreateGuess(gameId int, guess string, distance int) error
+	GetAllGuessByGame(gameId int) error
+	GetGuessById(guessId int) error
 }
 
 type Repository struct {

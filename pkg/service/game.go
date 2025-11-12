@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
 )
@@ -26,10 +28,15 @@ func (s *GameService) GetAllGames(userId int) ([]model.Game, error) {
 }
 
 func (s *GameService) GetGameById(userId, gameId int) (*model.Game, error) {
-	game, err := s.repo.GetGameById(userId, gameId)
+	game, err := s.repo.GetGameById(gameId)
 	if err != nil {
 		return nil, err
 	}
+
+	if game.UserId != userId {
+		return nil, fmt.Errorf("unauthorized: access denied")
+	}
+
 	return game, nil
 }
 

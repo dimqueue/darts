@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/dimqueue/darts/pkg/model"
@@ -29,20 +30,26 @@ func (r *GamePostgres) CreateGame(userId int, game *model.Game) (int, error) {
 func (r *GamePostgres) GetAllGames(userId int) ([]model.Game, error) {
 	var games []model.Game
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE g.user_id==$1",
+	query := fmt.Sprintf("SELECT * FROM %s WHERE g.user_id=$1",
 		gamesTable)
 	err := r.db.Select(&games, query, userId)
 	return games, err
 }
 
-// /
-func (r *GamePostgres) GetGameById(userId, gameId int) (*model.Game, error) {
+func (r *GamePostgres) GetGameById(gameId int) (*model.Game, error) {
 	var game model.Game
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE g.user_id==$1 AND g.id==$2",
-		gamesTable)
-	err := r.db.Select(&game, query, userId, gameId)
-	return nil, err
+	query := fmt.Sprintf("SELECT * FROM %s WHERE id=$1", gamesTable)
+	err := r.db.Get(&game, query, gameId)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("game not found")
+		}
+		return nil, err
+	}
+
+	return &game, nil
 }
 
 func (r *GamePostgres) UpdateGame(gameId int) (*model.Game, error) {
