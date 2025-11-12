@@ -23,7 +23,6 @@ import (
 
 func main() {
 	logrus.SetFormatter(new(logrus.JSONFormatter))
-
 	if err := run(); err != nil {
 		logrus.Error(err)
 		os.Exit(1)

@@ -26,7 +26,7 @@ CREATE TABLE "games"
     ended_at   TIMESTAMP
 );
 
-CREATE TABLE guesses
+CREATE TABLE "guesses"
 (
     id         SERIAL PRIMARY KEY,
     game_id    INTEGER      NOT NULL REFERENCES games (id) ON DELETE CASCADE,

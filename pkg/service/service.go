@@ -21,7 +21,7 @@ type Game interface {
 }
 
 type Guess interface {
-	CreateGuess(userId, gameId int, guess string) (int, error)
+	CreateGuess(userId, gameId int, word string) (int, error)
 	GetAllGuessByGame(i int) error
 	GetGuessById(i int) error
 }

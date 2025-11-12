@@ -16,11 +16,11 @@ func NewGamePostgres(db *sqlx.DB) *GamePostgres {
 	return &GamePostgres{db: db}
 }
 
-func (r *GamePostgres) CreateGame(userId int, game *model.Game) (int, error) {
+func (r *GamePostgres) CreateGame(game *model.Game) (int, error) {
 	var id int
 
-	query := fmt.Sprintf("INSERT INTO %s (user_id,word_id,status,language,started_at) VALUES ($1,$2,$3,$4) RETURNING id", gamesTable)
-	row := r.db.QueryRow(query, userId, game.WordId, game.Status, game.Language, game.StartedAt)
+	query := fmt.Sprintf("INSERT INTO %s (user_id,word_id,status,language) VALUES ($1,$2,$3,$4) RETURNING id", gamesTable)
+	row := r.db.QueryRow(query, game.UserId, game.WordId, game.Status, game.Language)
 	if err := row.Scan(&id); err != nil {
 		return 0, err
 	}

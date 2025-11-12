@@ -3,12 +3,13 @@ package model
 import "time"
 
 type Game struct {
-	Id        int       `db:"id" json:"id"`
-	UserId    int       `db:"user_id" json:"user_id"`
-	WordId    int       `db:"word_id" json:"word_id"`
-	Status    string    `db:"status" json:"status"`
-	Language  string    `db:"language" json:"language"`
-	StartedAt time.Time `db:"started_at" json:"started-at"`
+	Id        int        `db:"id" json:"id"`
+	UserId    int        `db:"user_id" json:"user_id"`
+	WordId    int        `db:"word_id" json:"word_id"`
+	Status    string     `db:"status" json:"status"`
+	Language  string     `db:"language" json:"language"`
+	StartedAt time.Time  `db:"started_at" json:"started_at"`
+	EndedAt   *time.Time `db:"ended_at" json:"ended_at,omitempty"`
 }
 
 type Guess struct {

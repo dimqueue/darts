@@ -19,8 +19,9 @@ func (s *GameService) CreateGame(userId int, lang string) (int, error) {
 	var game model.Game
 	game.Language = lang
 	game.Status = "in_progress"
+	game.UserId = userId
 	game.WordId = 1
-	return s.repo.CreateGame(userId, &game)
+	return s.repo.CreateGame(&game)
 }
 
 func (s *GameService) GetAllGames(userId int) ([]model.Game, error) {

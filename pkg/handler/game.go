@@ -27,6 +27,7 @@ func (h *Handler) createGame(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, "user id not found")
+		return
 	}
 
 	var input CreateGameInput
@@ -62,13 +63,13 @@ type getAllGamesResponse struct {
 // @Failure      500  {object}  errorResponse
 // @Router       /api/games/ [get]
 func (h *Handler) getAllGames(c *gin.Context) {
-	idUser, err := getUserId(c)
+	userId, err := getUserId(c)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	games, err := h.services.GetAllGames(idUser)
+	games, err := h.services.GetAllGames(userId)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 	}

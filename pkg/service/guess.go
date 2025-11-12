@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/dimqueue/darts/pkg/connections"
+	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
 )
 
@@ -21,7 +22,7 @@ func NewGuessService(guessRepo repository.Guess, gameRepo repository.Game, clien
 	}
 }
 
-func (s *GuessService) CreateGuess(userId, gameId int, guess string) (int, error) {
+func (s *GuessService) CreateGuess(userId, gameId int, word string) (int, error) {
 	game, err := s.gameRepo.GetGameById(gameId)
 	if err != nil {
 		return 0, err
@@ -41,7 +42,12 @@ func (s *GuessService) CreateGuess(userId, gameId int, guess string) (int, error
 	// }
 	distance := 5
 
-	err = s.guessRepo.CreateGuess(gameId, guess, distance)
+	guess := model.Guess{
+		GameId:    gameId,
+		GuessWord: word,
+		Distance:  distance,
+	}
+	err = s.guessRepo.CreateGuess(&guess)
 	if err != nil {
 		return 0, err
 	}

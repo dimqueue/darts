@@ -11,7 +11,7 @@ type Authorization interface {
 }
 
 type Game interface {
-	CreateGame(userId int, game *model.Game) (int, error)
+	CreateGame(game *model.Game) (int, error)
 	GetAllGames(userId int) ([]model.Game, error)
 	GetGameById(gameId int) (*model.Game, error)
 	UpdateGame(gameId int) (*model.Game, error)
@@ -19,7 +19,7 @@ type Game interface {
 }
 
 type Guess interface {
-	CreateGuess(gameId int, guess string, distance int) error
+	CreateGuess(guess *model.Guess) error
 	GetAllGuessByGame(gameId int) error
 	GetGuessById(guessId int) error
 }

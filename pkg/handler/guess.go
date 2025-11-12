@@ -2,13 +2,13 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 type createGuessInput struct {
-	GameId int    `json:"game_id" binding:"required"`
-	Guess  string `json:"guess" binding:"required"`
+	Guess string `json:"guess" binding:"required"`
 }
 
 func (h *Handler) createGuess(c *gin.Context) {
@@ -16,6 +16,12 @@ func (h *Handler) createGuess(c *gin.Context) {
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, "user not found")
 	}
+	gameId, err := strconv.Atoi(c.Param("id"))
+
+	if err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+	}
+
 	var input createGuessInput
 
 	if err = c.BindJSON(&input); err != nil {
@@ -28,7 +34,7 @@ func (h *Handler) createGuess(c *gin.Context) {
 		return
 	}
 
-	distance, err := h.services.Guess.CreateGuess(userId, input.GameId, input.Guess)
+	distance, err := h.services.Guess.CreateGuess(userId, gameId, input.Guess)
 
 	if err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
