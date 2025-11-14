@@ -20,7 +20,7 @@ type Config struct {
 
 func LoadEnv() error {
 	if os.Getenv("APP_ENV") != "production" {
-		if err := godotenv.Load(); err != nil {
+		if err := godotenv.Load("../.env"); err != nil {
 			logrus.Info("No .env file found, using system environment variables")
 		}
 	}
