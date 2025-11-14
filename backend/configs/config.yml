@@ -1,7 +1,7 @@
 port: "8080"
 
 db:
-  host: "localhost" # dartsdb localhost
+  host: "dartsdb" # dartsdb localhost
   username: "admin"
   port: "5432"
   dbname: "dartsdb"

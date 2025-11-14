@@ -16,10 +16,10 @@ migrates-down: up-db
 	docker compose run --rm backend migrates-down
 
 run: up-db build
-	docker compose up backend
+	docker compose up backend run-server
 
 run-only: up-db
-	docker compose up backend
+	docker compose up backend run-server
 
 dev-run:
 	BUILD_MODE=dev $(MAKE) run
