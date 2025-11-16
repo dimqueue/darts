@@ -22,7 +22,6 @@ import (
 // @name Authorization
 
 func main() {
-	logrus.SetFormatter(new(logrus.JSONFormatter))
 	if err := run(); err != nil {
 		logrus.Error(err)
 		os.Exit(1)
@@ -38,12 +37,16 @@ func run() error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
+	config := pkg.GetConfig()
+
+	if err := pkg.InitLogger(config.Logger); err != nil {
+		return fmt.Errorf("failed to initialize logger: %w", err)
+	}
+
 	cmd, err := pkg.ParseCommand()
 	if err != nil {
 		return err
 	}
-
-	config := pkg.GetConfig()
 
 	db, err := pkg.ConnectDB(config.DB)
 	if err != nil {

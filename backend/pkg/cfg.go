@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/dimqueue/darts/pkg/connections"
+	"github.com/dimqueue/darts/pkg/logger"
 	"github.com/dimqueue/darts/pkg/repository"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
@@ -16,6 +17,7 @@ type Config struct {
 	Port          string
 	DB            repository.Config
 	ComputeClient connections.Config
+	Logger        logger.Config
 }
 
 func LoadEnv() error {
@@ -58,7 +60,17 @@ func GetConfig() Config {
 			BaseURL: viper.GetString("word-service.baseURL"),
 			Timeout: viper.GetInt("word-service.timeout"),
 		},
+		Logger: logger.Config{
+			Level:        viper.GetString("logger.level"),
+			Format:       viper.GetString("logger.format"),
+			Output:       viper.GetString("logger.output"),
+			ReportCaller: viper.GetBool("logger.reportCaller"),
+		},
 	}
+}
+
+func InitLogger(config logger.Config) error {
+	return logger.Init(config)
 }
 
 func ConnectDB(config repository.Config) (*sqlx.DB, error) {

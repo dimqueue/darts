@@ -11,3 +11,9 @@ word-service:
   type: "http"
   baseURL: "http://localhost:5000"
   timeout: 30
+
+logger:
+  level: "debug"        # debug, info, warn, error, fatal, panic
+  format: "text"       # text or json
+  output: "stdout"     # stdout, stderr, or file path (e.g., "logs/app.log")
+  reportCaller: false  # include caller information in logs
