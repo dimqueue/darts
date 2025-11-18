@@ -1,0 +1,8 @@
+#post:
+#  dialect: postgres
+#  datasource: host=${POSTGRES_HOST} port=${POSTGRES_PORT} user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} sslmode=${POSTGRES_SSLMODE}
+#  dir: pkg/data/migrations/postgres
+#development:
+#  dialect: postgres
+#  datasource: host=localhost port=5432 user=admin password=players dbname=dartsdb sslmode=disable
+#  dir: pkg/data/migrations/postgres
