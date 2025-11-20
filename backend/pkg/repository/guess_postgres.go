@@ -25,8 +25,16 @@ func (r *GuessPostgres) CreateGuess(guess *model.Guess) error {
 	return nil
 }
 
-func (r *GuessPostgres) GetAllGuessByGame(i int) error {
-	return nil
+func (r *GuessPostgres) GetAllGuessByGame(gameId int) ([]model.Guess, error) {
+	var guesses []model.Guess
+	query := fmt.Sprintf("SELECT id, game_id, guess_word, distance, created_at FROM %s WHERE game_id = $1 ORDER BY created_at DESC", guessesTable)
+
+	err := r.db.Select(&guesses, query, gameId)
+	if err != nil {
+		return nil, err
+	}
+
+	return guesses, nil
 }
 
 func (r *GuessPostgres) GetGuessById(i int) error {

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/dimqueue/darts/pkg/model"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,11 +16,13 @@ func (h *Handler) createGuess(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, "user not found")
+		return
 	}
 	gameId, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	var input createGuessInput
@@ -44,15 +47,38 @@ func (h *Handler) createGuess(c *gin.Context) {
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"distance": distance,
 	})
-
 }
 
 func validateWord(word string) error {
 	return nil
 }
 
-func (h *Handler) getAllGuessByGame(c *gin.Context) {
+type getAllGuessByGameResponse struct {
+	Data []model.Guess `json:"data"`
+}
 
+func (h *Handler) getAllGuessByGame(c *gin.Context) {
+	userId, err := getUserId(c)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, "user not found")
+		return
+	}
+
+	gameId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	guesses, err := h.services.Guess.GetAllGuessByGame(userId, gameId)
+	if err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, getAllGuessByGameResponse{
+		Data: guesses,
+	})
 }
 
 func (h *Handler) getGuessById(c *gin.Context) {

@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"time"
+
 	"github.com/dimqueue/darts/pkg/service"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,6 +19,15 @@ func NewHandler(services *service.Service) *Handler {
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
 
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	auth := router.Group("/auth")
 	{
 		auth.POST("/sign-up", h.signUp)
@@ -25,16 +37,16 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	{
 		games := api.Group("/games")
 		{
-			games.POST("/", h.createGame)
-			games.GET("/", h.getAllGames)
+			games.POST("", h.createGame)
+			games.GET("", h.getAllGames)
 			games.GET("/:id", h.getGameById)
 			games.PUT("/:id", h.updateGame)
 			games.DELETE("/:id", h.deleteGame)
 
 			guess := games.Group(":id/guesses")
 			{
-				guess.POST("/", h.createGuess)
-				guess.GET("/", h.getAllGuessByGame)
+				guess.POST("", h.createGuess)
+				guess.GET("", h.getAllGuessByGame)
 				guess.GET("/:guess_id", h.getGuessById)
 
 			}

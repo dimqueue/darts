@@ -59,8 +59,22 @@ func (s *GuessService) CreateGuess(userId, gameId int, word string) (int, error)
 	return distance, nil
 }
 
-func (s *GuessService) GetAllGuessByGame(i int) error {
-	return nil
+func (s *GuessService) GetAllGuessByGame(userId, gameId int) ([]model.Guess, error) {
+	game, err := s.gameRepo.GetGameById(gameId)
+	if err != nil {
+		return nil, err
+	}
+
+	if game.UserId != userId {
+		return nil, errors.New("unauthorized: cannot view guesses for another user's game")
+	}
+
+	guesses, err := s.guessRepo.GetAllGuessByGame(gameId)
+	if err != nil {
+		return nil, err
+	}
+
+	return guesses, nil
 }
 
 func (s *GuessService) GetGuessById(i int) error {

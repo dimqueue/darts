@@ -20,7 +20,7 @@ type Game interface {
 
 type Guess interface {
 	CreateGuess(guess *model.Guess) error
-	GetAllGuessByGame(gameId int) error
+	GetAllGuessByGame(gameId int) ([]model.Guess, error)
 	GetGuessById(guessId int) error
 }
 
