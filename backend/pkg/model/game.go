@@ -19,9 +19,3 @@ type Guess struct {
 	Distance  int       `db:"distance" json:"distance"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }
-
-//type ListGame struct {
-//	Id     int
-//	UserId int
-//	GameId int
-//}

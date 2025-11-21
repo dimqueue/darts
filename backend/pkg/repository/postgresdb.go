@@ -10,6 +10,7 @@ const (
 	usersTable   = "users"
 	gamesTable   = "games"
 	guessesTable = "guesses"
+	wordsTable   = "words"
 )
 
 type Config struct {

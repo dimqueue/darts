@@ -185,8 +185,8 @@ function GamePage({ username, onLogout }) {
         try {
             await api.createGuess(gameId, validation.word);
             // Fetch all guesses to get the updated list
-            const allGuesses = await api.getAllGuessByGame(gameId);
-            setGuesses(allGuesses);
+            const response = await api.getAllGuessByGame(gameId);
+            setGuesses(response.data || []);
             setInputWord('');
         } catch (err) {
             setError('Failed to submit guess: ' + err.message);

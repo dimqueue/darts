@@ -26,16 +26,24 @@ type Guess interface {
 	GetGuessById(i int) error
 }
 
+type Word interface {
+	SelectWord(language string) (*model.Word, error)
+	GetWordById(wordId int) (*model.Word, error)
+}
+
 type Service struct {
 	Authorization
 	Game
 	Guess
+	Word
 }
 
-func NewService(repos *repository.Repository, computeClient connections.Client) *Service {
+func NewService(repos *repository.Repository, computeClient *connections.ComputeClientService) *Service {
+	wordService := NewWordService(repos.Word)
 	return &Service{
 		Authorization: NewAuthService(repos.Authorization),
-		Game:          NewGameService(repos.Game),
-		Guess:         NewGuessService(repos.Guess, repos.Game, computeClient),
+		Game:          NewGameService(repos.Game, wordService, computeClient),
+		Guess:         NewGuessService(repos.Guess, repos.Game, repos.Word, computeClient),
+		Word:          wordService,
 	}
 }

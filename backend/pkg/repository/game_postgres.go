@@ -55,6 +55,13 @@ func (r *GamePostgres) GetGameById(gameId int) (*model.Game, error) {
 func (r *GamePostgres) UpdateGame(gameId int) (*model.Game, error) {
 	return nil, nil
 }
+
+func (r *GamePostgres) UpdateGameStatus(gameId int, status string) error {
+	query := fmt.Sprintf("UPDATE %s SET status=$1, ended_at=NOW() WHERE id=$2", gamesTable)
+	_, err := r.db.Exec(query, status, gameId)
+	return err
+}
+
 func (r *GamePostgres) DeleteGame(gameId int) (*model.Game, error) {
 	return nil, nil
 }

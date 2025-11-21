@@ -85,11 +85,15 @@ func runServer(db *sqlx.DB, config Config) error {
 		return fmt.Errorf("failed to create computeClient: %w", err)
 	}
 
-	if err = computeClient.Call("GET", "/health", nil, nil); err != nil {
+	defer computeClient.Close()
+
+	computeClientService := connections.NewComputeClientService(computeClient)
+
+	if _, err := computeClientService.HealthCheck(); err != nil {
 		logrus.Warnf("Compute service not available: %v", err)
 	}
 
-	services := service.NewService(repos, computeClient)
+	services := service.NewService(repos, computeClientService)
 
 	handlers := handler.NewHandler(services)
 

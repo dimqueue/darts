@@ -16,8 +16,7 @@ class GuessRequest(BaseModel):
     language: str = "en"
 
 class GuessResponse(BaseModel):
-    rank: int
-    found: bool
+    distance: int
 
 class HealthResponse(BaseModel):
     status: str

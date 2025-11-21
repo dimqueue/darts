@@ -15,6 +15,7 @@ type Game interface {
 	GetAllGames(userId int) ([]model.Game, error)
 	GetGameById(gameId int) (*model.Game, error)
 	UpdateGame(gameId int) (*model.Game, error)
+	UpdateGameStatus(gameId int, status string) error
 	DeleteGame(gameId int) (*model.Game, error)
 }
 
@@ -24,10 +25,17 @@ type Guess interface {
 	GetGuessById(guessId int) error
 }
 
+type Word interface {
+	GetWordById(wordId int) (*model.Word, error)
+	GetRandomWordByLanguage(language string) (*model.Word, error)
+	GetWordCountByLanguage(language string) (int, error)
+}
+
 type Repository struct {
 	Authorization
 	Game
 	Guess
+	Word
 }
 
 func NewRepository(db *sqlx.DB) *Repository {
@@ -35,5 +43,6 @@ func NewRepository(db *sqlx.DB) *Repository {
 		Authorization: NewAuthPostgres(db),
 		Game:          NewGamePostgres(db),
 		Guess:         NewGuessPostgres(db),
+		Word:          NewWordPostgres(db),
 	}
 }

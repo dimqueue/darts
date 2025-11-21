@@ -23,7 +23,7 @@ class WordSimilarityModel:
         except KeyError:
             return False
 
-    def calculate_rankings(self, secret_word: str, language: str, top_n: int) -> Tuple[Dict[str, int], float]:
+    def calculate_distance(self, secret_word: str, language: str, top_n: int) -> Tuple[Dict[str, int], float]:
 
         start_time = time.time()
 
@@ -40,7 +40,7 @@ class WordSimilarityModel:
 
         return rankings, calculation_time
 
-    def get_guess_rank(self, secret_word: str, guess: str) -> Tuple[int, bool]:
+    def get_guess_distance(self, secret_word: str, guess: str) -> Tuple[int, bool]:
 
         game_data = self.game_rankings.get(secret_word)
 
@@ -52,6 +52,25 @@ class WordSimilarityModel:
 
         rank = game_data.get(guess, 0)
         return rank, False
+
+    def warm_up(self, language: str):
+        if language not in self.models:
+            raise ValueError(f"Language '{language}' not loaded")
+
+        model = self.models[language]
+
+        vocab_words = list(model.index_to_key)
+        if vocab_words:
+            warm_up_word = vocab_words[0]
+            print(f"Warming up model with word: '{warm_up_word}'")
+
+            start_time = time.time()
+            _ = model.most_similar(warm_up_word, topn=10)
+            warm_up_time = time.time() - start_time
+
+            print(f"Warm-up completed in {warm_up_time:.3f}s")
+        else:
+            print("Warning: No words found in vocabulary for warm-up")
 
     def cleanup(self):
         for lang in list(self.models.keys()):

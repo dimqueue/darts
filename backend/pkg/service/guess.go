@@ -9,20 +9,22 @@ import (
 )
 
 type GuessService struct {
-	client    connections.Client
-	guessRepo repository.Guess
-	gameRepo  repository.Game
+	computeClient *connections.ComputeClientService
+	guessRepo     repository.Guess
+	gameRepo      repository.Game
+	wordRepo      repository.Word
 }
 
-func NewGuessService(guessRepo repository.Guess, gameRepo repository.Game, client connections.Client) *GuessService {
+func NewGuessService(guessRepo repository.Guess, gameRepo repository.Game, wordRepo repository.Word, computeClient *connections.ComputeClientService) *GuessService {
 	return &GuessService{
-		guessRepo: guessRepo,
-		gameRepo:  gameRepo,
-		client:    client,
+		guessRepo:     guessRepo,
+		gameRepo:      gameRepo,
+		wordRepo:      wordRepo,
+		computeClient: computeClient,
 	}
 }
 
-func (s *GuessService) CreateGuess(userId, gameId int, word string) (int, error) {
+func (s *GuessService) CreateGuess(userId, gameId int, guess string) (int, error) {
 	game, err := s.gameRepo.GetGameById(gameId)
 	if err != nil {
 		return 0, err
@@ -36,27 +38,50 @@ func (s *GuessService) CreateGuess(userId, gameId int, word string) (int, error)
 		return 0, errors.New("game is not active")
 	}
 
-	// distance, err := s.client.CalculateDistance(game.Word, guess)
-	// if err != nil {
-	//     return 0, err
-	// }
-	distance := 5
-
-	guess := model.Guess{
-		GameId:    gameId,
-		GuessWord: word,
-		Distance:  distance,
-	}
-	err = s.guessRepo.CreateGuess(&guess)
+	word, err := s.wordRepo.GetWordById(game.WordId)
 	if err != nil {
 		return 0, err
 	}
 
-	// if distance == 0 {
-	//     s.gameRepo.UpdateGame(gameId, "won")
-	// }
+	var distance int
 
-	return distance, nil
+	if guess == word.Word {
+		distance = 1
+
+		newGuess := model.Guess{
+			GameId:    gameId,
+			GuessWord: guess,
+			Distance:  distance,
+		}
+		err = s.guessRepo.CreateGuess(&newGuess)
+		if err != nil {
+			return 0, err
+		}
+
+		err = s.gameRepo.UpdateGameStatus(gameId, "won")
+		if err != nil {
+			return 0, err
+		}
+
+		return distance, nil
+	}
+
+	resp, err := s.computeClient.MakeGuess(word.Word, guess, game.Language)
+	if err != nil {
+		return 0, err
+	}
+
+	newGuess := model.Guess{
+		GameId:    gameId,
+		GuessWord: guess,
+		Distance:  resp.Distance,
+	}
+	err = s.guessRepo.CreateGuess(&newGuess)
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.Distance, nil
 }
 
 func (s *GuessService) GetAllGuessByGame(userId, gameId int) ([]model.Guess, error) {
