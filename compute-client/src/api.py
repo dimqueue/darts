@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
         # Warm up the model to speed up first query
         logger.info("Warming up model...")
         word_model.warm_up("en")
-        monitor.log_metrics(context="Model Warmed Up")
+        monitor.log_metrics(context="Model  Warmed Up")
 
         logger.info("Application started successfully")
     except Exception as e:
@@ -98,7 +98,7 @@ async def log_request_resources(request: Request, call_next):
         response = await call_next(request)
 
         duration = time.time() - start_time
-        metrics = monitor.get_metrics(include_cpu=False)  # Skip CPU for faster response
+        metrics = monitor.get_metrics(include_cpu=False)
 
         logger.info(
             f"[{request_id}] {request.method} {request.url.path} | "

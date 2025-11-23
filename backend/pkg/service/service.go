@@ -12,11 +12,17 @@ type Authorization interface {
 	ParseToken(token string) (int, error)
 }
 
+type Word interface {
+	SelectWord(language string) (*model.Word, error)
+	GetWordById(wordId int) (*model.Word, error)
+}
+
 type Game interface {
 	CreateGame(userId int, lang string) (int, error)
 	GetAllGames(userId int) ([]model.Game, error)
 	GetGameById(userId, gameId int) (*model.Game, error)
 	UpdateGame(gameId int) (*model.Game, error)
+	UpdateGameStatus(gameId int, status string) error
 	DeleteGame(gameId int) (*model.Game, error)
 }
 
@@ -24,11 +30,6 @@ type Guess interface {
 	CreateGuess(userId, gameId int, word string) (int, error)
 	GetAllGuessByGame(userId, gameId int) ([]model.Guess, error)
 	GetGuessById(i int) error
-}
-
-type Word interface {
-	SelectWord(language string) (*model.Word, error)
-	GetWordById(wordId int) (*model.Word, error)
 }
 
 type Service struct {
@@ -40,10 +41,13 @@ type Service struct {
 
 func NewService(repos *repository.Repository, computeClient *connections.ComputeClientService) *Service {
 	wordService := NewWordService(repos.Word)
+	gameService := NewGameService(repos.Game, wordService, computeClient)
+	guessService := NewGuessService(repos.Guess, gameService, wordService, computeClient)
+
 	return &Service{
 		Authorization: NewAuthService(repos.Authorization),
-		Game:          NewGameService(repos.Game, wordService, computeClient),
-		Guess:         NewGuessService(repos.Guess, repos.Game, repos.Word, computeClient),
+		Game:          gameService,
+		Guess:         guessService,
 		Word:          wordService,
 	}
 }

@@ -11,34 +11,30 @@ import (
 type GuessService struct {
 	computeClient *connections.ComputeClientService
 	guessRepo     repository.Guess
-	gameRepo      repository.Game
-	wordRepo      repository.Word
+	gameService   Game
+	wordService   Word
 }
 
-func NewGuessService(guessRepo repository.Guess, gameRepo repository.Game, wordRepo repository.Word, computeClient *connections.ComputeClientService) *GuessService {
+func NewGuessService(guessRepo repository.Guess, gameService Game, wordService Word, computeClient *connections.ComputeClientService) *GuessService {
 	return &GuessService{
 		guessRepo:     guessRepo,
-		gameRepo:      gameRepo,
-		wordRepo:      wordRepo,
+		gameService:   gameService,
+		wordService:   wordService,
 		computeClient: computeClient,
 	}
 }
 
 func (s *GuessService) CreateGuess(userId, gameId int, guess string) (int, error) {
-	game, err := s.gameRepo.GetGameById(gameId)
+	game, err := s.gameService.GetGameById(userId, gameId)
 	if err != nil {
 		return 0, err
-	}
-
-	if game.UserId != userId {
-		return 0, errors.New("unauthorized: cannot add guess to another user's game")
 	}
 
 	if game.Status != "in_progress" {
 		return 0, errors.New("game is not active")
 	}
 
-	word, err := s.wordRepo.GetWordById(game.WordId)
+	word, err := s.wordService.GetWordById(game.WordId)
 	if err != nil {
 		return 0, err
 	}
@@ -58,7 +54,7 @@ func (s *GuessService) CreateGuess(userId, gameId int, guess string) (int, error
 			return 0, err
 		}
 
-		err = s.gameRepo.UpdateGameStatus(gameId, "won")
+		err = s.gameService.UpdateGameStatus(gameId, "won")
 		if err != nil {
 			return 0, err
 		}
@@ -85,13 +81,9 @@ func (s *GuessService) CreateGuess(userId, gameId int, guess string) (int, error
 }
 
 func (s *GuessService) GetAllGuessByGame(userId, gameId int) ([]model.Guess, error) {
-	game, err := s.gameRepo.GetGameById(gameId)
+	_, err := s.gameService.GetGameById(userId, gameId)
 	if err != nil {
 		return nil, err
-	}
-
-	if game.UserId != userId {
-		return nil, errors.New("unauthorized: cannot view guesses for another user's game")
 	}
 
 	guesses, err := s.guessRepo.GetAllGuessByGame(gameId)

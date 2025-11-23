@@ -26,12 +26,10 @@ func (s *WordService) SelectWord(language string) (*model.Word, error) {
 	return word, nil
 }
 
-// GetWordById retrieves a specific word by ID
 func (s *WordService) GetWordById(wordId int) (*model.Word, error) {
 	return s.repo.GetWordById(wordId)
 }
 
-// Future extension examples:
 // - SelectRandomWord(language string, difficulty string) - select by difficulty
 // - SelectWordByCategory(language string, category string) - themed words
 // - SelectUnusedWord(userId int, language string) - words user hasn't seen
