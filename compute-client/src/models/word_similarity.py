@@ -1,6 +1,12 @@
 import gensim.downloader as api
 from typing import Dict, Tuple
 import time
+import logging
+
+from utils.progress import Spinner
+
+logger = logging.getLogger(__name__)
+
 
 class WordSimilarityModel:
 
@@ -9,9 +15,16 @@ class WordSimilarityModel:
         self.game_rankings: Dict[str, Dict[str, int]] = {}
 
     def load_model(self, language: str, model_name: str = "glove-twitter-25"):
-        print(f"Loading model for language: {language}")
+        logger.info(f"Loading model '{model_name}' for language: {language}")
+
+        spinner = Spinner(f"Loading {model_name}")
+
+        spinner.update()
+
         self.models[language] = api.load(model_name)
-        print(f"Model loaded successfully for {language}")
+
+        spinner.finish(f"Model '{model_name}' loaded successfully")
+        logger.info(f"Model loaded for {language}")
 
     def is_language_supported(self, language: str) -> bool:
         return language in self.models
@@ -62,15 +75,18 @@ class WordSimilarityModel:
         vocab_words = list(model.index_to_key)
         if vocab_words:
             warm_up_word = vocab_words[0]
-            print(f"Warming up model with word: '{warm_up_word}'")
+            logger.info(f"Warming up model with word: '{warm_up_word}'")
+
+            spinner = Spinner("Warming up model")
+            spinner.update()
 
             start_time = time.time()
             _ = model.most_similar(warm_up_word, topn=10)
             warm_up_time = time.time() - start_time
 
-            print(f"Warm-up completed in {warm_up_time:.3f}s")
+            spinner.finish(f"Warm-up completed in {warm_up_time:.3f}s")
         else:
-            print("Warning: No words found in vocabulary for warm-up")
+            logger.warning("No words found in vocabulary for warm-up")
 
     def cleanup(self):
         for lang in list(self.models.keys()):

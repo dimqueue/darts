@@ -6,10 +6,6 @@ logger = logging.getLogger(__name__)
 
 
 class ResourceMonitor:
-    """
-    Monitors system resource usage for the application.
-    Designed to be protocol-agnostic (works with HTTP, gRPC, etc.)
-    """
 
     def __init__(self):
         self.process = psutil.Process()
@@ -18,15 +14,6 @@ class ResourceMonitor:
         logger.info(f"ResourceMonitor initialized. Initial memory: {self.initial_memory:.2f}MB")
 
     def get_metrics(self, include_cpu: bool = True) -> Dict[str, float]:
-        """
-        Get current resource usage metrics.
-
-        Args:
-            include_cpu: Whether to measure CPU (adds small delay, default: True)
-
-        Returns:
-            Dictionary with memory, CPU, threads, and file descriptors metrics
-        """
         try:
             with self.process.oneshot():
                 memory_info = self.process.memory_info()
@@ -43,7 +30,6 @@ class ResourceMonitor:
                 else:
                     metrics["cpu_percent"] = 0.0
 
-                # num_fds only available on Unix systems
                 if hasattr(self.process, 'num_fds'):
                     try:
                         metrics["num_fds"] = self.process.num_fds()
@@ -78,6 +64,5 @@ class ResourceMonitor:
         return metrics
 
     def get_memory_delta(self) -> float:
-        """Get memory change since initialization in MB"""
         current_memory = self.process.memory_info().rss / 1024 / 1024
         return current_memory - self.initial_memory
