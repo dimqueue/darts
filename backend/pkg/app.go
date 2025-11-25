@@ -80,20 +80,24 @@ func runServer(db *sqlx.DB, config Config) error {
 
 	repos := repository.NewRepository(db)
 
-	computeClient, err := connections.NewClient(config.ComputeClient)
+	computeClient, err := connections.NewComputeClient(config.ComputeClient)
 	if err != nil {
-		return fmt.Errorf("failed to create computeClient: %w", err)
+		return fmt.Errorf("failed to create compute client: %w", err)
 	}
 
 	defer computeClient.Close()
 
-	computeClientService := connections.NewComputeClientService(computeClient)
+	// Health check with context
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	if _, err := computeClientService.HealthCheck(); err != nil {
-		logrus.Warnf("Compute service not available: %v", err)
+	if resp, err := computeClient.HealthCheck(ctx); err != nil || len(resp.LoadedLanguages) == 0 {
+		logrus.Warnf("Compute service not available or failed to load languages: %v", err)
+	} else {
+		logrus.Infof("Compute service ready with languages: %v", resp.LoadedLanguages)
 	}
 
-	services := service.NewService(repos, computeClientService)
+	services := service.NewService(repos, computeClient)
 
 	handlers := handler.NewHandler(services)
 

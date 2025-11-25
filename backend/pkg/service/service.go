@@ -39,7 +39,7 @@ type Service struct {
 	Word
 }
 
-func NewService(repos *repository.Repository, computeClient *connections.ComputeClientService) *Service {
+func NewService(repos *repository.Repository, computeClient connections.ComputeClient) *Service {
 	wordService := NewWordService(repos.Word)
 	gameService := NewGameService(repos.Game, wordService, computeClient)
 	guessService := NewGuessService(repos.Guess, gameService, wordService, computeClient)

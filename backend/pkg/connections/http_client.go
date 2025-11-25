@@ -2,24 +2,25 @@ package connections
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 )
 
-type HTTPClient struct {
+type HTTPComputeClient struct {
 	baseURL string
 	client  *http.Client
 }
 
-func NewHTTPClient(cfg Config) (*HTTPClient, error) {
+func NewHTTPComputeClient(cfg Config) (*HTTPComputeClient, error) {
 	timeout := 30
 	if cfg.Timeout > 0 {
 		timeout = cfg.Timeout
 	}
 
-	return &HTTPClient{
+	return &HTTPComputeClient{
 		baseURL: cfg.BaseURL,
 		client: &http.Client{
 			Timeout: time.Duration(timeout) * time.Second,
@@ -27,19 +28,43 @@ func NewHTTPClient(cfg Config) (*HTTPClient, error) {
 	}, nil
 }
 
-func (c *HTTPClient) Call(method, path string, body interface{}, response interface{}) error {
+func (c *HTTPComputeClient) StartGame(ctx context.Context, req *StartGameRequest) (*StartGameResponse, error) {
+	var resp StartGameResponse
+	if err := c.call(ctx, "POST", "/start-game", req, &resp); err != nil {
+		return nil, fmt.Errorf("start game failed: %w", err)
+	}
+	return &resp, nil
+}
+
+func (c *HTTPComputeClient) MakeGuess(ctx context.Context, req *GuessRequest) (*GuessResponse, error) {
+	var resp GuessResponse
+	if err := c.call(ctx, "POST", "/guess", req, &resp); err != nil {
+		return nil, fmt.Errorf("make guess failed: %w", err)
+	}
+	return &resp, nil
+}
+
+func (c *HTTPComputeClient) HealthCheck(ctx context.Context) (*HealthResponse, error) {
+	var resp HealthResponse
+	if err := c.call(ctx, "GET", "/health", nil, &resp); err != nil {
+		return nil, fmt.Errorf("health check failed: %w", err)
+	}
+	return &resp, nil
+}
+
+func (c *HTTPComputeClient) call(ctx context.Context, method, path string, body, response interface{}) error {
 	var reqBody []byte
 	var err error
 
 	if body != nil {
 		reqBody, err = json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("failed to marshal request body: %w", err)
+			return fmt.Errorf("failed to marshal request: %w", err)
 		}
 	}
 
 	url := fmt.Sprintf("%s%s", c.baseURL, path)
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(reqBody))
+	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(reqBody))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -53,7 +78,7 @@ func (c *HTTPClient) Call(method, path string, body interface{}, response interf
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("request failed with status code: %d", resp.StatusCode)
+		return fmt.Errorf("request failed with status %d", resp.StatusCode)
 	}
 
 	if response != nil {
@@ -65,6 +90,6 @@ func (c *HTTPClient) Call(method, path string, body interface{}, response interf
 	return nil
 }
 
-func (c *HTTPClient) Close() error {
+func (c *HTTPComputeClient) Close() error {
 	return nil
 }

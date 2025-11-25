@@ -1,7 +1,9 @@
 package service
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/dimqueue/darts/pkg/connections"
 	"github.com/dimqueue/darts/pkg/model"
@@ -9,12 +11,12 @@ import (
 )
 
 type GameService struct {
-	computeClient *connections.ComputeClientService
+	computeClient connections.ComputeClient
 	wordService   Word
 	gameRepo      repository.Game
 }
 
-func NewGameService(gameRepo repository.Game, wordService Word, computeClient *connections.ComputeClientService) *GameService {
+func NewGameService(gameRepo repository.Game, wordService Word, computeClient connections.ComputeClient) *GameService {
 	return &GameService{
 		computeClient: computeClient,
 		wordService:   wordService,
@@ -28,7 +30,16 @@ func (s *GameService) CreateGame(userId int, lang string) (int, error) {
 		return 0, fmt.Errorf("failed to select word: %w", err)
 	}
 
-	resp, err := s.computeClient.StartGame(selectedWord.Word, lang)
+	// Create context with timeout for compute service call
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	req := &connections.StartGameRequest{
+		Language:   lang,
+		SecretWord: selectedWord.Word,
+	}
+
+	resp, err := s.computeClient.StartGame(ctx, req)
 	if err != nil {
 		return 0, fmt.Errorf("failed to start game on compute client: %w", err)
 	}

@@ -1,7 +1,9 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"time"
 
 	"github.com/dimqueue/darts/pkg/connections"
 	"github.com/dimqueue/darts/pkg/model"
@@ -9,13 +11,13 @@ import (
 )
 
 type GuessService struct {
-	computeClient *connections.ComputeClientService
+	computeClient connections.ComputeClient
 	guessRepo     repository.Guess
 	gameService   Game
 	wordService   Word
 }
 
-func NewGuessService(guessRepo repository.Guess, gameService Game, wordService Word, computeClient *connections.ComputeClientService) *GuessService {
+func NewGuessService(guessRepo repository.Guess, gameService Game, wordService Word, computeClient connections.ComputeClient) *GuessService {
 	return &GuessService{
 		guessRepo:     guessRepo,
 		gameService:   gameService,
@@ -62,7 +64,17 @@ func (s *GuessService) CreateGuess(userId, gameId int, guess string) (int, error
 		return distance, nil
 	}
 
-	resp, err := s.computeClient.MakeGuess(word.Word, guess, game.Language)
+	// Create context with timeout for compute service call
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	req := &connections.GuessRequest{
+		SecretWord: word.Word,
+		Guess:      guess,
+		Language:   game.Language,
+	}
+
+	resp, err := s.computeClient.MakeGuess(ctx, req)
 	if err != nil {
 		return 0, err
 	}

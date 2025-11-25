@@ -4,3 +4,7 @@ scripts
 configs/migrations.yml
 .docs
 .dev.env
+
+# Generated proto code
+backend/pkg/proto/
+compute-client/src/proto/
