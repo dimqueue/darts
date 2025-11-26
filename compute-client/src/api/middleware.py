@@ -12,6 +12,16 @@ async def log_request_resources(request: Request, call_next):
     request.state.request_id = request_id
     start_time = time.time()
 
+    # Log incoming request details
+    client_host = request.client.host if request.client else "unknown"
+    query_params = dict(request.query_params) if request.query_params else {}
+
+    logger.info(
+        f"[{request_id}] Incoming request: {request.method} {request.url.path} | "
+        f"Client: {client_host} | "
+        f"Query params: {query_params if query_params else 'none'}"
+    )
+
     try:
         response = await call_next(request)
         duration = time.time() - start_time

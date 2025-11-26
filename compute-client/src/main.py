@@ -41,7 +41,7 @@ def run_http_server(word_model: WordSimilarityModel, monitor: ResourceMonitor):
 
 
 def run_grpc_server(word_model: WordSimilarityModel, monitor: ResourceMonitor):
-    from grpc.server import serve as serve_grpc
+    from grpc_server.server import serve as serve_grpc
 
     logger.info(f"Starting gRPC server on port {Config.GRPC_PORT}")
 
