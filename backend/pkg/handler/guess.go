@@ -32,7 +32,7 @@ func (h *Handler) createGuess(c *gin.Context) {
 		return
 	}
 
-	if err = validateWord(input.Guess); err != nil {
+	if err = h.validator.ValidateWord(input.Guess); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -47,10 +47,6 @@ func (h *Handler) createGuess(c *gin.Context) {
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"distance": distance,
 	})
-}
-
-func validateWord(word string) error {
-	return nil
 }
 
 type getAllGuessByGameResponse struct {

@@ -14,6 +14,7 @@ import (
 	"github.com/dimqueue/darts/pkg/repository"
 	"github.com/dimqueue/darts/pkg/service"
 	"github.com/dimqueue/darts/pkg/swagger"
+	"github.com/dimqueue/darts/pkg/validation"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
@@ -87,7 +88,6 @@ func runServer(db *sqlx.DB, config Config) error {
 
 	defer computeClient.Close()
 
-	// Health check with context
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -99,7 +99,9 @@ func runServer(db *sqlx.DB, config Config) error {
 
 	services := service.NewService(repos, computeClient)
 
-	handlers := handler.NewHandler(services)
+	validator := validation.New()
+
+	handlers := handler.NewHandler(services, validator)
 
 	router := handlers.InitRoutes()
 

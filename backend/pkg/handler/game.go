@@ -72,6 +72,7 @@ func (h *Handler) getAllGames(c *gin.Context) {
 	games, err := h.services.GetAllGames(userId)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	c.JSON(http.StatusOK, getAllGamesResponse{
@@ -90,6 +91,7 @@ func (h *Handler) getGameById(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, "user id not found")
+		return
 	}
 
 	var input getGameByIdInput
@@ -102,6 +104,7 @@ func (h *Handler) getGameById(c *gin.Context) {
 	game, err := h.services.GetGameById(userId, input.gameId)
 	if err != nil {
 		newErrorResponse(c, http.StatusNotFound, err.Error())
+		return
 	}
 
 	c.JSON(http.StatusOK, getGameByIdResponse{

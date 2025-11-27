@@ -4,16 +4,21 @@ import (
 	"time"
 
 	"github.com/dimqueue/darts/pkg/service"
+	"github.com/dimqueue/darts/pkg/validation"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	services *service.Service
+	services  *service.Service
+	validator *validation.Validator
 }
 
-func NewHandler(services *service.Service) *Handler {
-	return &Handler{services: services}
+func NewHandler(services *service.Service, validator *validation.Validator) *Handler {
+	return &Handler{
+		services:  services,
+		validator: validator,
+	}
 }
 
 func (h *Handler) InitRoutes() *gin.Engine {
