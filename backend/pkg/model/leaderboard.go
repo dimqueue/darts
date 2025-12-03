@@ -35,8 +35,8 @@ type LeaderboardQuery struct {
 }
 
 type UserRanks struct {
-	GlobalRank  *int `json:"global_rank"`
-	DailyRank   *int `json:"daily_rank"`
-	WeeklyRank  *int `json:"weekly_rank"`
-	MonthlyRank *int `json:"monthly_rank"`
+	GlobalRank  *int `json:"global_rank" db:"global_rank"`
+	DailyRank   *int `json:"daily_rank" db:"daily_rank"`
+	WeeklyRank  *int `json:"weekly_rank" db:"weekly_rank"`
+	MonthlyRank *int `json:"monthly_rank" db:"monthly_rank"`
 }

@@ -17,57 +17,48 @@ func NewLeaderboardPostgres(db *sqlx.DB) *LeaderboardPostgres {
 }
 
 func (r *LeaderboardPostgres) GetLeaderboard(query model.LeaderboardQuery) ([]model.LeaderboardUser, error) {
-	switch query.Type {
-	case "global":
+	if query.Type == "global" {
 		if query.Language != nil {
 			return r.getGlobalByLanguage(*query.Language, query.Limit, query.Offset)
 		}
 		return r.getGlobal(query.Limit, query.Offset)
-	case "daily":
-		return r.getPeriodLeaderboard(getDayStart(), query.Language, query.Limit, query.Offset)
-	case "weekly":
-		return r.getPeriodLeaderboard(getWeekStart(), query.Language, query.Limit, query.Offset)
-	case "monthly":
-		return r.getPeriodLeaderboard(getMonthStart(), query.Language, query.Limit, query.Offset)
-	default:
-		return nil, fmt.Errorf("invalid leaderboard type: %s", query.Type)
 	}
+
+	periodStart, err := getPeriodStart(query.Type)
+	if err != nil {
+		return nil, err
+	}
+	return r.getPeriodLeaderboard(periodStart, query.Language, query.Limit, query.Offset)
 }
 
 func (r *LeaderboardPostgres) GetLeaderboardCount(query model.LeaderboardQuery) (int, error) {
-	switch query.Type {
-	case "global":
+	if query.Type == "global" {
 		if query.Language != nil {
 			return r.getGlobalByLanguageCount(*query.Language)
 		}
 		return r.getGlobalCount()
-	case "daily":
-		return r.getPeriodLeaderboardCount(getDayStart(), query.Language)
-	case "weekly":
-		return r.getPeriodLeaderboardCount(getWeekStart(), query.Language)
-	case "monthly":
-		return r.getPeriodLeaderboardCount(getMonthStart(), query.Language)
-	default:
-		return 0, fmt.Errorf("invalid leaderboard type: %s", query.Type)
 	}
+
+	periodStart, err := getPeriodStart(query.Type)
+	if err != nil {
+		return 0, err
+	}
+	return r.getPeriodLeaderboardCount(periodStart, query.Language)
 }
 
 func (r *LeaderboardPostgres) GetUserRank(userId int64, query model.LeaderboardQuery) (*int, error) {
-	switch query.Type {
-	case "global":
+	if query.Type == "global" {
 		if query.Language != nil {
 			return r.getUserRankByLanguage(userId, *query.Language)
 		}
 		return r.getUserRankGlobal(userId)
-	case "daily":
-		return r.getUserRankPeriod(userId, getDayStart(), query.Language)
-	case "weekly":
-		return r.getUserRankPeriod(userId, getWeekStart(), query.Language)
-	case "monthly":
-		return r.getUserRankPeriod(userId, getMonthStart(), query.Language)
-	default:
-		return nil, fmt.Errorf("invalid leaderboard type: %s", query.Type)
 	}
+
+	periodStart, err := getPeriodStart(query.Type)
+	if err != nil {
+		return nil, err
+	}
+	return r.getUserRankPeriod(userId, periodStart, query.Language)
 }
 
 func (r *LeaderboardPostgres) getGlobal(limit, offset int) ([]model.LeaderboardUser, error) {
@@ -223,14 +214,16 @@ func (r *LeaderboardPostgres) getPeriodLeaderboard(periodStart time.Time, langua
 			    up.country_code,
 			    SUM(CASE WHEN g.status = 'won' THEN 100 ELSE 0 END) as total_score,
 			    COUNT(CASE WHEN g.status = 'won' THEN 1 END) as total_wins,
-			    COUNT(g.id) as total_games,
-			    0 as best_win_streak,
+			    COUNT(CASE WHEN g.status != 'in_progress' THEN 1 END) as total_games,
+			    COALESCE(ugs.best_streak, 0) as best_win_streak,
 			    COALESCE(
-			        ROUND(SUM(COALESCE(gg.guess_count, 0))::DECIMAL / NULLIF(COUNT(g.id), 0), 2),
+			        ROUND(SUM(CASE WHEN g.status != 'in_progress' THEN COALESCE(gg.guess_count, 0) ELSE 0 END)::DECIMAL /
+			              NULLIF(COUNT(CASE WHEN g.status != 'in_progress' THEN 1 END), 0), 2),
 			        0
 			    ) as average_guesses,
-			    CASE WHEN COUNT(g.id) > 0
-			        THEN ROUND((COUNT(CASE WHEN g.status = 'won' THEN 1 END)::DECIMAL / COUNT(g.id) * 100), 2)
+			    CASE WHEN COUNT(CASE WHEN g.status != 'in_progress' THEN 1 END) > 0
+			        THEN ROUND((COUNT(CASE WHEN g.status = 'won' THEN 1 END)::DECIMAL /
+			                    COUNT(CASE WHEN g.status != 'in_progress' THEN 1 END) * 100), 2)
 			        ELSE 0
 			    END as win_rate
 			FROM users u
@@ -238,12 +231,13 @@ func (r *LeaderboardPostgres) getPeriodLeaderboard(periodStart time.Time, langua
 			LEFT JOIN game_guesses gg ON g.id = gg.game_id
 			LEFT JOIN user_profiles up ON u.id = up.user_id
 			LEFT JOIN user_settings us ON u.id = us.user_id
+			LEFT JOIN user_global_streaks ugs ON u.id = ugs.user_id
 			WHERE u.is_active = true
 			    AND g.started_at >= $1
 			    %s
 			    AND COALESCE(us.show_stats_public, true) = true
-			GROUP BY u.id, u.username, u.name, up.avatar_url, up.country_code
-			HAVING COUNT(g.id) >= 3
+			GROUP BY u.id, u.username, u.name, up.avatar_url, up.country_code, ugs.best_streak
+			HAVING COUNT(CASE WHEN g.status != 'in_progress' THEN 1 END) >= 1
 		),
 		ranked_users AS (
 			SELECT
@@ -284,10 +278,11 @@ func (r *LeaderboardPostgres) getPeriodLeaderboardCount(periodStart time.Time, l
 			LEFT JOIN user_settings us ON u.id = us.user_id
 			WHERE u.is_active = true
 			    AND g.started_at >= $1
+			    AND g.status != 'in_progress'
 			    %s
 			    AND COALESCE(us.show_stats_public, true) = true
 			GROUP BY u.id
-			HAVING COUNT(g.id) >= 3
+			HAVING COUNT(g.id) >= 1
 		) AS eligible_users
 	`, langFilter)
 
@@ -321,10 +316,11 @@ func (r *LeaderboardPostgres) getUserRankPeriod(userId int64, periodStart time.T
 		    LEFT JOIN user_settings us ON u.id = us.user_id
 		    WHERE u.is_active = true
 		        AND g.started_at >= $1
+		        AND g.status != 'in_progress'
 		        %s
 		        AND COALESCE(us.show_stats_public, true) = true
 		    GROUP BY u.id
-		    HAVING COUNT(g.id) >= 3
+		    HAVING COUNT(g.id) >= 1
 		),
 		ranked AS (
 		    SELECT user_id, RANK() OVER (ORDER BY total_score DESC, total_wins DESC) as rank
@@ -341,9 +337,9 @@ func (r *LeaderboardPostgres) getUserRankPeriod(userId int64, periodStart time.T
 }
 
 func (r *LeaderboardPostgres) GetAllUserRanks(userId int64) (*model.UserRanks, error) {
-	dayStart := getDayStart()
-	weekStart := getWeekStart()
-	monthStart := getMonthStart()
+	dayStart, _ := getPeriodStart("daily")
+	weekStart, _ := getPeriodStart("weekly")
+	monthStart, _ := getPeriodStart("monthly")
 
 	query := `
 		WITH global_rank AS (
@@ -359,9 +355,10 @@ func (r *LeaderboardPostgres) GetAllUserRanks(userId int64) (*model.UserRanks, e
 			LEFT JOIN user_settings us ON u.id = us.user_id
 			WHERE u.is_active = true
 				AND g.started_at >= $2
+				AND g.status != 'in_progress'
 				AND COALESCE(us.show_stats_public, true) = true
 			GROUP BY u.id
-			HAVING COUNT(g.id) >= 3
+			HAVING COUNT(g.id) >= 1
 		),
 		daily_ranked AS (
 			SELECT user_id, RANK() OVER (ORDER BY total_score DESC, total_wins DESC) as rank
@@ -377,9 +374,10 @@ func (r *LeaderboardPostgres) GetAllUserRanks(userId int64) (*model.UserRanks, e
 			LEFT JOIN user_settings us ON u.id = us.user_id
 			WHERE u.is_active = true
 				AND g.started_at >= $3
+				AND g.status != 'in_progress'
 				AND COALESCE(us.show_stats_public, true) = true
 			GROUP BY u.id
-			HAVING COUNT(g.id) >= 3
+			HAVING COUNT(g.id) >= 1
 		),
 		weekly_ranked AS (
 			SELECT user_id, RANK() OVER (ORDER BY total_score DESC, total_wins DESC) as rank
@@ -395,9 +393,10 @@ func (r *LeaderboardPostgres) GetAllUserRanks(userId int64) (*model.UserRanks, e
 			LEFT JOIN user_settings us ON u.id = us.user_id
 			WHERE u.is_active = true
 				AND g.started_at >= $4
+				AND g.status != 'in_progress'
 				AND COALESCE(us.show_stats_public, true) = true
 			GROUP BY u.id
-			HAVING COUNT(g.id) >= 3
+			HAVING COUNT(g.id) >= 1
 		),
 		monthly_ranked AS (
 			SELECT user_id, RANK() OVER (ORDER BY total_score DESC, total_wins DESC) as rank
@@ -419,21 +418,20 @@ func (r *LeaderboardPostgres) GetAllUserRanks(userId int64) (*model.UserRanks, e
 	return &ranks, nil
 }
 
-func getDayStart() time.Time {
+func getPeriodStart(periodType string) (time.Time, error) {
 	now := time.Now()
-	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-}
-
-func getWeekStart() time.Time {
-	now := time.Now()
-	weekStart := now.AddDate(0, 0, -int(now.Weekday())+1)
-	if now.Weekday() == time.Sunday {
-		weekStart = now.AddDate(0, 0, -6)
+	switch periodType {
+	case "daily":
+		return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC), nil
+	case "weekly":
+		weekStart := now.AddDate(0, 0, -int(now.Weekday())+1)
+		if now.Weekday() == time.Sunday {
+			weekStart = now.AddDate(0, 0, -6)
+		}
+		return time.Date(weekStart.Year(), weekStart.Month(), weekStart.Day(), 0, 0, 0, 0, time.UTC), nil
+	case "monthly":
+		return time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC), nil
+	default:
+		return time.Time{}, fmt.Errorf("invalid period type: %s", periodType)
 	}
-	return time.Date(weekStart.Year(), weekStart.Month(), weekStart.Day(), 0, 0, 0, 0, time.UTC)
-}
-
-func getMonthStart() time.Time {
-	now := time.Now()
-	return time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 }
