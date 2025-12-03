@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dimqueue/darts/pkg/config"
 	"github.com/dimqueue/darts/pkg/connections"
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
@@ -36,7 +37,7 @@ func (s *GameService) CreateGame(userId int64, lang string) (int64, error) {
 		return 0, fmt.Errorf("failed to select word: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.GameComputeTimeout)
 	defer cancel()
 
 	req := &connections.StartGameRequest{
@@ -49,7 +50,7 @@ func (s *GameService) CreateGame(userId int64, lang string) (int64, error) {
 		return 0, fmt.Errorf("failed to start game on compute client: %w", err)
 	}
 
-	expiresAt := time.Now().Add(2 * time.Hour)
+	expiresAt := time.Now().Add(config.GameTTL)
 
 	game := model.Game{
 		Language:  lang,
@@ -121,7 +122,7 @@ func (s *GameService) MakeGuess(userId, gameId int64, guess string) (int, error)
 	if isWinningGuess {
 		distance = 1
 	} else {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), config.GameComputeTimeout)
 		defer cancel()
 
 		req := &connections.GuessRequest{
@@ -147,7 +148,6 @@ func (s *GameService) MakeGuess(userId, gameId int64, guess string) (int, error)
 			return errors.New("game is no longer active")
 		}
 
-		// Re-check guess existence inside transaction to prevent race condition
 		existsTx, err := s.gameRepo.GuessExistsTx(tx, gameId, guess)
 		if err != nil {
 			return fmt.Errorf("failed to check guess in transaction: %w", err)

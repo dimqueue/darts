@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dimqueue/darts/pkg/config"
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -64,14 +65,14 @@ func (r *LeaderboardPostgres) GetUserRank(userId int64, query model.LeaderboardQ
 func (r *LeaderboardPostgres) getGlobal(limit, offset int) ([]model.LeaderboardUser, error) {
 	users := make([]model.LeaderboardUser, 0)
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT rank, user_id, username, name, avatar_url, country_code,
 		       total_score, total_wins, total_games, best_win_streak,
 		       average_guesses, win_rate
-		FROM global_leaderboard_view
+		FROM %s
 		ORDER BY rank
 		LIMIT $1 OFFSET $2
-	`
+	`, globalLeaderboardView)
 
 	err := r.db.Select(&users, query, limit, offset)
 	return users, err
@@ -80,7 +81,7 @@ func (r *LeaderboardPostgres) getGlobal(limit, offset int) ([]model.LeaderboardU
 func (r *LeaderboardPostgres) getGlobalByLanguage(language string, limit, offset int) ([]model.LeaderboardUser, error) {
 	users := make([]model.LeaderboardUser, 0)
 
-	query := `
+	query := fmt.Sprintf(`
 		WITH ranked_users AS (
 			SELECT
 			    RANK() OVER (ORDER BY uls.total_score DESC, uls.games_won DESC, uls.average_guesses ASC) as rank,
@@ -101,11 +102,9 @@ func (r *LeaderboardPostgres) getGlobalByLanguage(language string, limit, offset
 			FROM user_language_stats uls
 			INNER JOIN users u ON uls.user_id = u.id
 			LEFT JOIN user_profiles up ON u.id = up.user_id
-			LEFT JOIN user_settings us ON u.id = us.user_id
 			WHERE u.is_active = true
 			    AND uls.language = $1
-			    AND uls.games_played >= 3
-			    AND COALESCE(us.show_stats_public, true) = true
+			    AND uls.games_played >= %d
 		)
 		SELECT rank, user_id, username, name, avatar_url, country_code,
 		       total_score, total_wins, total_games, best_win_streak,
@@ -113,7 +112,7 @@ func (r *LeaderboardPostgres) getGlobalByLanguage(language string, limit, offset
 		FROM ranked_users
 		ORDER BY rank
 		LIMIT $2 OFFSET $3
-	`
+	`, config.LeaderboardMinGamesGlobal)
 
 	err := r.db.Select(&users, query, language, limit, offset)
 	return users, err
@@ -121,7 +120,7 @@ func (r *LeaderboardPostgres) getGlobalByLanguage(language string, limit, offset
 
 func (r *LeaderboardPostgres) getGlobalCount() (int, error) {
 	var count int
-	query := `SELECT COUNT(*) FROM global_leaderboard_view`
+	query := fmt.Sprintf(`SELECT COUNT(*) FROM %s`, globalLeaderboardView)
 	err := r.db.Get(&count, query)
 	return count, err
 }
@@ -129,16 +128,14 @@ func (r *LeaderboardPostgres) getGlobalCount() (int, error) {
 func (r *LeaderboardPostgres) getGlobalByLanguageCount(language string) (int, error) {
 	var count int
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT COUNT(*)
 		FROM user_language_stats uls
 		INNER JOIN users u ON uls.user_id = u.id
-		LEFT JOIN user_settings us ON u.id = us.user_id
 		WHERE u.is_active = true
 		    AND uls.language = $1
-		    AND uls.games_played >= 3
-		    AND COALESCE(us.show_stats_public, true) = true
-	`
+		    AND uls.games_played >= %d
+	`, config.LeaderboardMinGamesGlobal)
 
 	err := r.db.Get(&count, query, language)
 	return count, err
@@ -147,11 +144,11 @@ func (r *LeaderboardPostgres) getGlobalByLanguageCount(language string) (int, er
 func (r *LeaderboardPostgres) getUserRankGlobal(userId int64) (*int, error) {
 	var rank *int
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT rank
-		FROM global_leaderboard_view
+		FROM %s
 		WHERE user_id = $1
-	`
+	`, globalLeaderboardView)
 
 	err := r.db.Get(&rank, query, userId)
 	if err != nil {
@@ -163,19 +160,19 @@ func (r *LeaderboardPostgres) getUserRankGlobal(userId int64) (*int, error) {
 func (r *LeaderboardPostgres) getUserRankByLanguage(userId int64, language string) (*int, error) {
 	var rank *int
 
-	query := `
+	query := fmt.Sprintf(`
 		WITH ranked_users AS (
 		    SELECT
 		        user_id,
 		        RANK() OVER (ORDER BY total_score DESC, games_won DESC, average_guesses ASC) as rank
 		    FROM user_language_stats
 		    WHERE language = $2
-		        AND games_played >= 3
+		        AND games_played >= %d
 		)
 		SELECT rank
 		FROM ranked_users
 		WHERE user_id = $1
-	`
+	`, config.LeaderboardMinGamesGlobal)
 
 	err := r.db.Get(&rank, query, userId, language)
 	if err != nil {
@@ -188,11 +185,13 @@ func (r *LeaderboardPostgres) getPeriodLeaderboard(periodStart time.Time, langua
 	users := make([]model.LeaderboardUser, 0)
 
 	langFilter := ""
+	langFilterStreak := ""
 	args := []interface{}{periodStart}
 	argNum := 2
 
 	if language != nil {
 		langFilter = fmt.Sprintf("AND g.language = $%d", argNum)
+		langFilterStreak = fmt.Sprintf("AND g.language = $%d", argNum)
 		args = append(args, *language)
 		argNum++
 	}
@@ -205,6 +204,26 @@ func (r *LeaderboardPostgres) getPeriodLeaderboard(periodStart time.Time, langua
 			FROM guesses
 			GROUP BY game_id
 		),
+		period_streaks AS (
+			SELECT user_id, COALESCE(MAX(streak_len), 0) as best_period_streak
+			FROM (
+				SELECT user_id, COUNT(*) as streak_len
+				FROM (
+					SELECT
+						g.user_id,
+						g.status,
+						SUM(CASE WHEN g.status != 'won' THEN 1 ELSE 0 END)
+							OVER (PARTITION BY g.user_id ORDER BY g.started_at) as loss_group
+					FROM games g
+					WHERE g.started_at >= $1
+						AND g.status != 'in_progress'
+						%s
+				) grouped
+				WHERE status = 'won'
+				GROUP BY user_id, loss_group
+			) streaks
+			GROUP BY user_id
+		),
 		period_stats AS (
 			SELECT
 			    u.id as user_id,
@@ -215,7 +234,6 @@ func (r *LeaderboardPostgres) getPeriodLeaderboard(periodStart time.Time, langua
 			    SUM(CASE WHEN g.status = 'won' THEN 100 ELSE 0 END) as total_score,
 			    COUNT(CASE WHEN g.status = 'won' THEN 1 END) as total_wins,
 			    COUNT(CASE WHEN g.status != 'in_progress' THEN 1 END) as total_games,
-			    COALESCE(ugs.best_streak, 0) as best_win_streak,
 			    COALESCE(
 			        ROUND(SUM(CASE WHEN g.status != 'in_progress' THEN COALESCE(gg.guess_count, 0) ELSE 0 END)::DECIMAL /
 			              NULLIF(COUNT(CASE WHEN g.status != 'in_progress' THEN 1 END), 0), 2),
@@ -230,22 +248,21 @@ func (r *LeaderboardPostgres) getPeriodLeaderboard(periodStart time.Time, langua
 			INNER JOIN games g ON u.id = g.user_id
 			LEFT JOIN game_guesses gg ON g.id = gg.game_id
 			LEFT JOIN user_profiles up ON u.id = up.user_id
-			LEFT JOIN user_settings us ON u.id = us.user_id
-			LEFT JOIN user_global_streaks ugs ON u.id = ugs.user_id
 			WHERE u.is_active = true
 			    AND g.started_at >= $1
 			    %s
-			    AND COALESCE(us.show_stats_public, true) = true
-			GROUP BY u.id, u.username, u.name, up.avatar_url, up.country_code, ugs.best_streak
-			HAVING COUNT(CASE WHEN g.status != 'in_progress' THEN 1 END) >= 1
+			GROUP BY u.id, u.username, u.name, up.avatar_url, up.country_code
+			HAVING COUNT(CASE WHEN g.status != 'in_progress' THEN 1 END) >= %d
 		),
 		ranked_users AS (
 			SELECT
-			    RANK() OVER (ORDER BY total_score DESC, total_wins DESC, average_guesses ASC) as rank,
-			    user_id, username, name, avatar_url, country_code,
-			    total_score, total_wins, total_games, best_win_streak,
-			    average_guesses, win_rate
-			FROM period_stats
+			    RANK() OVER (ORDER BY ps.total_score DESC, ps.total_wins DESC, ps.average_guesses ASC) as rank,
+			    ps.user_id, ps.username, ps.name, ps.avatar_url, ps.country_code,
+			    ps.total_score, ps.total_wins, ps.total_games,
+			    COALESCE(pst.best_period_streak, 0) as best_win_streak,
+			    ps.average_guesses, ps.win_rate
+			FROM period_stats ps
+			LEFT JOIN period_streaks pst ON ps.user_id = pst.user_id
 		)
 		SELECT rank, user_id, username, name, avatar_url, country_code,
 		       total_score, total_wins, total_games, best_win_streak,
@@ -253,7 +270,7 @@ func (r *LeaderboardPostgres) getPeriodLeaderboard(periodStart time.Time, langua
 		FROM ranked_users
 		ORDER BY rank
 		LIMIT $%d OFFSET $%d
-	`, langFilter, argNum, argNum+1)
+	`, langFilterStreak, langFilter, config.LeaderboardMinGamesPeriod, argNum, argNum+1)
 
 	err := r.db.Select(&users, query, args...)
 	return users, err
@@ -275,16 +292,14 @@ func (r *LeaderboardPostgres) getPeriodLeaderboardCount(periodStart time.Time, l
 			SELECT u.id
 			FROM users u
 			INNER JOIN games g ON u.id = g.user_id
-			LEFT JOIN user_settings us ON u.id = us.user_id
 			WHERE u.is_active = true
 			    AND g.started_at >= $1
 			    AND g.status != 'in_progress'
 			    %s
-			    AND COALESCE(us.show_stats_public, true) = true
 			GROUP BY u.id
-			HAVING COUNT(g.id) >= 1
+			HAVING COUNT(g.id) >= %d
 		) AS eligible_users
-	`, langFilter)
+	`, langFilter, config.LeaderboardMinGamesPeriod)
 
 	err := r.db.Get(&count, query, args...)
 	return count, err
@@ -306,28 +321,37 @@ func (r *LeaderboardPostgres) getUserRankPeriod(userId int64, periodStart time.T
 	args = append(args, userId)
 
 	query := fmt.Sprintf(`
-		WITH period_scores AS (
+		WITH game_guesses AS (
+		    SELECT game_id, COUNT(*) as guess_count
+		    FROM guesses
+		    GROUP BY game_id
+		),
+		period_scores AS (
 		    SELECT
 		        u.id as user_id,
 		        SUM(CASE WHEN g.status = 'won' THEN 100 ELSE 0 END) as total_score,
-		        COUNT(CASE WHEN g.status = 'won' THEN 1 END) as total_wins
+		        COUNT(CASE WHEN g.status = 'won' THEN 1 END) as total_wins,
+		        COALESCE(
+		            ROUND(SUM(CASE WHEN g.status != 'in_progress' THEN COALESCE(gg.guess_count, 0) ELSE 0 END)::DECIMAL /
+		                  NULLIF(COUNT(CASE WHEN g.status != 'in_progress' THEN 1 END), 0), 2),
+		            0
+		        ) as average_guesses
 		    FROM users u
 		    INNER JOIN games g ON u.id = g.user_id
-		    LEFT JOIN user_settings us ON u.id = us.user_id
+		    LEFT JOIN game_guesses gg ON g.id = gg.game_id
 		    WHERE u.is_active = true
 		        AND g.started_at >= $1
 		        AND g.status != 'in_progress'
 		        %s
-		        AND COALESCE(us.show_stats_public, true) = true
 		    GROUP BY u.id
-		    HAVING COUNT(g.id) >= 1
+		    HAVING COUNT(g.id) >= %d
 		),
 		ranked AS (
-		    SELECT user_id, RANK() OVER (ORDER BY total_score DESC, total_wins DESC) as rank
+		    SELECT user_id, RANK() OVER (ORDER BY total_score DESC, total_wins DESC, average_guesses ASC) as rank
 		    FROM period_scores
 		)
 		SELECT rank FROM ranked WHERE user_id = $%d
-	`, langFilter, argNum)
+	`, langFilter, config.LeaderboardMinGamesPeriod, argNum)
 
 	err := r.db.Get(&rank, query, args...)
 	if err != nil {
@@ -337,83 +361,18 @@ func (r *LeaderboardPostgres) getUserRankPeriod(userId int64, periodStart time.T
 }
 
 func (r *LeaderboardPostgres) GetAllUserRanks(userId int64) (*model.UserRanks, error) {
-	dayStart, _ := getPeriodStart("daily")
-	weekStart, _ := getPeriodStart("weekly")
-	monthStart, _ := getPeriodStart("monthly")
-
-	query := `
-		WITH global_rank AS (
-			SELECT rank FROM global_leaderboard_view WHERE user_id = $1
-		),
-		daily_scores AS (
-			SELECT
-				u.id as user_id,
-				SUM(CASE WHEN g.status = 'won' THEN 100 ELSE 0 END) as total_score,
-				COUNT(CASE WHEN g.status = 'won' THEN 1 END) as total_wins
-			FROM users u
-			INNER JOIN games g ON u.id = g.user_id
-			LEFT JOIN user_settings us ON u.id = us.user_id
-			WHERE u.is_active = true
-				AND g.started_at >= $2
-				AND g.status != 'in_progress'
-				AND COALESCE(us.show_stats_public, true) = true
-			GROUP BY u.id
-			HAVING COUNT(g.id) >= 1
-		),
-		daily_ranked AS (
-			SELECT user_id, RANK() OVER (ORDER BY total_score DESC, total_wins DESC) as rank
-			FROM daily_scores
-		),
-		weekly_scores AS (
-			SELECT
-				u.id as user_id,
-				SUM(CASE WHEN g.status = 'won' THEN 100 ELSE 0 END) as total_score,
-				COUNT(CASE WHEN g.status = 'won' THEN 1 END) as total_wins
-			FROM users u
-			INNER JOIN games g ON u.id = g.user_id
-			LEFT JOIN user_settings us ON u.id = us.user_id
-			WHERE u.is_active = true
-				AND g.started_at >= $3
-				AND g.status != 'in_progress'
-				AND COALESCE(us.show_stats_public, true) = true
-			GROUP BY u.id
-			HAVING COUNT(g.id) >= 1
-		),
-		weekly_ranked AS (
-			SELECT user_id, RANK() OVER (ORDER BY total_score DESC, total_wins DESC) as rank
-			FROM weekly_scores
-		),
-		monthly_scores AS (
-			SELECT
-				u.id as user_id,
-				SUM(CASE WHEN g.status = 'won' THEN 100 ELSE 0 END) as total_score,
-				COUNT(CASE WHEN g.status = 'won' THEN 1 END) as total_wins
-			FROM users u
-			INNER JOIN games g ON u.id = g.user_id
-			LEFT JOIN user_settings us ON u.id = us.user_id
-			WHERE u.is_active = true
-				AND g.started_at >= $4
-				AND g.status != 'in_progress'
-				AND COALESCE(us.show_stats_public, true) = true
-			GROUP BY u.id
-			HAVING COUNT(g.id) >= 1
-		),
-		monthly_ranked AS (
-			SELECT user_id, RANK() OVER (ORDER BY total_score DESC, total_wins DESC) as rank
-			FROM monthly_scores
-		)
-		SELECT
-			(SELECT rank FROM global_rank) as global_rank,
-			(SELECT rank FROM daily_ranked WHERE user_id = $1) as daily_rank,
-			(SELECT rank FROM weekly_ranked WHERE user_id = $1) as weekly_rank,
-			(SELECT rank FROM monthly_ranked WHERE user_id = $1) as monthly_rank
-	`
-
 	var ranks model.UserRanks
-	err := r.db.Get(&ranks, query, userId, dayStart, weekStart, monthStart)
-	if err != nil {
-		return &model.UserRanks{}, nil
-	}
+
+	ranks.GlobalRank, _ = r.getUserRankGlobal(userId)
+
+	dayStart, _ := getPeriodStart("daily")
+	ranks.DailyRank, _ = r.getUserRankPeriod(userId, dayStart, nil)
+
+	weekStart, _ := getPeriodStart("weekly")
+	ranks.WeeklyRank, _ = r.getUserRankPeriod(userId, weekStart, nil)
+
+	monthStart, _ := getPeriodStart("monthly")
+	ranks.MonthlyRank, _ = r.getUserRankPeriod(userId, monthStart, nil)
 
 	return &ranks, nil
 }

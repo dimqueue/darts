@@ -13,9 +13,14 @@ const (
 	wordsTable         = "words"
 	profilesTable      = "user_profiles"
 	settingsTable      = "user_settings"
-	statisticsTable    = "user_statistics"
 	languageStatsTable = "user_language_stats"
 	globalStreaksTable = "user_global_streaks"
+)
+
+const (
+	globalLeaderboardView  = "global_leaderboard_view"
+	userProfileSummaryView = "user_profile_summary"
+	userStatisticsView     = "user_statistics"
 )
 
 type Config struct {

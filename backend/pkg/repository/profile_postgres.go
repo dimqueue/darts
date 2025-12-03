@@ -134,15 +134,15 @@ func (r *ProfilePostgres) UpdateSettings(userId int64, input model.UpdateSetting
 func (r *ProfilePostgres) GetProfileSummary(userId int64) (*model.UserProfileSummary, error) {
 	var summary model.UserProfileSummary
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, username, name, email, member_since, last_login_at,
 		       avatar_url, bio, country_code,
 		       preferred_language, theme, show_profile_public, show_stats_public,
 		       total_games, total_wins, total_losses, current_win_streak,
 		       best_win_streak, average_guesses, total_score, last_game_at
-		FROM user_profile_summary
+		FROM %s
 		WHERE id = $1
-	`
+	`, userProfileSummaryView)
 
 	err := r.db.Get(&summary, query, userId)
 	if err != nil {
@@ -158,15 +158,15 @@ func (r *ProfilePostgres) GetProfileSummary(userId int64) (*model.UserProfileSum
 func (r *ProfilePostgres) GetProfileByUsername(username string) (*model.UserProfileSummary, error) {
 	var summary model.UserProfileSummary
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, username, name, email, member_since, last_login_at,
 		       avatar_url, bio, country_code,
 		       preferred_language, theme, show_profile_public, show_stats_public,
 		       total_games, total_wins, total_losses, current_win_streak,
 		       best_win_streak, average_guesses, total_score, last_game_at
-		FROM user_profile_summary
+		FROM %s
 		WHERE username = $1
-	`
+	`, userProfileSummaryView)
 
 	err := r.db.Get(&summary, query, username)
 	if err != nil {

@@ -25,13 +25,9 @@ func (r *StatisticsPostgres) GetStatistics(userId int64) (*model.UserStatistics,
 		       fastest_win_seconds, fewest_guesses_win, total_score, last_game_at, updated_at
 		FROM %s
 		WHERE user_id = $1
-	`, statisticsTable)
+	`, userStatisticsView)
 
-	err := r.db.Get(&stats, query, userId)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("statistics not found")
-		}
+	if err := r.db.Get(&stats, query, userId); err != nil {
 		return nil, err
 	}
 
@@ -124,7 +120,7 @@ func (r *StatisticsPostgres) GetLanguageStats(userId int64, language string) (*m
 	err := r.db.Get(&stats, query, userId, language)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil // Not an error, just no stats yet
+			return nil, nil
 		}
 		return nil, err
 	}

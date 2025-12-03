@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/dimqueue/darts/pkg/config"
 	"github.com/dimqueue/darts/pkg/connections"
 	"github.com/dimqueue/darts/pkg/logger"
 	"github.com/dimqueue/darts/pkg/repository"
@@ -45,6 +46,8 @@ func LoadConfig() error {
 }
 
 func GetConfig() Config {
+	config.LoadFromViper()
+
 	return Config{
 		Port: viper.GetString("port"),
 		DB: repository.Config{

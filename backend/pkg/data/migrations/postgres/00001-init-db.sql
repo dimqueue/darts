@@ -103,7 +103,7 @@ CREATE TABLE "user_global_streaks" (
 
 CREATE VIEW "user_statistics" AS
 SELECT
-    uls.user_id,
+    u.id as user_id,
     COALESCE(SUM(uls.games_played), 0)::INTEGER as total_games,
     COALESCE(SUM(uls.games_won), 0)::INTEGER as total_wins,
     (COALESCE(SUM(uls.games_played), 0) - COALESCE(SUM(uls.games_won), 0))::INTEGER as total_losses,
@@ -116,9 +116,10 @@ SELECT
     COALESCE(ugs.best_streak, 0) as best_win_streak,
     ugs.last_game_at,
     GREATEST(MAX(uls.updated_at), ugs.updated_at) as updated_at
-FROM user_language_stats uls
-LEFT JOIN user_global_streaks ugs ON uls.user_id = ugs.user_id
-GROUP BY uls.user_id, ugs.current_streak, ugs.best_streak, ugs.last_game_at, ugs.updated_at;
+FROM users u
+LEFT JOIN user_language_stats uls ON u.id = uls.user_id
+LEFT JOIN user_global_streaks ugs ON u.id = ugs.user_id
+GROUP BY u.id, ugs.current_streak, ugs.best_streak, ugs.last_game_at, ugs.updated_at;
 
 -- +migrate StatementBegin
 CREATE OR REPLACE FUNCTION update_modified_column()
@@ -159,10 +160,8 @@ SELECT
 FROM users u
 INNER JOIN user_statistics us ON u.id = us.user_id
 LEFT JOIN user_profiles up ON u.id = up.user_id
-LEFT JOIN user_settings uset ON u.id = uset.user_id
 WHERE u.is_active = true
-  AND us.total_games >= 3
-  AND COALESCE(uset.show_stats_public, true) = true;
+  AND us.total_games >= 3;
 
 CREATE VIEW user_profile_summary AS
 SELECT

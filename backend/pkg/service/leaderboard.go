@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/dimqueue/darts/pkg/config"
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
 )
@@ -17,10 +18,10 @@ func NewLeaderboardService(leaderboardRepo repository.Leaderboard) *LeaderboardS
 
 func (s *LeaderboardService) GetLeaderboard(query model.LeaderboardQuery) (*model.LeaderboardResponse, error) {
 	if query.Limit <= 0 {
-		query.Limit = 50
+		query.Limit = config.LeaderboardDefaultLimit
 	}
-	if query.Limit > 100 {
-		query.Limit = 100
+	if query.Limit > config.LeaderboardMaxLimit {
+		query.Limit = config.LeaderboardMaxLimit
 	}
 
 	users, err := s.leaderboardRepo.GetLeaderboard(query)
