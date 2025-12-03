@@ -38,7 +38,7 @@ export default function ProfilePage() {
             ]);
             setProfile(profileData);
             setStats(statsData);
-            setLanguageStats(langStatsData.data || []);
+            setLanguageStats(langStatsData || []);
             setEditForm({
                 bio: profileData.bio || '',
                 country_code: profileData.country_code || '',

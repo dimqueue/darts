@@ -178,7 +178,7 @@ class MockApiClient {
     }
 
 
-    async getGlobalLeaderboard(params = {}) {
+    async getLeaderboard(type = 'global', params = {}, language = null) {
         await this.delay();
         const mockUsers = Array.from({ length: 50 }, (_, i) => ({
             rank: i + 1,
@@ -186,7 +186,7 @@ class MockApiClient {
             username: `player${i + 1}`,
             name: `Player ${i + 1}`,
             avatar_url: null,
-            country_code: ['US', 'GB', 'DE', 'FR', 'RU'][i % 5],
+            country_code: ['US', 'GB', 'DE', 'FR', 'UA'][i % 5],
             total_score: 1500 - i * 25,
             total_wins: 50 - i,
             total_games: 60 - i,
@@ -195,28 +195,19 @@ class MockApiClient {
             win_rate: ((50 - i) / (60 - i) * 100).toFixed(1),
         }));
         return {
+            leaderboard_type: type,
+            language: language,
             users: mockUsers,
             total: 150,
             current_user_rank: 23,
         };
     }
 
-    async getWeeklyLeaderboard(params = {}) {
-        return this.getGlobalLeaderboard(params);
-    }
-
-    async getMonthlyLeaderboard(params = {}) {
-        return this.getGlobalLeaderboard(params);
-    }
-
-    async getLanguageLeaderboard(language, params = {}) {
-        return this.getGlobalLeaderboard(params);
-    }
-
     async getMyRank() {
         await this.delay();
         return {
             global_rank: 23,
+            daily_rank: 12,
             weekly_rank: 15,
             monthly_rank: 18,
         };

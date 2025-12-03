@@ -143,25 +143,13 @@ class RealApiClient {
         return this.request('/api/profile/statistics/languages', { method: 'GET' });
     }
 
-
-    async getGlobalLeaderboard(params = { limit: 50, offset: 0 }) {
-        const query = new URLSearchParams(params).toString();
-        return this.request(`/api/leaderboard/global?${query}`, { method: 'GET' });
-    }
-
-    async getWeeklyLeaderboard(params = { limit: 50, offset: 0 }) {
-        const query = new URLSearchParams(params).toString();
-        return this.request(`/api/leaderboard/weekly?${query}`, { method: 'GET' });
-    }
-
-    async getMonthlyLeaderboard(params = { limit: 50, offset: 0 }) {
-        const query = new URLSearchParams(params).toString();
-        return this.request(`/api/leaderboard/monthly?${query}`, { method: 'GET' });
-    }
-
-    async getLanguageLeaderboard(language, params = { limit: 50, offset: 0 }) {
-        const query = new URLSearchParams(params).toString();
-        return this.request(`/api/leaderboard/language/${language}?${query}`, { method: 'GET' });
+    async getLeaderboard(type = 'global', params = { limit: 50, offset: 0 }, language = null) {
+        const queryParams = { type, ...params };
+        if (language) {
+            queryParams.language = language;
+        }
+        const query = new URLSearchParams(queryParams).toString();
+        return this.request(`/api/leaderboard?${query}`, { method: 'GET' });
     }
 
     async getMyRank() {

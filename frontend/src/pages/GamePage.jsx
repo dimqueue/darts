@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Send, Trophy, RotateCcw, Globe } from 'lucide-react';
 import api from '../api';
 import { useTheme } from '../contexts/ThemeContext';
@@ -21,10 +21,13 @@ export default function GamePage() {
     const [error, setError] = useState('');
     const [language, setLanguage] = useState('en');
     const [gameStatus, setGameStatus] = useState('in_progress');
+    const initializedRef = useRef(false);
 
     const { theme } = useTheme();
 
     useEffect(() => {
+        if (initializedRef.current) return;
+        initializedRef.current = true;
         startNewGame();
     }, []);
 
