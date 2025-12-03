@@ -56,6 +56,28 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 			}
 		}
+
+		profile := api.Group("/profile")
+		{
+			profile.GET("", h.getMyProfile)
+			profile.PUT("", h.updateMyProfile)
+			profile.GET("/settings", h.getMySettings)
+			profile.PUT("/settings", h.updateMySettings)
+			profile.GET("/statistics", h.getMyStatistics)
+			profile.GET("/statistics/languages", h.getMyLanguageStats)
+		}
+
+		leaderboard := api.Group("/leaderboard")
+		{
+			leaderboard.GET("", h.getLeaderboard)
+			leaderboard.GET("/my-rank", h.getMyRank)
+		}
 	}
+
+	public := router.Group("/public")
+	{
+		public.GET("/profile/:username", h.getProfileByUsername)
+	}
+
 	return router
 }

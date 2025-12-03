@@ -18,7 +18,7 @@ func (h *Handler) createGuess(c *gin.Context) {
 		newErrorResponse(c, http.StatusInternalServerError, "user not found")
 		return
 	}
-	gameId, err := strconv.Atoi(c.Param("id"))
+	gameId, err := strconv.ParseInt(c.Param("id"), 10, 64)
 
 	if err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
@@ -37,7 +37,7 @@ func (h *Handler) createGuess(c *gin.Context) {
 		return
 	}
 
-	distance, err := h.services.Guess.CreateGuess(userId, gameId, input.Guess)
+	distance, err := h.services.Game.MakeGuess(userId, gameId, input.Guess)
 
 	if err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
@@ -60,13 +60,13 @@ func (h *Handler) getAllGuessByGame(c *gin.Context) {
 		return
 	}
 
-	gameId, err := strconv.Atoi(c.Param("id"))
+	gameId, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	guesses, err := h.services.Guess.GetAllGuessByGame(userId, gameId)
+	guesses, err := h.services.Game.GetAllGuessByGame(userId, gameId)
 	if err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return

@@ -22,14 +22,13 @@ type paginatedResponse struct {
 	TotalPages int         `json:"total_pages"`
 }
 
+type statusResponse struct {
+	Status string `json:"status"`
+}
+
 func newErrorResponse(c *gin.Context, statusCode int, message string) {
 	logrus.Error(message)
 	c.AbortWithStatusJSON(statusCode, errorResponse{Message: message})
-}
-
-func newErrorResponseWithCode(c *gin.Context, statusCode int, code, message string) {
-	logrus.WithField("code", code).Error(message)
-	c.AbortWithStatusJSON(statusCode, errorResponse{Code: code, Message: message})
 }
 
 func newSuccessResponse(c *gin.Context, statusCode int, data interface{}) {

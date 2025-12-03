@@ -7,10 +7,15 @@ import (
 )
 
 const (
-	usersTable   = "users"
-	gamesTable   = "games"
-	guessesTable = "guesses"
-	wordsTable   = "words"
+	usersTable         = "users"
+	gamesTable         = "games"
+	guessesTable       = "guesses"
+	wordsTable         = "words"
+	profilesTable      = "user_profiles"
+	settingsTable      = "user_settings"
+	statisticsTable    = "user_statistics"
+	languageStatsTable = "user_language_stats"
+	globalStreaksTable = "user_global_streaks"
 )
 
 type Config struct {

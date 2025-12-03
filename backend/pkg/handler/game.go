@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/gin-gonic/gin"
@@ -33,6 +34,11 @@ func (h *Handler) createGame(c *gin.Context) {
 	var input CreateGameInput
 
 	if err := c.BindJSON(&input); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := h.validator.ValidateLanguage(input.Language); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -80,9 +86,6 @@ func (h *Handler) getAllGames(c *gin.Context) {
 	})
 }
 
-type getGameByIdInput struct {
-	gameId int `json:"game_id" binding:"required"`
-}
 type getGameByIdResponse struct {
 	Data *model.Game `json:"data"`
 }
@@ -94,14 +97,13 @@ func (h *Handler) getGameById(c *gin.Context) {
 		return
 	}
 
-	var input getGameByIdInput
-
-	if err = c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+	gameId, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		newErrorResponse(c, http.StatusBadRequest, "invalid game id")
 		return
 	}
 
-	game, err := h.services.GetGameById(userId, input.gameId)
+	game, err := h.services.GetGameById(userId, gameId)
 	if err != nil {
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return

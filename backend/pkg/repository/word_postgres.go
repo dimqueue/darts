@@ -16,10 +16,10 @@ func NewWordPostgres(db *sqlx.DB) *WordPostgres {
 	return &WordPostgres{db: db}
 }
 
-func (r *WordPostgres) GetWordById(wordId int) (*model.Word, error) {
+func (r *WordPostgres) GetWordById(wordId int64) (*model.Word, error) {
 	var word model.Word
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id=$1", wordsTable)
+	query := fmt.Sprintf("SELECT id, word, language, difficulty, is_active FROM %s WHERE id=$1", wordsTable)
 	err := r.db.Get(&word, query, wordId)
 
 	if err != nil {
@@ -35,7 +35,7 @@ func (r *WordPostgres) GetWordById(wordId int) (*model.Word, error) {
 func (r *WordPostgres) GetRandomWordByLanguage(language string) (*model.Word, error) {
 	var word model.Word
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE language=$1 ORDER BY RANDOM() LIMIT 1", wordsTable)
+	query := fmt.Sprintf("SELECT id, word, language, difficulty, is_active FROM %s WHERE language=$1 AND is_active=true ORDER BY RANDOM() LIMIT 1", wordsTable)
 	err := r.db.Get(&word, query, language)
 
 	if err != nil {
@@ -51,7 +51,7 @@ func (r *WordPostgres) GetRandomWordByLanguage(language string) (*model.Word, er
 func (r *WordPostgres) GetWordCountByLanguage(language string) (int, error) {
 	var count int
 
-	query := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE language=$1", wordsTable)
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE language=$1 AND is_active=true", wordsTable)
 	err := r.db.Get(&count, query, language)
 
 	if err != nil {

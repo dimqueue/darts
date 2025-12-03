@@ -26,7 +26,7 @@ func (s *WordService) SelectWord(language string) (*model.Word, error) {
 	return word, nil
 }
 
-func (s *WordService) GetWordById(wordId int) (*model.Word, error) {
+func (s *WordService) GetWordById(wordId int64) (*model.Word, error) {
 	return s.repo.GetWordById(wordId)
 }
 

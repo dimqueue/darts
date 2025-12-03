@@ -2,6 +2,7 @@ package validation
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
@@ -13,6 +14,11 @@ var (
 	ErrTooShort  = errors.New("input is too short")
 	ErrEmptyWord = errors.New("input cannot be empty")
 )
+
+var SupportedLanguages = map[string]bool{
+	"en": true,
+	"ua": true,
+}
 
 type Validator struct {
 	badWords map[string]struct{}
@@ -51,4 +57,11 @@ func (v *Validator) RegisterCustomValidators(validate *validator.Validate) {
 	validate.RegisterValidation("nobadwords", func(fl validator.FieldLevel) bool {
 		return !v.containsBadWord(strings.ToLower(fl.Field().String()))
 	})
+}
+
+func (v *Validator) ValidateLanguage(lang string) error {
+	if !SupportedLanguages[lang] {
+		return fmt.Errorf("unsupported language: %s", lang)
+	}
+	return nil
 }

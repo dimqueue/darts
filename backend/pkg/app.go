@@ -15,6 +15,7 @@ import (
 	"github.com/dimqueue/darts/pkg/service"
 	"github.com/dimqueue/darts/pkg/swagger"
 	"github.com/dimqueue/darts/pkg/validation"
+	"github.com/dimqueue/darts/pkg/worker"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
@@ -104,6 +105,11 @@ func runServer(db *sqlx.DB, config Config) error {
 	handlers := handler.NewHandler(services, validator)
 
 	router := handlers.InitRoutes()
+
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	defer workerCancel()
+	expiryWorker := worker.NewGameExpiryWorker(repos.Game, services.Stats, repos.TxManager, time.Minute)
+	go expiryWorker.Start(workerCtx)
 
 	swagger.SetupSwagger(router)
 
