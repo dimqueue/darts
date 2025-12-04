@@ -113,11 +113,3 @@ func (h *Handler) getGameById(c *gin.Context) {
 		Data: game,
 	})
 }
-
-func (h *Handler) updateGame(c *gin.Context) {
-
-}
-
-func (h *Handler) deleteGame(c *gin.Context) {
-
-}

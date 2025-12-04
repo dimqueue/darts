@@ -12,7 +12,7 @@ import (
 
 // StatsUpdater interface to avoid circular dependency with service package
 type StatsUpdater interface {
-	UpdateGameEndStats(tx *sqlx.Tx, update model.StatisticsUpdate) error
+	UpdateGameEndStats(q repository.Querier, update model.StatisticsUpdate) error
 }
 
 type GameExpiryWorker struct {
@@ -76,21 +76,20 @@ func (w *GameExpiryWorker) expireGames() {
 
 func (w *GameExpiryWorker) expireGame(game model.Game) error {
 	return w.txManager.WithTransaction(func(tx *sqlx.Tx) error {
-		lockedGame, err := w.gameRepo.GetGameByIdForUpdate(tx, game.Id)
+		lockedGame, err := w.gameRepo.GetGameById(tx, game.Id, true)
 		if err != nil {
 			return err
 		}
 
 		if lockedGame.Status != "in_progress" {
-			// Game already ended, skip
 			return nil
 		}
 
-		if err := w.gameRepo.UpdateGameStatusTx(tx, game.Id, "lost"); err != nil {
+		if err := w.gameRepo.UpdateGameStatus(tx, game.Id, "lost"); err != nil {
 			return err
 		}
 
-		guessCount, err := w.gameRepo.CountGuessesByGameTx(tx, game.Id)
+		guessCount, err := w.gameRepo.CountGuessesByGame(tx, game.Id)
 		if err != nil {
 			return err
 		}

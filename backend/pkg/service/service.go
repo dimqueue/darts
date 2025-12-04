@@ -4,7 +4,6 @@ import (
 	"github.com/dimqueue/darts/pkg/connections"
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
-	"github.com/jmoiron/sqlx"
 )
 
 type Authorization interface {
@@ -22,16 +21,14 @@ type Game interface {
 	CreateGame(userId int64, lang string) (int64, error)
 	GetAllGames(userId int64) ([]model.Game, error)
 	GetGameById(userId, gameId int64) (*model.Game, error)
-	UpdateGame(gameId int64) (*model.Game, error)
 	UpdateGameStatus(gameId int64, status string) error
-	DeleteGame(gameId int64) (*model.Game, error)
 	MakeGuess(userId, gameId int64, guess string) (int, error)
 	GetAllGuessByGame(userId, gameId int64) ([]model.Guess, error)
 }
 
 type Stats interface {
-	InitializeStats(tx *sqlx.Tx, userId int64) error
-	UpdateGameEndStats(tx *sqlx.Tx, update model.StatisticsUpdate) error
+	InitializeStats(q repository.Querier, userId int64) error
+	UpdateGameEndStats(q repository.Querier, update model.StatisticsUpdate) error
 	GetStatistics(userId int64) (*model.UserStatistics, error)
 	GetLanguageStats(userId int64, language string) (*model.UserLanguageStats, error)
 	GetAllLanguageStats(userId int64) ([]model.UserLanguageStats, error)

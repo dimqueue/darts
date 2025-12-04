@@ -36,13 +36,13 @@ func (r *ProfilePostgres) GetProfile(userId int64) (*model.UserProfile, error) {
 	return &profile, nil
 }
 
-func (r *ProfilePostgres) CreateProfile(tx *sqlx.Tx, profile *model.UserProfile) error {
+func (r *ProfilePostgres) CreateProfile(q Querier, profile *model.UserProfile) error {
 	query := fmt.Sprintf(`
 		INSERT INTO %s (user_id, avatar_url, bio, country_code, timezone, date_of_birth)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`, profilesTable)
 
-	_, err := tx.Exec(query,
+	_, err := q.Exec(query,
 		profile.UserId,
 		profile.AvatarURL,
 		profile.Bio,
@@ -96,13 +96,13 @@ func (r *ProfilePostgres) GetSettings(userId int64) (*model.UserSettings, error)
 	return &settings, nil
 }
 
-func (r *ProfilePostgres) CreateSettings(tx *sqlx.Tx, userId int64) error {
+func (r *ProfilePostgres) CreateSettings(q Querier, userId int64) error {
 	query := fmt.Sprintf(`
 		INSERT INTO %s (user_id)
 		VALUES ($1)
 	`, settingsTable)
 
-	_, err := tx.Exec(query, userId)
+	_, err := q.Exec(query, userId)
 	return err
 }
 

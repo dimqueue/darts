@@ -1,33 +1,27 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/jmoiron/sqlx"
 )
 
 type Authorization interface {
-	CreateUserTx(tx *sqlx.Tx, user model.User) (int64, error)
+	CreateUser(q Querier, user model.User) (int64, error)
 	GetUser(username, password string) (model.User, error)
 }
 
 type Game interface {
 	CreateGame(game *model.Game) (int64, error)
 	GetAllGames(userId int64) ([]model.Game, error)
-	GetGameById(gameId int64) (*model.Game, error)
-	GetGameByIdForUpdate(tx *sqlx.Tx, gameId int64) (*model.Game, error)
-	UpdateGame(gameId int64) (*model.Game, error)
-	UpdateGameStatus(gameId int64, status string) error
-	UpdateGameStatusTx(tx *sqlx.Tx, gameId int64, status string) error
-	DeleteGame(gameId int64) (*model.Game, error)
-	ExpireGames() (int64, error)
+	GetGameById(q Querier, gameId int64, forUpdate bool) (*model.Game, error)
+	UpdateGameStatus(q Querier, gameId int64, status string) error
 	GetExpiredGames() ([]model.Game, error)
-	CreateGuess(guess *model.Guess) error
-	CreateGuessTx(tx *sqlx.Tx, guess *model.Guess) error
+	CreateGuess(q Querier, guess *model.Guess) error
 	GetAllGuessByGame(gameId int64) ([]model.Guess, error)
-	GetGuessById(guessId int64) error
-	CountGuessesByGameTx(tx *sqlx.Tx, gameId int64) (int, error)
-	GuessExists(gameId int64, guessWord string) (bool, error)
-	GuessExistsTx(tx *sqlx.Tx, gameId int64, guessWord string) (bool, error)
+	CountGuessesByGame(q Querier, gameId int64) (int, error)
+	GuessExists(q Querier, gameId int64, guessWord string) (bool, error)
 }
 
 type Word interface {
@@ -38,10 +32,10 @@ type Word interface {
 
 type Profile interface {
 	GetProfile(userId int64) (*model.UserProfile, error)
-	CreateProfile(tx *sqlx.Tx, profile *model.UserProfile) error
+	CreateProfile(q Querier, profile *model.UserProfile) error
 	UpdateProfile(userId int64, input model.UpdateProfileInput) error
 	GetSettings(userId int64) (*model.UserSettings, error)
-	CreateSettings(tx *sqlx.Tx, userId int64) error
+	CreateSettings(q Querier, userId int64) error
 	UpdateSettings(userId int64, input model.UpdateSettingsInput) error
 	GetProfileSummary(userId int64) (*model.UserProfileSummary, error)
 	GetProfileByUsername(username string) (*model.UserProfileSummary, error)
@@ -49,18 +43,29 @@ type Profile interface {
 
 type Statistics interface {
 	GetStatistics(userId int64) (*model.UserStatistics, error)
-	CreateGlobalStreaks(tx *sqlx.Tx, userId int64) error
-	UpdateGlobalStreaksAfterGame(tx *sqlx.Tx, update model.StatisticsUpdate) error
-	GetLanguageStats(userId int64, language string) (*model.UserLanguageStats, error)
+
+	CreateGlobalStreaks(q Querier, userId int64) error
+	GetGlobalStreaks(q Querier, userId int64, forUpdate bool) (*model.UserGlobalStreaks, error)
+	CreateGlobalStreaksWithData(q Querier, streaks *model.UserGlobalStreaks) error
+	UpdateGlobalStreaks(q Querier, streaks *model.UserGlobalStreaks) error
+
+	GetLanguageStats(q Querier, userId int64, language string, forUpdate bool) (*model.UserLanguageStats, error)
 	GetAllLanguageStats(userId int64) ([]model.UserLanguageStats, error)
-	UpdateLanguageStats(tx *sqlx.Tx, update model.StatisticsUpdate) error
+	CreateLanguageStats(q Querier, stats *model.UserLanguageStats) error
+	UpdateLanguageStats(q Querier, stats *model.UserLanguageStats) error
 }
 
 type Leaderboard interface {
-	GetLeaderboard(query model.LeaderboardQuery) ([]model.LeaderboardUser, error)
-	GetLeaderboardCount(query model.LeaderboardQuery) (int, error)
-	GetUserRank(userId int64, query model.LeaderboardQuery) (*int, error)
-	GetAllUserRanks(userId int64) (*model.UserRanks, error)
+	GetGlobalLeaderboard(limit, offset int) ([]model.LeaderboardUser, error)
+	GetGlobalLeaderboardByLanguage(language string, limit, offset int) ([]model.LeaderboardUser, error)
+	GetGlobalLeaderboardCount() (int, error)
+	GetGlobalLeaderboardByLanguageCount(language string) (int, error)
+	GetGlobalUserRank(userId int64) (*int, error)
+	GetGlobalUserRankByLanguage(userId int64, language string) (*int, error)
+
+	GetPeriodLeaderboard(periodStart time.Time, language *string, limit, offset int) ([]model.LeaderboardUser, error)
+	GetPeriodLeaderboardCount(periodStart time.Time, language *string) (int, error)
+	GetPeriodUserRank(userId int64, periodStart time.Time, language *string) (*int, error)
 }
 
 type Repository struct {

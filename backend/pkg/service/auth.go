@@ -45,7 +45,7 @@ func (s *AuthService) CreateUser(user model.User) (int64, error) {
 	var userId int64
 
 	err := s.txManager.WithTransaction(func(tx *sqlx.Tx) error {
-		id, err := s.repo.CreateUserTx(tx, user)
+		id, err := s.repo.CreateUser(tx, user)
 		if err != nil {
 			return fmt.Errorf("failed to create user: %w", err)
 		}

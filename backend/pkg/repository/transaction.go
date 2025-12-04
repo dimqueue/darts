@@ -1,13 +1,25 @@
 package repository
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
 )
 
+type Querier interface {
+	Get(dest interface{}, query string, args ...interface{}) error
+	Select(dest interface{}, query string, args ...interface{}) error
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+}
+
 type TransactionManager struct {
 	db *sqlx.DB
+}
+
+func (tm *TransactionManager) DB() Querier {
+	return tm.db
 }
 
 func NewTransactionManager(db *sqlx.DB) *TransactionManager {

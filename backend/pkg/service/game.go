@@ -69,7 +69,7 @@ func (s *GameService) GetAllGames(userId int64) ([]model.Game, error) {
 }
 
 func (s *GameService) GetGameById(userId, gameId int64) (*model.Game, error) {
-	game, err := s.gameRepo.GetGameById(gameId)
+	game, err := s.gameRepo.GetGameById(s.txManager.DB(), gameId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -81,16 +81,8 @@ func (s *GameService) GetGameById(userId, gameId int64) (*model.Game, error) {
 	return game, nil
 }
 
-func (s *GameService) UpdateGame(gameId int64) (*model.Game, error) {
-	return nil, nil
-}
-
 func (s *GameService) UpdateGameStatus(gameId int64, status string) error {
-	return s.gameRepo.UpdateGameStatus(gameId, status)
-}
-
-func (s *GameService) DeleteGame(gameId int64) (*model.Game, error) {
-	return nil, nil
+	return s.gameRepo.UpdateGameStatus(s.txManager.DB(), gameId, status)
 }
 
 func (s *GameService) MakeGuess(userId, gameId int64, guess string) (int, error) {
@@ -103,7 +95,7 @@ func (s *GameService) MakeGuess(userId, gameId int64, guess string) (int, error)
 		return 0, errors.New("game is not active")
 	}
 
-	exists, err := s.gameRepo.GuessExists(gameId, guess)
+	exists, err := s.gameRepo.GuessExists(s.txManager.DB(), gameId, guess)
 	if err != nil {
 		return 0, fmt.Errorf("failed to check guess: %w", err)
 	}
@@ -139,7 +131,7 @@ func (s *GameService) MakeGuess(userId, gameId int64, guess string) (int, error)
 	}
 
 	err = s.txManager.WithTransaction(func(tx *sqlx.Tx) error {
-		lockedGame, err := s.gameRepo.GetGameByIdForUpdate(tx, gameId)
+		lockedGame, err := s.gameRepo.GetGameById(tx, gameId, true)
 		if err != nil {
 			return fmt.Errorf("failed to lock game: %w", err)
 		}
@@ -148,7 +140,7 @@ func (s *GameService) MakeGuess(userId, gameId int64, guess string) (int, error)
 			return errors.New("game is no longer active")
 		}
 
-		existsTx, err := s.gameRepo.GuessExistsTx(tx, gameId, guess)
+		existsTx, err := s.gameRepo.GuessExists(tx, gameId, guess)
 		if err != nil {
 			return fmt.Errorf("failed to check guess in transaction: %w", err)
 		}
@@ -161,16 +153,16 @@ func (s *GameService) MakeGuess(userId, gameId int64, guess string) (int, error)
 			GuessWord: guess,
 			Distance:  distance,
 		}
-		if err := s.gameRepo.CreateGuessTx(tx, &newGuess); err != nil {
+		if err := s.gameRepo.CreateGuess(tx, &newGuess); err != nil {
 			return fmt.Errorf("failed to create guess: %w", err)
 		}
 
 		if isWinningGuess {
-			if err := s.gameRepo.UpdateGameStatusTx(tx, gameId, "won"); err != nil {
+			if err := s.gameRepo.UpdateGameStatus(tx, gameId, "won"); err != nil {
 				return fmt.Errorf("failed to update game status: %w", err)
 			}
 
-			guessCount, err := s.gameRepo.CountGuessesByGameTx(tx, gameId)
+			guessCount, err := s.gameRepo.CountGuessesByGame(tx, gameId)
 			if err != nil {
 				return fmt.Errorf("failed to count guesses: %w", err)
 			}
@@ -183,7 +175,7 @@ func (s *GameService) MakeGuess(userId, gameId int64, guess string) (int, error)
 				IsWin:       true,
 				GuessCount:  guessCount,
 				TimeSeconds: &elapsed,
-				ScoreEarned: 100,
+				ScoreEarned: config.ScorePerWin,
 			}
 
 			if err := s.statsService.UpdateGameEndStats(tx, statsUpdate); err != nil {

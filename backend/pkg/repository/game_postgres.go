@@ -35,12 +35,15 @@ func (r *GamePostgres) GetAllGames(userId int64) ([]model.Game, error) {
 	return games, err
 }
 
-func (r *GamePostgres) GetGameById(gameId int64) (*model.Game, error) {
+func (r *GamePostgres) GetGameById(q Querier, gameId int64, forUpdate bool) (*model.Game, error) {
 	var game model.Game
 
 	query := fmt.Sprintf("SELECT id, user_id, word_id, status, language, started_at, ended_at, expires_at FROM %s WHERE id=$1", gamesTable)
-	err := r.db.Get(&game, query, gameId)
+	if forUpdate {
+		query += " FOR UPDATE"
+	}
 
+	err := q.Get(&game, query, gameId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("game not found")
@@ -51,52 +54,15 @@ func (r *GamePostgres) GetGameById(gameId int64) (*model.Game, error) {
 	return &game, nil
 }
 
-func (r *GamePostgres) UpdateGame(gameId int64) (*model.Game, error) {
-	return nil, nil
-}
-
-func (r *GamePostgres) UpdateGameStatus(gameId int64, status string) error {
+func (r *GamePostgres) UpdateGameStatus(q Querier, gameId int64, status string) error {
 	query := fmt.Sprintf("UPDATE %s SET status=$1, ended_at=NOW() WHERE id=$2", gamesTable)
-	_, err := r.db.Exec(query, status, gameId)
+	_, err := q.Exec(query, status, gameId)
 	return err
 }
 
-func (r *GamePostgres) DeleteGame(gameId int64) (*model.Game, error) {
-	return nil, nil
-}
-
-func (r *GamePostgres) ExpireGames() (int64, error) {
-	query := fmt.Sprintf(`
-		UPDATE %s
-		SET status = 'lost', ended_at = NOW()
-		WHERE status = 'in_progress'
-		  AND expires_at IS NOT NULL
-		  AND expires_at < NOW()
-	`, gamesTable)
-
-	result, err := r.db.Exec(query)
-	if err != nil {
-		return 0, err
-	}
-
-	return result.RowsAffected()
-}
-
-func (r *GamePostgres) UpdateGameStatusTx(tx *sqlx.Tx, gameId int64, status string) error {
-	query := fmt.Sprintf("UPDATE %s SET status=$1, ended_at=NOW() WHERE id=$2", gamesTable)
-	_, err := tx.Exec(query, status, gameId)
-	return err
-}
-
-func (r *GamePostgres) CreateGuess(guess *model.Guess) error {
-	query := fmt.Sprintf("INSERT INTO %s (game_id,guess_word,distance) VALUES ($1,$2,$3) RETURNING id", guessesTable)
-	_, err := r.db.Exec(query, guess.GameId, guess.GuessWord, guess.Distance)
-	return err
-}
-
-func (r *GamePostgres) CreateGuessTx(tx *sqlx.Tx, guess *model.Guess) error {
+func (r *GamePostgres) CreateGuess(q Querier, guess *model.Guess) error {
 	query := fmt.Sprintf("INSERT INTO %s (game_id,guess_word,distance) VALUES ($1,$2,$3)", guessesTable)
-	_, err := tx.Exec(query, guess.GameId, guess.GuessWord, guess.Distance)
+	_, err := q.Exec(query, guess.GameId, guess.GuessWord, guess.Distance)
 	return err
 }
 
@@ -112,28 +78,11 @@ func (r *GamePostgres) GetAllGuessByGame(gameId int64) ([]model.Guess, error) {
 	return guesses, nil
 }
 
-func (r *GamePostgres) GetGuessById(guessId int64) error {
-	return nil
-}
-
-func (r *GamePostgres) CountGuessesByGameTx(tx *sqlx.Tx, gameId int64) (int, error) {
+func (r *GamePostgres) CountGuessesByGame(q Querier, gameId int64) (int, error) {
 	var count int
 	query := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE game_id = $1", guessesTable)
-	err := tx.Get(&count, query, gameId)
+	err := q.Get(&count, query, gameId)
 	return count, err
-}
-
-func (r *GamePostgres) GetGameByIdForUpdate(tx *sqlx.Tx, gameId int64) (*model.Game, error) {
-	var game model.Game
-	query := fmt.Sprintf("SELECT id, user_id, word_id, status, language, started_at, ended_at, expires_at FROM %s WHERE id = $1 FOR UPDATE", gamesTable)
-	err := tx.Get(&game, query, gameId)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("game not found")
-		}
-		return nil, err
-	}
-	return &game, nil
 }
 
 func (r *GamePostgres) GetExpiredGames() ([]model.Game, error) {
@@ -149,16 +98,9 @@ func (r *GamePostgres) GetExpiredGames() ([]model.Game, error) {
 	return games, err
 }
 
-func (r *GamePostgres) GuessExists(gameId int64, guessWord string) (bool, error) {
+func (r *GamePostgres) GuessExists(q Querier, gameId int64, guessWord string) (bool, error) {
 	var exists bool
 	query := fmt.Sprintf("SELECT EXISTS(SELECT 1 FROM %s WHERE game_id = $1 AND guess_word = $2)", guessesTable)
-	err := r.db.Get(&exists, query, gameId, guessWord)
-	return exists, err
-}
-
-func (r *GamePostgres) GuessExistsTx(tx *sqlx.Tx, gameId int64, guessWord string) (bool, error) {
-	var exists bool
-	query := fmt.Sprintf("SELECT EXISTS(SELECT 1 FROM %s WHERE game_id = $1 AND guess_word = $2)", guessesTable)
-	err := tx.Get(&exists, query, gameId, guessWord)
+	err := q.Get(&exists, query, gameId, guessWord)
 	return exists, err
 }

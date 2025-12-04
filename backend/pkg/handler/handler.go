@@ -45,8 +45,6 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			games.POST("", h.createGame)
 			games.GET("", h.getAllGames)
 			games.GET("/:id", h.getGameById)
-			games.PUT("/:id", h.updateGame)
-			games.DELETE("/:id", h.deleteGame)
 
 			guess := games.Group(":id/guesses")
 			{

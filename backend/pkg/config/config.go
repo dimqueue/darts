@@ -6,14 +6,16 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Game settings
 var (
 	GameTTL            = 2 * time.Hour
 	GameComputeTimeout = 30 * time.Second
 	GameMaxGuesses     = 0 // 0 = unlimited
 )
 
-// Leaderboard settings
+var (
+	ScorePerWin = 100
+)
+
 var (
 	LeaderboardMinGamesGlobal = 3
 	LeaderboardMinGamesPeriod = 1
@@ -21,7 +23,6 @@ var (
 	LeaderboardMaxLimit       = 100
 )
 
-// LoadFromViper loads config values from viper, falling back to defaults
 func LoadFromViper() {
 	if v := viper.GetInt("game.ttl"); v > 0 {
 		GameTTL = time.Duration(v) * time.Second
