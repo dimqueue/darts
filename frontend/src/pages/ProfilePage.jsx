@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, Trophy, Target, Flame, TrendingUp, Save, Edit2 } from 'lucide-react';
-import api from '../api';
+import api from '@/api';
 import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Trophy, RotateCcw, Globe } from 'lucide-react';
-import api from '../api';
+import api from '@/api';
 import { useTheme } from '../contexts/ThemeContext';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';

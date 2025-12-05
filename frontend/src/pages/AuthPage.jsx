@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { LogIn, Trophy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import api from '../api';
+import api from '@/api';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';

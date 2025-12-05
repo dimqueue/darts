@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Settings, Palette, Globe, Bell, Eye, Save } from 'lucide-react';
-import api from '../api';
+import api from '@/api';
 import { useTheme, THEMES } from '../contexts/ThemeContext';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';

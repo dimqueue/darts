@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -23,9 +23,8 @@ jobs:
         working-directory: frontend
         run: |
           npm ci
-          npm run build
+          npm run build:pages
         env:
-          VITE_USE_MOCK_API: "true"
           VITE_BASE_PATH: "/darts/"
 
       - name: Deploy to GitHub Pages
