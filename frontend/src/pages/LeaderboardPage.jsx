@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Trophy, Globe, ChevronUp, ChevronDown } from 'lucide-react';
-import api from '../api';
+import api from '@/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import Layout from '../components/layout/Layout';
