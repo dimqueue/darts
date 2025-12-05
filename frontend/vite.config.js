@@ -5,7 +5,7 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '')
 
     return {
-        base: env.VITE_BASE_PATH || '/',
+        base: process.env.VITE_BASE_PATH || env.VITE_BASE_PATH || '/',
         plugins: [react()],
         server: {
             proxy: {
@@ -14,8 +14,7 @@ export default defineConfig(({ mode }) => {
             }
         },
         define: {
-            // Use environment variable to determine mock API usage
-            '__USE_MOCK_API__': env.VITE_USE_MOCK_API === 'true' ? 'true' : 'false'
+            '__USE_MOCK_API__': (process.env.VITE_USE_MOCK_API || env.VITE_USE_MOCK_API) === 'true' ? 'true' : 'false'
         }
     }
 })
