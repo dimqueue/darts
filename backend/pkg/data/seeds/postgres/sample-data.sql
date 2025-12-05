@@ -1,4 +1,4 @@
--- +migrate Up
+-- Sample data for development environment only
 
 INSERT INTO users (username, name, password_hash, email, is_active) VALUES
     ('player1', 'Alex Johnson', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjZQQX9HqVL6sC1LIaP3Ufv5KXAGSK', 'alex@example.com', true),
@@ -129,14 +129,3 @@ FROM games g WHERE g.word_id = (SELECT id FROM words WHERE word = 'apple') LIMIT
 INSERT INTO guesses (game_id, guess_word, distance, created_at)
 SELECT g.id, 'apple', 0, g.started_at + INTERVAL '3 minutes'
 FROM games g WHERE g.word_id = (SELECT id FROM words WHERE word = 'apple') LIMIT 1;
-
--- +migrate Down
-
-DELETE FROM guesses WHERE game_id IN (SELECT id FROM games WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'player%'));
-DELETE FROM games WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'player%');
-DELETE FROM words WHERE word IN ('apple', 'house', 'water', 'music', 'dream', 'garden', 'planet', 'mystery', 'adventure', 'beautiful', 'mustang', 'ocean', 'knight', 'claptrap', 'сонце', 'вода', 'дерево', 'музика', 'мрія', 'щастя', 'природа', 'кохання', 'пригода', 'майбутнє');
-DELETE FROM user_language_stats WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'player%');
-DELETE FROM user_global_streaks WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'player%');
-DELETE FROM user_settings WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'player%');
-DELETE FROM user_profiles WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'player%');
-DELETE FROM users WHERE username LIKE 'player%';

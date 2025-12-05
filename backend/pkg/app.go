@@ -10,6 +10,7 @@ import (
 
 	"github.com/dimqueue/darts/pkg/connections"
 	"github.com/dimqueue/darts/pkg/data/migrations"
+	"github.com/dimqueue/darts/pkg/data/seeds"
 	"github.com/dimqueue/darts/pkg/handler"
 	"github.com/dimqueue/darts/pkg/repository"
 	"github.com/dimqueue/darts/pkg/service"
@@ -64,6 +65,11 @@ func runMigrateUp(db *sqlx.DB) error {
 	}
 
 	logrus.Info("Migrations completed successfully")
+
+	if err := seeds.Run(db); err != nil {
+		return fmt.Errorf("seed data failed: %w", err)
+	}
+
 	return nil
 }
 

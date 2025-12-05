@@ -9,11 +9,9 @@ import (
 var (
 	GameTTL            = 2 * time.Hour
 	GameComputeTimeout = 30 * time.Second
+	ScorePerWin        = 100
 	GameMaxGuesses     = 0 // 0 = unlimited
-)
 
-var (
-	ScorePerWin = 100
 )
 
 var (
