@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package compute.v1;
+
+option go_package = "github.com/dimqueue/darts/pkg/proto/compute/v1;computev1";
+
+service ComputeService {
+  rpc StartGame(StartGameRequest) returns (StartGameResponse);
+
+  rpc MakeGuess(MakeGuessRequest) returns (MakeGuessResponse);
+
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message StartGameRequest {
+  string language = 1;
+  string secret_word = 2;
+  int32 top_n = 3;
+}
+
+message StartGameResponse {
+  double calculation_time = 1;
+  string hint_word = 2;
+}
+
+message MakeGuessRequest {
+  string secret_word = 1;
+  string guess = 2;
+  string language = 3;
+}
+
+message MakeGuessResponse {
+  int32 distance = 1;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;
+  repeated string loaded_languages = 2;
+}
