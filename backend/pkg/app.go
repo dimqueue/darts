@@ -8,10 +8,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dimqueue/darts/pkg/config"
 	"github.com/dimqueue/darts/pkg/connections"
 	"github.com/dimqueue/darts/pkg/data/migrations"
 	"github.com/dimqueue/darts/pkg/data/seeds"
 	"github.com/dimqueue/darts/pkg/handler"
+	"github.com/dimqueue/darts/pkg/logger"
 	"github.com/dimqueue/darts/pkg/repository"
 	"github.com/dimqueue/darts/pkg/service"
 	"github.com/dimqueue/darts/pkg/swagger"
@@ -27,34 +29,46 @@ const (
 	cmdRunServer   command = "run-server"
 	cmdMigrateUp   command = "migrates-up"
 	cmdMigrateDown command = "migrates-down"
+	cmdSeed        command = "seed"
 )
 
 func ParseCommand() (command, error) {
 	if len(os.Args) < 2 {
-		return "", fmt.Errorf("usage: %s <command>\n\nAvailable commands:\n  run-server    - Start the HTTP server\n  migrates-up   - Run database migrations\n  migrates-down - Rollback migrations", os.Args[0])
+		return "", fmt.Errorf("usage: %s <command>\n\nAvailable commands:\n  run-server    - Start the HTTP server\n  migrates-up   - Run database migrations\n  migrates-down - Rollback migrations\n  seed          - Load seed data (dev only)", os.Args[0])
 	}
 
 	cmd := command(os.Args[1])
 
 	switch cmd {
-	case cmdRunServer, cmdMigrateUp, cmdMigrateDown:
+	case cmdRunServer, cmdMigrateUp, cmdMigrateDown, cmdSeed:
 		return cmd, nil
 	default:
-		return "", fmt.Errorf("unknown command: %s\n\nAvailable commands:\n  run-server\n  migrates-up\n  migrates-down", os.Args[1])
+		return "", fmt.Errorf("unknown command: %s\n\nAvailable commands:\n  run-server\n  migrates-up\n  migrates-down\n  seed", os.Args[1])
 	}
 }
 
-func ExecuteCommand(cmd command, db *sqlx.DB, config Config) error {
+func ExecuteCommand(cmd command, db *sqlx.DB) error {
 	switch cmd {
 	case cmdMigrateUp:
 		return runMigrateUp(db)
 	case cmdMigrateDown:
 		return runMigrateDown(db)
+	case cmdSeed:
+		return runSeed(db)
 	case cmdRunServer:
-		return runServer(db, config)
+		return runServer(db)
 	default:
 		return fmt.Errorf("unknown command: %s", cmd)
 	}
+}
+
+func InitLogger() error {
+	return logger.Init(logger.Config{
+		Level:        config.LogLevel,
+		Format:       config.LogFormat,
+		Output:       config.LogOutput,
+		ReportCaller: config.LogReportCaller,
+	})
 }
 
 func runMigrateUp(db *sqlx.DB) error {
@@ -65,11 +79,13 @@ func runMigrateUp(db *sqlx.DB) error {
 	}
 
 	logrus.Info("Migrations completed successfully")
+	return nil
+}
 
+func runSeed(db *sqlx.DB) error {
 	if err := seeds.Run(db); err != nil {
 		return fmt.Errorf("seed data failed: %w", err)
 	}
-
 	return nil
 }
 
@@ -84,11 +100,17 @@ func runMigrateDown(db *sqlx.DB) error {
 	return nil
 }
 
-func runServer(db *sqlx.DB, config Config) error {
+func runServer(db *sqlx.DB) error {
 
 	repos := repository.NewRepository(db)
 
-	computeClient, err := connections.NewComputeClient(config.ComputeClient)
+	computeClientConfig := connections.Config{
+		Type:    config.WordServiceType,
+		BaseURL: config.WordServiceURL,
+		Timeout: config.WordServiceTimeout,
+	}
+
+	computeClient, err := connections.NewComputeClient(computeClientConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create compute client: %w", err)
 	}

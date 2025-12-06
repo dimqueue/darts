@@ -28,8 +28,6 @@ def run_http_server(word_model: WordSimilarityModel, monitor: ResourceMonitor):
     import uvicorn
     from api.app import create_app
 
-    logger.info(f"Starting HTTP server on {Config.HTTP_HOST}:{Config.HTTP_PORT}")
-
     app = create_app(word_model, monitor)
 
     try:
@@ -41,16 +39,30 @@ def run_http_server(word_model: WordSimilarityModel, monitor: ResourceMonitor):
 
 
 def run_grpc_server(word_model: WordSimilarityModel, monitor: ResourceMonitor):
+    import threading
     from grpc_server.server import serve as serve_grpc
 
-    logger.info(f"Starting gRPC server on port {Config.GRPC_PORT}")
-
     server = serve_grpc(word_model, port=Config.GRPC_PORT)
+
+    # Start periodic monitoring in a background thread
+    stop_monitoring = threading.Event()
+
+    def periodic_monitor():
+        logger.info(f"Periodic monitoring started (interval: {Config.MONITORING_INTERVAL}s)")
+        while not stop_monitoring.wait(Config.MONITORING_INTERVAL):
+            monitor.log_metrics(context="Periodic")
+        logger.info("Periodic monitoring stopped")
+
+    monitoring_thread = threading.Thread(target=periodic_monitor, daemon=True)
+    monitoring_thread.start()
+
+    logger.info("gRPC server ready")
 
     try:
         server.wait_for_termination()
     except KeyboardInterrupt:
         logger.info("gRPC server shutting down...")
+        stop_monitoring.set()
         server.stop(0)
         word_model.cleanup()
         monitor.log_metrics(context="Shutdown")
@@ -59,13 +71,17 @@ def run_grpc_server(word_model: WordSimilarityModel, monitor: ResourceMonitor):
 def main():
     setup_logging(service_name="compute-client", log_dir=Config.LOG_DIR)
 
-    logger.info("=" * 60)
-    logger.info(f"Starting compute-client service in {Config.SERVER_MODE.upper()} mode")
-    logger.info("=" * 60)
+    mode = Config.SERVER_MODE.upper()
+    port = Config.GRPC_PORT if Config.SERVER_MODE == "grpc" else Config.HTTP_PORT
+    host = f"0.0.0.0:{port}" if Config.SERVER_MODE == "grpc" else f"{Config.HTTP_HOST}:{Config.HTTP_PORT}"
 
-    config_display = Config.display()
-    for key, value in config_display.items():
-        logger.info(f"  {key}: {value}")
+    logger.info("=" * 60)
+    logger.info(f"Compute Client - {mode} Server")
+    logger.info("=" * 60)
+    logger.info(f"  Mode:     {mode}")
+    logger.info(f"  Address:  {host}")
+    logger.info(f"  Model:    {Config.MODEL_NAME}")
+    logger.info(f"  Language: {Config.DEFAULT_LANGUAGE}")
     logger.info("=" * 60)
 
     monitor = ResourceMonitor()

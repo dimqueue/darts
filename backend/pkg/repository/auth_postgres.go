@@ -26,9 +26,9 @@ func (r *AuthPostgres) CreateUser(q Querier, user model.User) (int64, error) {
 	return id, nil
 }
 
-func (r *AuthPostgres) GetUser(username, password string) (model.User, error) {
+func (r *AuthPostgres) GetUserByUsername(username string) (model.User, error) {
 	var user model.User
-	query := fmt.Sprintf("SELECT id FROM %s WHERE username=$1 AND password_hash=$2", usersTable)
-	err := r.db.Get(&user, query, username, password)
+	query := fmt.Sprintf("SELECT id, password_hash FROM %s WHERE username=$1", usersTable)
+	err := r.db.Get(&user, query, username)
 	return user, err
 }

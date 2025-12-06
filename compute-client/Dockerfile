@@ -5,8 +5,14 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY src/ ./src/
 
-EXPOSE 5000
+RUN mkdir -p logs
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "5000"]
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/src
+
+EXPOSE 5000 50051
+
+# Run the application
+CMD ["python", "-m", "src.main"]

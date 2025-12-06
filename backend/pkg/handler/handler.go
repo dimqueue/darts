@@ -3,6 +3,7 @@ package handler
 import (
 	"time"
 
+	"github.com/dimqueue/darts/pkg/config"
 	"github.com/dimqueue/darts/pkg/service"
 	"github.com/dimqueue/darts/pkg/validation"
 	"github.com/gin-contrib/cors"
@@ -25,7 +26,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     config.CORSOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
