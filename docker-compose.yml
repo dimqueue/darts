@@ -1,33 +1,21 @@
 services:
-  frontend:
-    restart: on-failure
-    image: darts-frontend:latest
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    depends_on:
-      - backend
-    environment:
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
-      - VITE_USE_MOCK_API=false
-    ports:
-      - "3000:80"
-
   backend:
     restart: on-failure
-    image: darts-backend:${BUILD_MODE:-dev} # prod dev
+    image: darts-backend:${BUILD_MODE:-dev}
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: ${BUILD_MODE:-dev}  # prod dev
+      target: ${BUILD_MODE:-dev}
     depends_on:
       - db
       - compute-client
     env_file:
       - ./.env
+    environment:
+      - POSTGRES_HOST=dartsdb
+      - WORD_SERVICE_URL=compute-client:50051
     ports:
       - "8080:8080"
-    command: run-server # migrates-up migrates-down run-server
     volumes:
       - ./backend/configs/config.yml:/configs/config.yml:ro
 
@@ -43,7 +31,21 @@ services:
       - "50051:50051"
       - "5000:5000"
     volumes:
-      - ${GENSIM_DATA_DIR:-~/.gensim-data}:/root/gensim-data:ro
+      - ${GENSIM_DATA_DIR:-~/.gensim-data}:/root/gensim-data
+
+  frontend:
+    restart: on-failure
+    image: darts-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
+      - VITE_USE_MOCK_API=false
+    ports:
+      - "3000:80"
 
   db:
     restart: on-failure

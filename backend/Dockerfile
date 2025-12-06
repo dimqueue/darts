@@ -16,11 +16,15 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /usr/local/bin/darts github.com/dimqueu
 FROM alpine:3.19 AS dev
 RUN apk add --no-cache ca-certificates
 COPY --from=build-dev /usr/local/bin/darts /usr/local/bin/darts
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 EXPOSE 8080
-ENTRYPOINT ["darts"]
+ENTRYPOINT ["/entrypoint.sh"]
 
 FROM alpine:3.19 AS prod
 RUN apk add --no-cache ca-certificates
 COPY --from=build-prod /usr/local/bin/darts /usr/local/bin/darts
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 EXPOSE 8080
-ENTRYPOINT ["darts"]
+ENTRYPOINT ["/entrypoint.sh"]
