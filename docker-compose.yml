@@ -1,4 +1,18 @@
 services:
+  frontend:
+    restart: on-failure
+    image: darts-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
+      - VITE_USE_MOCK_API=false
+    ports:
+      - "3000:80"
+
   backend:
     restart: on-failure
     image: darts-backend:${BUILD_MODE:-dev} # prod dev

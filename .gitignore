@@ -6,6 +6,7 @@ configs/migrations.yml
 # Environment files with secrets
 .env
 .env.local
+.env.docker
 .dev.env
 *.local.env
 

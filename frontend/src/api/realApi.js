@@ -1,8 +1,8 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import config from '../config/env';
 
 class RealApiClient {
     constructor() {
-        this.baseURL = API_BASE_URL;
+        this.baseURL = config.apiUrl;
         console.log(`API Mode: REAL (${this.baseURL})`);
     }
 
@@ -22,13 +22,13 @@ class RealApiClient {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-        const config = {
+        const fetchConfig = {
             ...options,
             headers,
         };
 
         try {
-            const response = await fetch(url, config);
+            const response = await fetch(url, fetchConfig);
 
             if (response.status === 401) {
                 localStorage.removeItem('token');
