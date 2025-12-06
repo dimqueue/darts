@@ -8,10 +8,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dimqueue/darts/pkg/config"
 	"github.com/dimqueue/darts/pkg/connections"
 	"github.com/dimqueue/darts/pkg/data/migrations"
 	"github.com/dimqueue/darts/pkg/data/seeds"
 	"github.com/dimqueue/darts/pkg/handler"
+	"github.com/dimqueue/darts/pkg/logger"
 	"github.com/dimqueue/darts/pkg/repository"
 	"github.com/dimqueue/darts/pkg/service"
 	"github.com/dimqueue/darts/pkg/swagger"
@@ -44,17 +46,26 @@ func ParseCommand() (command, error) {
 	}
 }
 
-func ExecuteCommand(cmd command, db *sqlx.DB, config Config) error {
+func ExecuteCommand(cmd command, db *sqlx.DB) error {
 	switch cmd {
 	case cmdMigrateUp:
 		return runMigrateUp(db)
 	case cmdMigrateDown:
 		return runMigrateDown(db)
 	case cmdRunServer:
-		return runServer(db, config)
+		return runServer(db)
 	default:
 		return fmt.Errorf("unknown command: %s", cmd)
 	}
+}
+
+func InitLogger() error {
+	return logger.Init(logger.Config{
+		Level:        config.LogLevel,
+		Format:       config.LogFormat,
+		Output:       config.LogOutput,
+		ReportCaller: config.LogReportCaller,
+	})
 }
 
 func runMigrateUp(db *sqlx.DB) error {
@@ -84,11 +95,17 @@ func runMigrateDown(db *sqlx.DB) error {
 	return nil
 }
 
-func runServer(db *sqlx.DB, config Config) error {
+func runServer(db *sqlx.DB) error {
 
 	repos := repository.NewRepository(db)
 
-	computeClient, err := connections.NewComputeClient(config.ComputeClient)
+	computeClientConfig := connections.Config{
+		Type:    config.WordServiceType,
+		BaseURL: config.WordServiceURL,
+		Timeout: config.WordServiceTimeout,
+	}
+
+	computeClient, err := connections.NewComputeClient(computeClientConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create compute client: %w", err)
 	}

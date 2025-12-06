@@ -5,21 +5,12 @@ import (
 	"os"
 
 	"github.com/dimqueue/darts/pkg/config"
-	"github.com/dimqueue/darts/pkg/connections"
-	"github.com/dimqueue/darts/pkg/logger"
 	"github.com/dimqueue/darts/pkg/repository"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
-
-type Config struct {
-	Port          string
-	DB            repository.Config
-	ComputeClient connections.Config
-	Logger        logger.Config
-}
 
 func LoadEnv() error {
 	if os.Getenv("APP_ENV") != "production" {
@@ -42,42 +33,23 @@ func LoadConfig() error {
 	}
 
 	logrus.Infof("Loaded config from: %s", viper.ConfigFileUsed())
+
+	config.Load()
+
 	return nil
 }
 
-func GetConfig() Config {
-	config.LoadFromViper()
-
-	return Config{
-		Port: viper.GetString("port"),
-		DB: repository.Config{
-			Host:     viper.GetString("db.host"),
-			Username: viper.GetString("db.username"),
-			Port:     viper.GetString("db.port"),
-			DBName:   viper.GetString("db.dbname"),
-			SSLMode:  viper.GetString("db.sslmode"),
-			Password: os.Getenv("POSTGRES_PASSWORD"),
-		},
-		ComputeClient: connections.Config{
-			Type:    viper.GetString("word-service.type"),
-			BaseURL: viper.GetString("word-service.baseURL"),
-			Timeout: viper.GetInt("word-service.timeout"),
-		},
-		Logger: logger.Config{
-			Level:        viper.GetString("logger.level"),
-			Format:       viper.GetString("logger.format"),
-			Output:       viper.GetString("logger.output"),
-			ReportCaller: viper.GetBool("logger.reportCaller"),
-		},
+func ConnectDB() (*sqlx.DB, error) {
+	dbConfig := repository.Config{
+		Host:     config.DBHost,
+		Port:     config.DBPort,
+		Username: config.DBUser,
+		DBName:   config.DBName,
+		SSLMode:  config.DBSSLMode,
+		Password: config.DBPassword,
 	}
-}
 
-func InitLogger(config logger.Config) error {
-	return logger.Init(config)
-}
-
-func ConnectDB(config repository.Config) (*sqlx.DB, error) {
-	db, err := repository.NewPostgresDB(config)
+	db, err := repository.NewPostgresDB(dbConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}

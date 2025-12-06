@@ -37,9 +37,7 @@ func run() error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	config := pkg.GetConfig()
-
-	if err := pkg.InitLogger(config.Logger); err != nil {
+	if err := pkg.InitLogger(); err != nil {
 		return fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
@@ -48,11 +46,11 @@ func run() error {
 		return err
 	}
 
-	db, err := pkg.ConnectDB(config.DB)
+	db, err := pkg.ConnectDB()
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer db.Close()
 
-	return pkg.ExecuteCommand(cmd, db, config)
+	return pkg.ExecuteCommand(cmd, db)
 }

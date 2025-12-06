@@ -9,16 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dimqueue/darts/pkg/config"
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
 	"github.com/golang-jwt/jwt"
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/argon2"
-)
-
-const (
-	signInKey = "klkkk"
-	tokenTTL  = 12 * time.Hour
 )
 
 type AuthService struct {
@@ -93,7 +89,7 @@ type Argon2Configuration struct {
 }
 
 func (s *AuthService) generatePasswordHash(password string) (string, error) {
-	config := Argon2Configuration{
+	cfg := Argon2Configuration{
 		TimeCost:   2,
 		MemoryCost: 64 * 1024,
 		Threads:    4,
@@ -103,23 +99,23 @@ func (s *AuthService) generatePasswordHash(password string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("password hashing failed: %w", err)
 	}
-	config.Salt = salt
-	config.HashRaw = argon2.IDKey(
+	cfg.Salt = salt
+	cfg.HashRaw = argon2.IDKey(
 		[]byte(password),
-		config.Salt,
-		config.TimeCost,
-		config.MemoryCost,
-		config.Threads,
-		config.KeyLength)
+		cfg.Salt,
+		cfg.TimeCost,
+		cfg.MemoryCost,
+		cfg.Threads,
+		cfg.KeyLength)
 
 	encodedHash := fmt.Sprintf(
 		"$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",
 		argon2.Version,
-		config.MemoryCost,
-		config.TimeCost,
-		config.Threads,
-		base64.RawStdEncoding.EncodeToString(config.Salt),
-		base64.RawStdEncoding.EncodeToString(config.HashRaw))
+		cfg.MemoryCost,
+		cfg.TimeCost,
+		cfg.Threads,
+		base64.RawStdEncoding.EncodeToString(cfg.Salt),
+		base64.RawStdEncoding.EncodeToString(cfg.HashRaw))
 
 	return encodedHash, nil
 }
@@ -146,24 +142,24 @@ func (s *AuthService) parseArgon2Hash(encodedHash string) (*Argon2Configuration,
 	var version int
 	fmt.Sscanf(components[2], "v=%d", &version)
 
-	config := &Argon2Configuration{}
+	cfg := &Argon2Configuration{}
 	fmt.Sscanf(components[3], "m=%d,t=%d,p=%d",
-		&config.MemoryCost, &config.TimeCost, &config.Threads)
+		&cfg.MemoryCost, &cfg.TimeCost, &cfg.Threads)
 
 	salt, err := base64.RawStdEncoding.DecodeString(components[4])
 	if err != nil {
 		return nil, fmt.Errorf("salt decoding failed: %w", err)
 	}
-	config.Salt = salt
+	cfg.Salt = salt
 
 	hash, err := base64.RawStdEncoding.DecodeString(components[5])
 	if err != nil {
 		return nil, fmt.Errorf("hash decoding failed: %w", err)
 	}
-	config.HashRaw = hash
-	config.KeyLength = uint32(len(hash))
+	cfg.HashRaw = hash
+	cfg.KeyLength = uint32(len(hash))
 
-	return config, nil
+	return cfg, nil
 }
 
 func (s *AuthService) GenerateToken(username, password string) (string, error) {
@@ -182,30 +178,30 @@ func (s *AuthService) GenerateToken(username, password string) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(tokenTTL).Unix(),
+			ExpiresAt: time.Now().Add(config.TokenTTL).Unix(),
 			IssuedAt:  time.Now().Unix(),
 		},
 		user.Id,
 	})
-	return token.SignedString([]byte(signInKey))
+	return token.SignedString([]byte(config.JWTSecret))
 }
 
 func (s *AuthService) verifyPasswordSecure(storedHash, providedPassword string) (bool, error) {
-	config, err := s.parseArgon2Hash(storedHash)
+	cfg, err := s.parseArgon2Hash(storedHash)
 	if err != nil {
 		return false, fmt.Errorf("hash parsing failed: %w", err)
 	}
 
 	computedHash := argon2.IDKey(
 		[]byte(providedPassword),
-		config.Salt,
-		config.TimeCost,
-		config.MemoryCost,
-		config.Threads,
-		config.KeyLength,
+		cfg.Salt,
+		cfg.TimeCost,
+		cfg.MemoryCost,
+		cfg.Threads,
+		cfg.KeyLength,
 	)
 
-	match := subtle.ConstantTimeCompare(config.HashRaw, computedHash) == 1
+	match := subtle.ConstantTimeCompare(cfg.HashRaw, computedHash) == 1
 	return match, nil
 }
 
@@ -214,7 +210,7 @@ func (s *AuthService) ParseToken(accessToken string) (int64, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("invalid signing method")
 		}
-		return []byte(signInKey), nil
+		return []byte(config.JWTSecret), nil
 	})
 	if err != nil {
 		return 0, err

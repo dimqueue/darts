@@ -1,3 +1,7 @@
+# Default Configuration
+# Values can be overridden by environment variables
+# See .env.example for environment variable names
+
 port: "8080"
 
 db:
@@ -6,14 +10,33 @@ db:
   port: "5432"
   dbname: "dartsdb"
   sslmode: "disable"
+  # password: from POSTGRES_PASSWORD env var
+
+auth:
+  tokenTTLHours: 12
+  # jwtSecret: from JWT_SECRET env var (required)
+
+cors:
+  origins: "http://localhost:5173"
 
 word-service:
-  type: "grpc" #grpc http
+  type: "grpc" # grpc http
   baseURL: "localhost:50051" # localhost:50051 http://localhost:5000
   timeout: 30
 
 logger:
-  level: "debug"        # debug, info, warn, error, fatal, panic
-  format: "text"       # text or json
-  output: "stdout"     # stdout, stderr, or file path (e.g., "logs/app.log")
-  reportCaller: false  # include caller information in logs
+  level: "debug"
+  format: "text"
+  output: "stdout"
+  reportCaller: false
+
+game:
+  ttl: 7200
+  computeTimeout: 30
+  maxGuesses: 0
+
+leaderboard:
+  minGamesGlobal: 3
+  minGamesPeriod: 1
+  defaultLimit: 50
+  maxLimit: 100

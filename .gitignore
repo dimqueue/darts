@@ -1,10 +1,33 @@
 .idea
-.env
 scripts
 configs/migrations.yml
 .docs
+
+# Environment files with secrets
+.env
+.env.local
 .dev.env
+*.local.env
 
 # Generated proto code
 backend/pkg/proto/
 compute-client/src/proto/
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+backend/cmd/app/app
+
+# Test binary
+*.test
+
+# Go workspace
+go.work
+
+# IDE
+.vscode/
+*.swp
+*.swo
