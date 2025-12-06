@@ -2,11 +2,21 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Install dependencies first (better caching)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy source code
+COPY src/ ./src/
 
-EXPOSE 5000
+# Create logs directory
+RUN mkdir -p logs
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "5000"]
+# Unbuffered output for better logging
+ENV PYTHONUNBUFFERED=1
+
+# Expose both ports (only one will be used based on SERVER_MODE)
+EXPOSE 5000 50051
+
+# Run the application
+CMD ["python", "-m", "src.main"]

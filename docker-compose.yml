@@ -1,13 +1,14 @@
 services:
   backend:
     restart: on-failure
-    image: darts-backend:${BUILD_MODE:-dev}
+    image: darts-backend:${BUILD_MODE:-dev} # prod dev
     build:
       context: ./backend
       dockerfile: Dockerfile
       target: ${BUILD_MODE:-dev}  # prod dev
     depends_on:
       - db
+      - compute-client
     env_file:
       - ./.env
     ports:
@@ -23,29 +24,19 @@ services:
       context: ./compute-client
       dockerfile: Dockerfile
     env_file:
-      - ./.env
+      - ./compute-client/.env
     ports:
+      - "50051:50051"
       - "5000:5000"
-
-#  frontend:
-#    restart: on-failure
-#    image: darts-frontend:latest
-#    build:
-#      context: ./frontend
-#      dockerfile: Dockerfile
-#    depends_on:
-#      - backend
-#    ports:
-#      - "3000:3000"
-#    environment:
-#      - REACT_APP_API_URL=http://backend:8080
+    volumes:
+      - ${GENSIM_DATA_DIR:-~/.gensim-data}:/root/gensim-data:ro
 
   db:
     restart: on-failure
     image: postgres:16-alpine
     container_name: dartsdb
     env_file:
-      - .env
+      - ./.env
     ports:
       - "5432:5432"
     volumes:
