@@ -1,15 +1,15 @@
 port: "8080"
 
 db:
-  host: "dartsdb" # dartsdb localhost
+  host: "localhost" # dartsdb localhost
   username: "admin"
   port: "5432"
   dbname: "dartsdb"
   sslmode: "disable"
 
 word-service:
-  type: "http"
-  baseURL: "http://localhost:5000"
+  type: "grpc" #grpc http
+  baseURL: "localhost:50051" # localhost:50051 http://localhost:5000
   timeout: 30
 
 logger:

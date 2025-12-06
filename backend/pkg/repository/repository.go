@@ -9,7 +9,7 @@ import (
 
 type Authorization interface {
 	CreateUser(q Querier, user model.User) (int64, error)
-	GetUser(username, password string) (model.User, error)
+	GetUserByUsername(username string) (model.User, error)
 }
 
 type Game interface {
