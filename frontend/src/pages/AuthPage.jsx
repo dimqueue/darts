@@ -16,7 +16,7 @@ export default function AuthPage() {
     const [loading, setLoading] = useState(false);
 
     const { login } = useAuth();
-    const { theme } = useTheme();
+    const { theme, darkMode } = useTheme();
     const navigate = useNavigate();
 
     const handleSubmit = async () => {
@@ -52,14 +52,14 @@ export default function AuthPage() {
     };
 
     return (
-        <div className={`min-h-screen bg-gradient-to-br ${theme.bgGradient} flex items-center justify-center p-4`}>
+        <div className={`min-h-screen bg-gradient-to-br transition-colors duration-300 ${darkMode ? theme.bgGradientDark : theme.bgGradient} flex items-center justify-center p-4`}>
             <Card className="w-full max-w-md" padding="p-8">
                 <div className="flex items-center justify-center mb-6">
-                    <Trophy className={`w-12 h-12 ${theme.textColor} mr-3`} />
-                    <h1 className="text-3xl font-bold text-gray-800">Darts Game</h1>
+                    <Trophy className={`w-12 h-12 ${darkMode ? theme.textColorDark : theme.textColor} mr-3`} />
+                    <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Darts Game</h1>
                 </div>
 
-                <h2 className="text-xl font-semibold text-center mb-6 text-gray-700">
+                <h2 className={`text-xl font-semibold text-center mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     {isSignUp ? 'Create Account' : 'Welcome Back'}
                 </h2>
 
@@ -82,7 +82,11 @@ export default function AuthPage() {
                     />
 
                     {error && (
-                        <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-xl">
+                        <div className={`text-sm text-center p-3 rounded-xl ${
+                            darkMode
+                                ? 'bg-red-900/30 text-red-400 border border-red-800'
+                                : 'bg-red-50 text-red-500'
+                        }`}>
                             {error}
                         </div>
                     )}
@@ -101,7 +105,7 @@ export default function AuthPage() {
                 <div className="mt-6 text-center">
                     <button
                         onClick={() => setIsSignUp(!isSignUp)}
-                        className={`${theme.textColor} hover:underline text-sm`}
+                        className={`${darkMode ? theme.textColorDark : theme.textColor} hover:underline text-sm`}
                     >
                         {isSignUp
                             ? 'Already have an account? Sign In'
