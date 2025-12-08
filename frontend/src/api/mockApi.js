@@ -1,9 +1,11 @@
+import { getRandomWord, calculateDistance } from './mockData.js';
+
 class MockApiClient {
     constructor() {
-        console.log('API Mode: MOCK (mock data)');
         this.users = new Map();
         this.games = new Map();
         this.guesses = new Map();
+        this.targetWords = new Map();
         this.nextUserId = 1;
         this.nextGameId = 1;
         this.nextGuessId = 1;
@@ -49,6 +51,8 @@ class MockApiClient {
         };
         this.games.set(game.id, game);
         this.guesses.set(game.id, []);
+        const targetWord = getRandomWord(language);
+        this.targetWords.set(game.id, targetWord);
         return game;
     }
 
@@ -76,6 +80,7 @@ class MockApiClient {
         await this.delay();
         this.games.delete(gameId);
         this.guesses.delete(gameId);
+        this.targetWords.delete(gameId);
         return { message: 'Game deleted' };
     }
 
@@ -83,11 +88,14 @@ class MockApiClient {
     async createGuess(gameId, guess) {
         await this.delay();
         const gameGuesses = this.guesses.get(gameId) || [];
+        const targetWord = this.targetWords.get(gameId) || 'ocean';
+        const distance = calculateDistance(guess, targetWord);
+
         const newGuess = {
             id: this.nextGuessId++,
             game_id: gameId,
             guess_word: guess,
-            distance: Math.floor(Math.random() * 1000),
+            distance: distance,
             created_at: new Date().toISOString(),
         };
         gameGuesses.push(newGuess);
@@ -111,14 +119,24 @@ class MockApiClient {
 
     async getMyProfile() {
         await this.delay();
+
+        let currentUser = null;
+        try {
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+            }
+        } catch {
+        }
+
         return {
-            id: 1,
-            username: 'testuser',
-            name: 'Test User',
-            email: 'test@example.com',
+            id: currentUser?.id || 1,
+            username: currentUser?.username || 'testuser',
+            name: currentUser?.name || currentUser?.username || 'Test User',
+            email: currentUser?.email || 'test@example.com',
             avatar_url: null,
             bio: 'Hello, I love playing Darts!',
-            country_code: 'US',
+            country_code: 'UA',
             total_games: 42,
             total_wins: 28,
             total_losses: 14,
@@ -180,26 +198,92 @@ class MockApiClient {
 
     async getLeaderboard(type = 'global', params = {}, language = null) {
         await this.delay();
-        const mockUsers = Array.from({ length: 50 }, (_, i) => ({
-            rank: i + 1,
-            user_id: i + 1,
-            username: `player${i + 1}`,
-            name: `Player ${i + 1}`,
-            avatar_url: null,
-            country_code: ['US', 'GB', 'DE', 'FR', 'UA'][i % 5],
-            total_score: 1500 - i * 25,
-            total_wins: 50 - i,
-            total_games: 60 - i,
-            best_win_streak: 10 - Math.floor(i / 5),
-            average_guesses: 3.5 + (i * 0.1),
-            win_rate: ((50 - i) / (60 - i) * 100).toFixed(1),
-        }));
+
+        let currentUser = null;
+        try {
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+            }
+        } catch {
+        }
+
+        const mockNames = [
+            'Alex Storm', 'Maria Chen', 'John Smith', 'Emma Wilson', 'Oleksandr Petrov',
+            'Sophie Martin', 'Michael Brown', 'Anna Kovalenko', 'David Lee', 'Julia Schmidt',
+            'James Taylor', 'Katya Bondarenko', 'Robert Garcia', 'Nina Ivanova', 'William Davis',
+            'Elena Moroz', 'Daniel Miller', 'Oksana Shevchenko', 'Christopher Moore', 'Tetiana Lysenko',
+            'Matthew Anderson', 'Iryna Tkachenko', 'Andrew Jackson', 'Viktoria Melnyk', 'Joshua White',
+            'Natalia Kravchenko', 'Ryan Harris', 'Svitlana Boyko', 'Brandon Clark', 'Daryna Savchenko',
+            'Kevin Lewis', 'Alina Rudenko', 'Jason Robinson', 'Maryna Kozak', 'Justin Walker',
+            'Yulia Polishchuk', 'Eric Hall', 'Olena Marchenko', 'Adam Young', 'Karina Stepanenko',
+            'Tyler King', 'Larysa Hryhorenko', 'Aaron Wright', 'Veronika Fedorova', 'Nicholas Scott',
+            'Anastasia Zaitseva', 'Patrick Green', 'Diana Romanova', 'Sean Baker', 'Polina Sokolova',
+        ];
+
+        const mockUsernames = [
+            'alexstorm', 'mariachen', 'johnsmith', 'emmawilson', 'oleksandrp',
+            'sophiem', 'mikebrown', 'annakov', 'davidlee', 'juliaschmidt',
+            'jamest', 'katyab', 'robertg', 'ninaiv', 'williamd',
+            'elenam', 'danmiller', 'oksanas', 'chrismoore', 'tetianal',
+            'mattanderson', 'irynat', 'andrewj', 'viktoriamelnyk', 'joshwhite',
+            'nataliak', 'ryanharris', 'svitlanab', 'brandonc', 'darynas',
+            'kevinlewis', 'alinar', 'jasonr', 'marynakozak', 'justinw',
+            'yuliap', 'erichall', 'olenam', 'adamyoung', 'karinas',
+            'tylerk', 'larysah', 'aaronwright', 'veronikaf', 'nicholasscott',
+            'anastasiaz', 'patrickg', 'dianar', 'seanbaker', 'polinas',
+        ];
+
+        const ranksByType = {
+            global: 23,
+            daily: 2,
+            weekly: 3,
+            monthly: 18,
+        };
+        const currentUserRank = ranksByType[type] || 23;
+
+        const mockUsers = Array.from({ length: 50 }, (_, i) => {
+            const rank = i + 1;
+
+            if (rank === currentUserRank && currentUser) {
+                return {
+                    rank: rank,
+                    user_id: currentUser.id || 999,
+                    username: currentUser.username,
+                    name: currentUser.name || currentUser.username,
+                    avatar_url: null,
+                    country_code: 'UA',
+                    total_score: 1500 - (rank - 1) * 25,
+                    total_wins: 50 - (rank - 1),
+                    total_games: 60 - (rank - 1),
+                    best_win_streak: 10 - Math.floor((rank - 1) / 5),
+                    average_guesses: 3.5 + ((rank - 1) * 0.1),
+                    win_rate: ((50 - (rank - 1)) / (60 - (rank - 1)) * 100).toFixed(1),
+                };
+            }
+
+            return {
+                rank: rank,
+                user_id: i + 100,
+                username: mockUsernames[i] || `player${i + 1}`,
+                name: mockNames[i] || `Player ${i + 1}`,
+                avatar_url: null,
+                country_code: ['US', 'GB', 'DE', 'FR', 'UA'][i % 5],
+                total_score: 1500 - i * 25,
+                total_wins: 50 - i,
+                total_games: 60 - i,
+                best_win_streak: 10 - Math.floor(i / 5),
+                average_guesses: 3.5 + (i * 0.1),
+                win_rate: ((50 - i) / (60 - i) * 100).toFixed(1),
+            };
+        });
+
         return {
             leaderboard_type: type,
             language: language,
             users: mockUsers,
             total: 150,
-            current_user_rank: 23,
+            current_user_rank: currentUserRank,
         };
     }
 
@@ -207,8 +291,8 @@ class MockApiClient {
         await this.delay();
         return {
             global_rank: 23,
-            daily_rank: 12,
-            weekly_rank: 15,
+            daily_rank: 2,
+            weekly_rank: 3,
             monthly_rank: 18,
         };
     }
@@ -232,6 +316,7 @@ class MockApiClient {
         this.users.clear();
         this.games.clear();
         this.guesses.clear();
+        this.targetWords.clear();
         localStorage.removeItem('token');
         localStorage.removeItem('user');
     }

@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, Trophy, RotateCcw, Globe } from 'lucide-react';
 import api from '@/api';
 import { useTheme } from '../contexts/ThemeContext';
+import { useGame } from '../contexts/GameContext';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import { GamePageSkeleton } from '../components/ui/Skeleton';
 
 const LANGUAGES = [
     { code: 'en', name: 'English' },
@@ -22,13 +24,62 @@ export default function GamePage() {
     const [language, setLanguage] = useState('en');
     const [gameStatus, setGameStatus] = useState('in_progress');
     const initializedRef = useRef(false);
+    const inputRef = useRef(null);
 
-    const { theme } = useTheme();
+    const { theme, darkMode } = useTheme();
+    const { gameState, saveGame } = useGame();
+
+    useEffect(() => {
+        if (gameId && !initializing) {
+            saveGame({ gameId, guesses, language, status: gameStatus });
+        }
+    }, [gameId, guesses, language, gameStatus, initializing, saveGame]);
 
     useEffect(() => {
         if (initializedRef.current) return;
         initializedRef.current = true;
-        startNewGame();
+
+        const loadActiveGame = async () => {
+            try {
+                if (gameState && gameState.status === 'in_progress' && gameState.gameId) {
+                    try {
+                        const gameResponse = await api.getGameById(gameState.gameId);
+                        if (gameResponse.data && gameResponse.data.status === 'in_progress') {
+                            setGameId(gameState.gameId);
+                            setGuesses(gameState.guesses || []);
+                            setLanguage(gameState.language || 'en');
+                            setGameStatus(gameState.status);
+                            setInitializing(false);
+                            setTimeout(() => inputRef.current?.focus(), 100);
+                            return;
+                        }
+                    } catch {
+                    }
+                }
+
+                const response = await api.getAllGames();
+                const games = response.data || [];
+                const activeGame = games.find(g => g.status === 'in_progress');
+
+                if (activeGame) {
+                    setGameId(activeGame.id);
+                    setLanguage(activeGame.language || 'en');
+                    setGameStatus(activeGame.status);
+
+                    const guessesResponse = await api.getAllGuessByGame(activeGame.id);
+                    setGuesses(guessesResponse.data || []);
+                    setInitializing(false);
+                    setTimeout(() => inputRef.current?.focus(), 100);
+                } else {
+                    startNewGame();
+                }
+            } catch (err) {
+                console.error('Failed to load active game:', err);
+                startNewGame();
+            }
+        };
+
+        loadActiveGame();
     }, []);
 
     const startNewGame = async (lang = language) => {
@@ -44,6 +95,7 @@ export default function GamePage() {
             setError('Failed to start game: ' + err.message);
         } finally {
             setInitializing(false);
+            setTimeout(() => inputRef.current?.focus(), 100);
         }
     };
 
@@ -74,14 +126,26 @@ export default function GamePage() {
             return;
         }
 
+        const alreadyGuessed = guesses.some(
+            (g) => g.guess_word.toLowerCase() === validation.word.toLowerCase()
+        );
+        if (alreadyGuessed) {
+            setError('You already guessed this word');
+            return;
+        }
+
         setLoading(true);
         setError('');
 
         try {
             const result = await api.createGuess(gameId, validation.word);
 
-            // Check if won (distance === 0)
             if (result.distance === 0) {
+                setError('Word not found in vocabulary');
+                return;
+            }
+
+            if (result.distance === 1) {
                 setGameStatus('won');
             }
 
@@ -92,6 +156,7 @@ export default function GamePage() {
             setError(err.message);
         } finally {
             setLoading(false);
+            setTimeout(() => inputRef.current?.focus(), 50);
         }
     };
 
@@ -102,20 +167,31 @@ export default function GamePage() {
     };
 
     const getDistanceColor = (distance) => {
-        if (distance === 0) return 'bg-green-500 text-white';
-        if (distance < 100) return 'bg-green-100 text-green-800';
-        if (distance < 500) return 'bg-yellow-100 text-yellow-800';
-        if (distance < 1000) return 'bg-orange-100 text-orange-800';
-        return 'bg-red-100 text-red-800';
+        if (distance === 1) return 'bg-green-500 text-white';
+        if (distance < 100) {
+            return darkMode
+                ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-500/50'
+                : 'bg-green-100 text-green-800';
+        }
+        if (distance < 500) {
+            return darkMode
+                ? 'bg-amber-500/30 text-amber-200 border border-amber-500/50'
+                : 'bg-yellow-100 text-yellow-800';
+        }
+        if (distance < 1000) {
+            return darkMode
+                ? 'bg-orange-500/30 text-orange-200 border border-orange-500/50'
+                : 'bg-orange-100 text-orange-800';
+        }
+        return darkMode
+            ? 'bg-red-500/30 text-red-200 border border-red-500/50'
+            : 'bg-red-100 text-red-800';
     };
 
     if (initializing) {
         return (
             <Layout>
-                <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                    <Trophy className={`w-16 h-16 ${theme.textColor} animate-pulse mb-4`} />
-                    <p className="text-xl font-semibold text-gray-700">Starting game...</p>
-                </div>
+                <GamePageSkeleton />
             </Layout>
         );
     }
@@ -127,18 +203,20 @@ export default function GamePage() {
                 <Card>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Trophy className={`w-8 h-8 ${theme.textColor}`} />
+                            <Trophy className={`w-8 h-8 ${darkMode ? theme.textColorDark : theme.textColor}`} />
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-800">Daily Challenge</h1>
-                                <p className="text-sm text-gray-500">Guess the secret word</p>
+                                <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Daily Challenge</h1>
+                                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Guess the secret word</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Globe className="w-5 h-5 text-gray-400" />
+                            <Globe className={`w-5 h-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                             <select
                                 value={language}
                                 onChange={(e) => startNewGame(e.target.value)}
-                                className={`px-3 py-2 border-2 rounded-xl ${theme.focusBorder} focus:outline-none`}
+                                className={`px-3 py-2 border-2 rounded-xl ${theme.focusBorder} focus:outline-none ${
+                                    darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-800 border-gray-200'
+                                }`}
                             >
                                 {LANGUAGES.map((lang) => (
                                     <option key={lang.code} value={lang.code}>
@@ -155,7 +233,7 @@ export default function GamePage() {
                     <Card className={`${theme.gradient} text-white text-center`}>
                         <Trophy className="w-12 h-12 mx-auto mb-2" />
                         <h2 className="text-2xl font-bold mb-1">Congratulations!</h2>
-                        <p className="text-lg opacity-90">You found the word in {guesses.length} guesses!</p>
+                        <p className="text-lg opacity-90">You found the word in {guesses.filter((g) => g.distance > 0).length} guesses!</p>
                     </Card>
                 )}
 
@@ -163,6 +241,7 @@ export default function GamePage() {
                 <Card>
                     <div className="flex gap-3">
                         <Input
+                            ref={inputRef}
                             value={inputWord}
                             onChange={(e) => setInputWord(e.target.value)}
                             onKeyPress={handleKeyPress}
@@ -181,7 +260,11 @@ export default function GamePage() {
                     </div>
 
                     {error && (
-                        <div className="mt-3 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm">
+                        <div className={`mt-3 p-3 rounded-xl text-sm border ${
+                            darkMode
+                                ? 'bg-red-900/30 border-red-800 text-red-400'
+                                : 'bg-red-50 border-red-200 text-red-600'
+                        }`}>
                             {error}
                         </div>
                     )}
@@ -190,8 +273,8 @@ export default function GamePage() {
                 {/* Guesses List */}
                 <Card>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-gray-700">
-                            Your Guesses ({guesses.length})
+                        <h3 className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                            Your Guesses ({guesses.filter((g) => g.distance > 0).length})
                         </h3>
                         <Button
                             onClick={() => startNewGame(language)}
@@ -203,7 +286,7 @@ export default function GamePage() {
                         </Button>
                     </div>
 
-                    {guesses.length === 0 ? (
+                    {guesses.filter((g) => g.distance > 0).length === 0 ? (
                         <div className="text-center py-12 text-gray-400">
                             <p>Make your first guess!</p>
                             <p className="text-sm mt-1">The closer to 0, the closer you are</p>
@@ -211,6 +294,7 @@ export default function GamePage() {
                     ) : (
                         <div className="space-y-2">
                             {guesses
+                                .filter((g) => g.distance > 0)
                                 .slice()
                                 .sort((a, b) => a.distance - b.distance)
                                 .map((guess, index) => (
@@ -220,7 +304,7 @@ export default function GamePage() {
                                     >
                                         <span className="font-medium">{guess.guess_word}</span>
                                         <span className="font-bold">
-                                            {guess.distance === 0 ? 'FOUND!' : guess.distance}
+                                            {guess.distance === 1 ? 'FOUND!' : guess.distance}
                                         </span>
                                     </div>
                                 ))}

@@ -25,7 +25,7 @@ const getCountryFlag = (countryCode) => {
     return String.fromCodePoint(...codePoints);
 };
 
-const RankNavigation = ({ ranks, activeTab, onTabChange, theme }) => {
+const RankNavigation = ({ ranks, activeTab, onTabChange, theme, darkMode }) => {
     const stats = [
         { id: 'global', label: 'Global', value: ranks?.global_rank },
         { id: 'monthly', label: 'Monthly', value: ranks?.monthly_rank },
@@ -36,10 +36,10 @@ const RankNavigation = ({ ranks, activeTab, onTabChange, theme }) => {
     return (
         <Card>
             <div className="flex items-center gap-3 mb-4">
-                <Trophy className={`w-8 h-8 ${theme.textColor}`} />
+                <Trophy className={`w-8 h-8 ${darkMode ? theme.textColorDark : theme.textColor}`} />
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Leaderboard</h1>
-                    <p className="text-sm text-gray-500">Click your rank to switch views</p>
+                    <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Leaderboard</h1>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Click your rank to switch views</p>
                 </div>
             </div>
             <div className="flex gap-3">
@@ -52,13 +52,15 @@ const RankNavigation = ({ ranks, activeTab, onTabChange, theme }) => {
                             className={`flex-1 px-4 py-4 rounded-xl text-center border-2 transition-all cursor-pointer ${
                                 isActive
                                     ? `${theme.borderColor} ${theme.gradient} text-white shadow-lg scale-105`
-                                    : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
+                                    : darkMode
+                                        ? 'border-gray-600 bg-gray-700 hover:border-gray-500 hover:bg-gray-600'
+                                        : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
                             }`}
                         >
-                            <p className={`text-xs font-medium uppercase tracking-wide ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
+                            <p className={`text-xs font-medium uppercase tracking-wide ${isActive ? 'text-white/80' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                 {stat.label}
                             </p>
-                            <p className={`text-2xl font-bold mt-1 ${isActive ? 'text-white' : 'text-gray-800'}`}>
+                            <p className={`text-2xl font-bold mt-1 ${isActive ? 'text-white' : darkMode ? 'text-white' : 'text-gray-800'}`}>
                                 {stat.value ? `#${stat.value}` : '-'}
                             </p>
                             {isActive && <div className="w-8 h-1 bg-white/50 rounded-full mx-auto mt-2" />}
@@ -70,13 +72,15 @@ const RankNavigation = ({ ranks, activeTab, onTabChange, theme }) => {
     );
 };
 
-const SortableHeader = ({ label, field, sortBy, sortDirection, onSort, align = 'left' }) => {
+const SortableHeader = ({ label, field, sortBy, sortDirection, onSort, align = 'left', darkMode }) => {
     const isActive = sortBy === field;
     const alignClass = align === 'right' ? 'text-right justify-end' : 'text-left';
 
     return (
         <th
-            className={`px-6 py-4 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition-colors select-none ${alignClass}`}
+            className={`px-6 py-4 text-xs font-semibold uppercase cursor-pointer transition-colors select-none ${alignClass} ${
+                darkMode ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-100'
+            }`}
             onClick={() => onSort(field)}
         >
             <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : ''}`}>
@@ -93,7 +97,7 @@ const SortableHeader = ({ label, field, sortBy, sortDirection, onSort, align = '
 
 export default function LeaderboardPage() {
     const { user } = useAuth();
-    const { theme } = useTheme();
+    const { theme, darkMode } = useTheme();
     const [activeTab, setActiveTab] = useState('global');
     const [language, setLanguage] = useState('');
     const [data, setData] = useState({ users: [], total: 0, current_user_rank: null });
@@ -183,19 +187,22 @@ export default function LeaderboardPage() {
                     activeTab={activeTab}
                     onTabChange={handleTabChange}
                     theme={theme}
+                    darkMode={darkMode}
                 />
 
                 {/* Language Filter */}
                 <div className="flex items-center justify-end">
                     <div className="flex items-center gap-2">
-                        <Globe className="w-5 h-5 text-gray-400" />
+                        <Globe className={`w-5 h-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                         <select
                             value={language}
                             onChange={(e) => {
                                 setLanguage(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            className={`px-3 py-2 border-2 rounded-xl ${theme.focusBorder} focus:outline-none bg-white`}
+                            className={`px-3 py-2 border-2 rounded-xl ${theme.focusBorder} focus:outline-none ${
+                                darkMode ? 'bg-gray-800 text-white border-gray-600' : 'bg-white text-gray-800 border-gray-200'
+                            }`}
                         >
                             {LANGUAGES.map((lang) => (
                                 <option key={lang.code} value={lang.code}>
@@ -215,16 +222,16 @@ export default function LeaderboardPage() {
                     ) : error ? (
                         <div className="p-6 text-center text-red-500">{error}</div>
                     ) : sortedUsers.length === 0 ? (
-                        <div className="p-6 text-center text-gray-500">No data available</div>
+                        <div className={`p-6 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No data available</div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-gray-50 border-b border-gray-200">
+                                <thead className={`border-b ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
+                                        <th className={`px-6 py-4 text-left text-xs font-semibold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                             Rank
                                         </th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
+                                        <th className={`px-6 py-4 text-left text-xs font-semibold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                             Player
                                         </th>
                                         <SortableHeader
@@ -234,6 +241,7 @@ export default function LeaderboardPage() {
                                             sortDirection={sortDirection}
                                             onSort={handleSort}
                                             align="right"
+                                            darkMode={darkMode}
                                         />
                                         <SortableHeader
                                             label="Wins"
@@ -242,6 +250,7 @@ export default function LeaderboardPage() {
                                             sortDirection={sortDirection}
                                             onSort={handleSort}
                                             align="right"
+                                            darkMode={darkMode}
                                         />
                                         <SortableHeader
                                             label="Win Rate"
@@ -250,6 +259,7 @@ export default function LeaderboardPage() {
                                             sortDirection={sortDirection}
                                             onSort={handleSort}
                                             align="right"
+                                            darkMode={darkMode}
                                         />
                                         <SortableHeader
                                             label="Avg Guesses"
@@ -258,6 +268,7 @@ export default function LeaderboardPage() {
                                             sortDirection={sortDirection}
                                             onSort={handleSort}
                                             align="right"
+                                            darkMode={darkMode}
                                         />
                                         <SortableHeader
                                             label="Best Streak"
@@ -266,10 +277,11 @@ export default function LeaderboardPage() {
                                             sortDirection={sortDirection}
                                             onSort={handleSort}
                                             align="right"
+                                            darkMode={darkMode}
                                         />
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-100'}`}>
                                     {sortedUsers.map((entry) => {
                                         const isCurrentUser = entry.username === user?.username;
                                         const flag = getCountryFlag(entry.country_code);
@@ -279,12 +291,16 @@ export default function LeaderboardPage() {
                                                 key={entry.user_id}
                                                 className={`transition-colors ${
                                                     isCurrentUser
-                                                        ? `${theme.gradient.replace('bg-gradient-to-r', 'bg-opacity-20')} bg-purple-50 font-semibold`
-                                                        : 'hover:bg-gray-50'
+                                                        ? darkMode
+                                                            ? 'bg-violet-900/40 border-l-4 border-l-violet-500 font-semibold'
+                                                            : 'bg-violet-100 border-l-4 border-l-violet-500 font-semibold'
+                                                        : darkMode
+                                                            ? 'hover:bg-gray-700'
+                                                            : 'hover:bg-gray-50'
                                                 }`}
                                             >
                                                 <td className="px-6 py-4">
-                                                    <span className="text-gray-600 font-medium">
+                                                    <span className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                                                         #{entry.rank}
                                                     </span>
                                                 </td>
@@ -299,32 +315,27 @@ export default function LeaderboardPage() {
                                                             {entry.username?.[0]?.toUpperCase() || '?'}
                                                         </div>
                                                         <div>
-                                                            <p className="font-medium text-gray-800 flex items-center gap-1">
+                                                            <p className={`font-medium flex items-center gap-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                                                                 {flag && <span>{flag}</span>}
                                                                 {entry.name || entry.username}
-                                                                {isCurrentUser && (
-                                                                    <span className={`ml-1 text-xs px-2 py-0.5 rounded-full ${theme.gradient} text-white`}>
-                                                                        You
-                                                                    </span>
-                                                                )}
                                                             </p>
-                                                            <p className="text-sm text-gray-500">@{entry.username}</p>
+                                                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>@{entry.username}</p>
                                                         </div>
                                                     </Link>
                                                 </td>
-                                                <td className="px-6 py-4 text-right font-semibold text-gray-800">
+                                                <td className={`px-6 py-4 text-right font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                                                     {entry.total_score?.toLocaleString() || 0}
                                                 </td>
-                                                <td className="px-6 py-4 text-right text-gray-600">
+                                                <td className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                                                     {entry.total_wins || 0}
                                                 </td>
-                                                <td className="px-6 py-4 text-right text-gray-600">
+                                                <td className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                                                     {entry.win_rate || 0}%
                                                 </td>
-                                                <td className="px-6 py-4 text-right text-gray-600">
+                                                <td className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                                                     {entry.average_guesses?.toFixed(1) || '-'}
                                                 </td>
-                                                <td className="px-6 py-4 text-right text-gray-600">
+                                                <td className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                                                     {entry.best_win_streak || 0}
                                                 </td>
                                             </tr>
