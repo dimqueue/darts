@@ -1,9 +1,11 @@
+import { getRandomWord, calculateDistance } from './mockData.js';
+
 class MockApiClient {
     constructor() {
-        console.log('API Mode: MOCK (mock data)');
         this.users = new Map();
         this.games = new Map();
         this.guesses = new Map();
+        this.targetWords = new Map();
         this.nextUserId = 1;
         this.nextGameId = 1;
         this.nextGuessId = 1;
@@ -49,6 +51,8 @@ class MockApiClient {
         };
         this.games.set(game.id, game);
         this.guesses.set(game.id, []);
+        const targetWord = getRandomWord(language);
+        this.targetWords.set(game.id, targetWord);
         return game;
     }
 
@@ -76,6 +80,7 @@ class MockApiClient {
         await this.delay();
         this.games.delete(gameId);
         this.guesses.delete(gameId);
+        this.targetWords.delete(gameId);
         return { message: 'Game deleted' };
     }
 
@@ -83,11 +88,14 @@ class MockApiClient {
     async createGuess(gameId, guess) {
         await this.delay();
         const gameGuesses = this.guesses.get(gameId) || [];
+        const targetWord = this.targetWords.get(gameId) || 'ocean';
+        const distance = calculateDistance(guess, targetWord);
+
         const newGuess = {
             id: this.nextGuessId++,
             game_id: gameId,
             guess_word: guess,
-            distance: Math.floor(Math.random() * 1000),
+            distance: distance,
             created_at: new Date().toISOString(),
         };
         gameGuesses.push(newGuess);
@@ -232,6 +240,7 @@ class MockApiClient {
         this.users.clear();
         this.games.clear();
         this.guesses.clear();
+        this.targetWords.clear();
         localStorage.removeItem('token');
         localStorage.removeItem('user');
     }

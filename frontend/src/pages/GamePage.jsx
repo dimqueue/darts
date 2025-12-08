@@ -80,8 +80,8 @@ export default function GamePage() {
         try {
             const result = await api.createGuess(gameId, validation.word);
 
-            // Check if won (distance === 0)
-            if (result.distance === 0) {
+            // Check if won (distance === 1)
+            if (result.distance === 1) {
                 setGameStatus('won');
             }
 
