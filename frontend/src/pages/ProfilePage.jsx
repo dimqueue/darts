@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react';
 import { User, Trophy, Target, Flame, TrendingUp, Save, Edit2 } from 'lucide-react';
 import api from '@/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import StatCard from '../components/ui/StatCard';
+import { ProfileSkeleton } from '../components/ui/Skeleton';
 
 export default function ProfilePage() {
     const { user, updateUser } = useAuth();
+    const { theme, darkMode } = useTheme();
     const [profile, setProfile] = useState(null);
     const [stats, setStats] = useState(null);
     const [languageStats, setLanguageStats] = useState([]);
@@ -38,7 +41,7 @@ export default function ProfilePage() {
             ]);
             setProfile(profileData);
             setStats(statsData);
-            setLanguageStats(langStatsData || []);
+            setLanguageStats(langStatsData?.data || langStatsData || []);
             setEditForm({
                 bio: profileData.bio || '',
                 country_code: profileData.country_code || '',
@@ -68,9 +71,7 @@ export default function ProfilePage() {
     if (loading) {
         return (
             <Layout>
-                <div className="flex items-center justify-center min-h-[60vh]">
-                    <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full" />
-                </div>
+                <ProfileSkeleton />
             </Layout>
         );
     }
@@ -86,16 +87,16 @@ export default function ProfilePage() {
                 <Card>
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="w-20 h-20 bg-gradient-purple rounded-full flex items-center justify-center">
+                            <div className={`w-20 h-20 ${theme.gradient} rounded-full flex items-center justify-center`}>
                                 <User className="w-10 h-10 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-800">
+                                <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                                     {profile?.name || user?.username}
                                 </h1>
-                                <p className="text-gray-500">@{profile?.username || user?.username}</p>
+                                <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>@{profile?.username || user?.username}</p>
                                 {profile?.country_code && (
-                                    <p className="text-sm text-gray-400 mt-1">
+                                    <p className={`text-sm mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                                         {profile.country_code}
                                     </p>
                                 )}
@@ -130,12 +131,16 @@ export default function ProfilePage() {
                         </div>
                     ) : (
                         profile?.bio && (
-                            <p className="mt-4 text-gray-600">{profile.bio}</p>
+                            <p className={`mt-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{profile.bio}</p>
                         )
                     )}
 
                     {error && (
-                        <div className="mt-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm">
+                        <div className={`mt-4 p-3 rounded-xl text-sm ${
+                            darkMode
+                                ? 'bg-red-900/30 text-red-400 border border-red-800'
+                                : 'bg-red-50 text-red-600'
+                        }`}>
                             {error}
                         </div>
                     )}
@@ -167,33 +172,33 @@ export default function ProfilePage() {
 
                 {/* More Stats */}
                 <Card>
-                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Detailed Statistics</h2>
+                    <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Detailed Statistics</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div>
-                            <p className="text-sm text-gray-500">Current Streak</p>
-                            <p className="text-xl font-bold text-gray-800">{stats?.current_win_streak || 0}</p>
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Current Streak</p>
+                            <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{stats?.current_win_streak || 0}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500">Avg. Guesses</p>
-                            <p className="text-xl font-bold text-gray-800">{stats?.average_guesses?.toFixed(1) || '0.0'}</p>
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Avg. Guesses</p>
+                            <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{stats?.average_guesses?.toFixed(1) || '0.0'}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500">Total Score</p>
-                            <p className="text-xl font-bold text-gray-800">{stats?.total_score || 0}</p>
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Score</p>
+                            <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{stats?.total_score || 0}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500">Fastest Win</p>
-                            <p className="text-xl font-bold text-gray-800">
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Fastest Win</p>
+                            <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
                                 {stats?.fastest_win_seconds ? `${stats.fastest_win_seconds}s` : '-'}
                             </p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500">Fewest Guesses</p>
-                            <p className="text-xl font-bold text-gray-800">{stats?.fewest_guesses_win || '-'}</p>
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Fewest Guesses</p>
+                            <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{stats?.fewest_guesses_win || '-'}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500">Total Guesses</p>
-                            <p className="text-xl font-bold text-gray-800">{stats?.total_guesses || 0}</p>
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Guesses</p>
+                            <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{stats?.total_guesses || 0}</p>
                         </div>
                     </div>
                 </Card>
@@ -201,27 +206,29 @@ export default function ProfilePage() {
                 {/* Language Stats */}
                 {languageStats.length > 0 && (
                     <Card>
-                        <h2 className="text-lg font-semibold text-gray-800 mb-4">Stats by Language</h2>
+                        <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}>Stats by Language</h2>
                         <div className="space-y-3">
                             {languageStats.map((lang) => (
                                 <div
                                     key={lang.language}
-                                    className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
+                                    className={`flex items-center justify-between p-3 rounded-xl ${
+                                        darkMode ? 'bg-gray-700/50' : 'bg-gray-50'
+                                    }`}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <span className="font-medium text-gray-700 uppercase">
+                                        <span className={`font-medium uppercase ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
                                             {lang.language}
                                         </span>
                                     </div>
                                     <div className="flex gap-6 text-sm">
-                                        <span className="text-gray-500">
-                                            Games: <span className="font-semibold text-gray-700">{lang.games_played}</span>
+                                        <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>
+                                            Games: <span className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{lang.games_played}</span>
                                         </span>
-                                        <span className="text-gray-500">
-                                            Won: <span className="font-semibold text-green-600">{lang.games_won}</span>
+                                        <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>
+                                            Won: <span className={`font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{lang.games_won}</span>
                                         </span>
-                                        <span className="text-gray-500">
-                                            Avg: <span className="font-semibold text-gray-700">{lang.average_guesses?.toFixed(1)}</span>
+                                        <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>
+                                            Avg: <span className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{lang.average_guesses?.toFixed(1)}</span>
                                         </span>
                                     </div>
                                 </div>

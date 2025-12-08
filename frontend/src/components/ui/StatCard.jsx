@@ -1,10 +1,14 @@
 import { useTheme } from '../../contexts/ThemeContext';
 
 export default function StatCard({ label, value, icon: Icon }) {
-    const { theme } = useTheme();
+    const { theme, darkMode } = useTheme();
 
     return (
-        <div className="bg-white rounded-xl p-4 shadow-card border border-gray-100">
+        <div className={`rounded-xl p-4 shadow-card border transition-colors duration-300 ${
+            darkMode
+                ? 'bg-gray-800 border-gray-700'
+                : 'bg-white border-gray-100'
+        }`}>
             <div className="flex items-center gap-3">
                 {Icon && (
                     <div className={`p-2 rounded-lg ${theme.gradient}`}>
@@ -12,8 +16,8 @@ export default function StatCard({ label, value, icon: Icon }) {
                     </div>
                 )}
                 <div>
-                    <p className="text-sm text-gray-500">{label}</p>
-                    <p className="text-xl font-bold text-gray-800">{value}</p>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{label}</p>
+                    <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{value}</p>
                 </div>
             </div>
         </div>

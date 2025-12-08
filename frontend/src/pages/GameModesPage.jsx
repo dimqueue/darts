@@ -43,7 +43,7 @@ const GAME_MODES = [
 ];
 
 export default function GameModesPage() {
-    const { theme } = useTheme();
+    const { theme, darkMode } = useTheme();
     const navigate = useNavigate();
 
     const handleModeSelect = (mode) => {
@@ -55,7 +55,7 @@ export default function GameModesPage() {
     return (
         <Layout>
             <div className="max-w-2xl mx-auto">
-                <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">Game Modes</h1>
+                <h1 className={`text-2xl font-bold mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>Game Modes</h1>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {GAME_MODES.map((mode) => {
@@ -65,14 +65,20 @@ export default function GameModesPage() {
                                 key={mode.id}
                                 onClick={() => handleModeSelect(mode)}
                                 disabled={!mode.available}
-                                className={`group relative p-5 bg-white rounded-2xl text-left transition-all overflow-hidden ${
+                                className={`group relative p-5 rounded-2xl text-left transition-all duration-300 overflow-hidden border ${
+                                    darkMode
+                                        ? 'bg-gray-800/80 border-gray-700 shadow-lg shadow-black/20'
+                                        : 'bg-white border-gray-100 shadow-card'
+                                } ${
                                     mode.available
-                                        ? 'hover:shadow-xl hover:-translate-y-1 cursor-pointer'
+                                        ? darkMode
+                                            ? 'hover:bg-gray-800 hover:border-gray-600 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30 cursor-pointer'
+                                            : 'hover:shadow-xl hover:-translate-y-1 cursor-pointer'
                                         : 'opacity-50'
                                 }`}
                             >
                                 {/* Background decoration */}
-                                <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full bg-gradient-to-br ${mode.gradient} opacity-10`} />
+                                <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full bg-gradient-to-br ${mode.gradient} ${darkMode ? 'opacity-20' : 'opacity-10'}`} />
 
                                 {/* Icon */}
                                 <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br ${mode.gradient} text-white shadow-lg`}>
@@ -80,8 +86,8 @@ export default function GameModesPage() {
                                 </div>
 
                                 {/* Content */}
-                                <h3 className="font-bold text-gray-800 mb-1">{mode.name}</h3>
-                                <p className="text-sm text-gray-500 leading-relaxed">{mode.description}</p>
+                                <h3 className={`font-bold mb-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{mode.name}</h3>
+                                <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{mode.description}</p>
 
                                 {/* Footer */}
                                 <div className="mt-4 flex items-center justify-between">
@@ -91,7 +97,7 @@ export default function GameModesPage() {
                                             Play now
                                         </span>
                                     ) : (
-                                        <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${darkMode ? 'text-gray-500 bg-gray-700' : 'text-gray-400 bg-gray-100'}`}>
                                             Coming soon
                                         </span>
                                     )}

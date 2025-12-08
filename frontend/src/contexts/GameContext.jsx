@@ -1,44 +1,67 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useAuth } from './AuthContext';
 
 const GameContext = createContext(null);
 
-const STORAGE_KEY = 'darts_game_state';
+const STORAGE_KEY_PREFIX = 'darts_game_cache_';
+
+function getStorageKey(userId) {
+    return userId ? `${STORAGE_KEY_PREFIX}${userId}` : null;
+}
 
 export function GameProvider({ children }) {
-    const [gameState, setGameState] = useState(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            try {
-                return JSON.parse(saved);
-            } catch {
-                localStorage.removeItem(STORAGE_KEY);
-            }
-        }
-        return null;
-    });
+    const { user } = useAuth();
+    const userId = user?.id;
+
+    const [gameState, setGameState] = useState(null);
 
     useEffect(() => {
-        if (gameState) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
-        } else {
-            localStorage.removeItem(STORAGE_KEY);
+        const storageKey = getStorageKey(userId);
+        if (!storageKey) {
+            setGameState(null);
+            return;
         }
-    }, [gameState]);
 
-    const saveGame = (state) => {
-        setGameState({
+        const cached = localStorage.getItem(storageKey);
+        if (cached) {
+            try {
+                setGameState(JSON.parse(cached));
+            } catch {
+                localStorage.removeItem(storageKey);
+            }
+        } else {
+            setGameState(null);
+        }
+    }, [userId]);
+
+    const saveGame = useCallback((state) => {
+        const storageKey = getStorageKey(userId);
+        const newState = {
             ...state,
             savedAt: new Date().toISOString(),
-        });
-    };
+        };
+        setGameState(newState);
 
-    const clearGame = () => {
+        if (storageKey) {
+            localStorage.setItem(storageKey, JSON.stringify(newState));
+        }
+    }, [userId]);
+
+    const clearGame = useCallback(() => {
         setGameState(null);
-    };
+        const storageKey = getStorageKey(userId);
+        if (storageKey) {
+            localStorage.removeItem(storageKey);
+        }
+    }, [userId]);
 
-    const hasActiveGame = () => {
+    const hasActiveGame = useCallback(() => {
         return gameState !== null && gameState.status === 'in_progress';
-    };
+    }, [gameState]);
+
+    const getCachedGameId = useCallback(() => {
+        return gameState?.gameId || null;
+    }, [gameState]);
 
     return (
         <GameContext.Provider value={{
@@ -46,6 +69,7 @@ export function GameProvider({ children }) {
             saveGame,
             clearGame,
             hasActiveGame,
+            getCachedGameId,
         }}>
             {children}
         </GameContext.Provider>

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Settings, Palette, Globe, Bell, Eye, Save } from 'lucide-react';
+import { Settings, Palette, Globe, Bell, Eye, Save, Moon, Sun, ChevronDown } from 'lucide-react';
 import api from '@/api';
 import { useTheme, THEMES } from '../contexts/ThemeContext';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import { SettingsSkeleton } from '../components/ui/Skeleton';
 
 const LANGUAGES = [
     { code: 'en', name: 'English' },
@@ -12,10 +13,10 @@ const LANGUAGES = [
 ];
 
 export default function SettingsPage() {
-    const { themeName, setTheme, theme } = useTheme();
+    const { themeName, setTheme, theme, darkMode, setDarkMode } = useTheme();
     const [settings, setSettings] = useState({
         preferred_language: 'en',
-        theme: 'purple',
+        theme: themeName,
         sound_enabled: true,
         email_notifications: true,
         show_profile_public: true,
@@ -27,6 +28,10 @@ export default function SettingsPage() {
     const [success, setSuccess] = useState('');
 
     useEffect(() => {
+        setSettings(prev => ({ ...prev, theme: themeName }));
+    }, [themeName]);
+
+    useEffect(() => {
         loadSettings();
     }, []);
 
@@ -34,10 +39,7 @@ export default function SettingsPage() {
         setLoading(true);
         try {
             const data = await api.getMySettings();
-            setSettings(data);
-            if (data.theme && THEMES[data.theme]) {
-                setTheme(data.theme);
-            }
+            setSettings(prev => ({ ...prev, ...data, theme: themeName }));
         } catch (err) {
             setError('Failed to load settings: ' + err.message);
         } finally {
@@ -63,6 +65,9 @@ export default function SettingsPage() {
 
     const handleChange = (key, value) => {
         setSettings({ ...settings, [key]: value });
+        if (key === 'theme') {
+            setTheme(value);
+        }
     };
 
     const themeColors = {
@@ -74,9 +79,7 @@ export default function SettingsPage() {
     if (loading) {
         return (
             <Layout>
-                <div className="flex items-center justify-center min-h-[60vh]">
-                    <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full" />
-                </div>
+                <SettingsSkeleton />
             </Layout>
         );
     }
@@ -87,66 +90,116 @@ export default function SettingsPage() {
                 {/* Header */}
                 <Card>
                     <div className="flex items-center gap-3">
-                        <Settings className={`w-8 h-8 ${theme.textColor}`} />
+                        <Settings className={`w-8 h-8 ${darkMode ? theme.textColorDark : theme.textColor}`} />
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-800">Settings</h1>
-                            <p className="text-sm text-gray-500">Customize your experience</p>
+                            <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Settings</h1>
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Customize your experience</p>
                         </div>
+                    </div>
+                </Card>
+
+                {/* Dark Mode */}
+                <Card>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            {darkMode ? (
+                                <Moon className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`} />
+                            ) : (
+                                <Sun className={`w-5 h-5 ${theme.textColor}`} />
+                            )}
+                            <div>
+                                <h2 className="font-semibold">Dark Mode</h2>
+                                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    {darkMode ? 'Currently using dark theme' : 'Currently using light theme'}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setDarkMode(!darkMode)}
+                            className={`relative w-14 h-8 rounded-full transition-colors duration-300 ${
+                                darkMode ? theme.gradient : 'bg-gray-300'
+                            }`}
+                            role="switch"
+                            aria-checked={darkMode}
+                        >
+                            <span
+                                className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 ease-in-out ${
+                                    darkMode ? 'translate-x-6' : 'translate-x-0'
+                                }`}
+                            />
+                        </button>
                     </div>
                 </Card>
 
                 {/* Theme Selection */}
                 <Card>
                     <div className="flex items-center gap-3 mb-4">
-                        <Palette className={`w-5 h-5 ${theme.textColor}`} />
-                        <h2 className="font-semibold text-gray-800">Theme</h2>
+                        <Palette className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`} />
+                        <h2 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Color Theme</h2>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
-                        {Object.keys(THEMES).map((name) => (
-                            <button
-                                key={name}
-                                onClick={() => handleChange('theme', name)}
-                                className={`p-4 rounded-xl border-2 transition-all ${
-                                    settings.theme === name
-                                        ? `${theme.borderColor} ring-2 ring-offset-2 ring-purple-200`
-                                        : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                            >
-                                <div className={`h-12 rounded-lg mb-2 ${themeColors[name]}`} />
-                                <p className="font-medium text-gray-700 capitalize">{name}</p>
-                            </button>
-                        ))}
+                        {Object.keys(THEMES).map((name) => {
+                            const isSelected = settings.theme === name;
+                            const selectedTheme = THEMES[name];
+                            return (
+                                <button
+                                    key={name}
+                                    onClick={() => handleChange('theme', name)}
+                                    className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                                        isSelected
+                                            ? `${selectedTheme.borderColor} ring-2 ring-offset-2 ${darkMode ? 'ring-offset-gray-800' : 'ring-offset-white'} ${
+                                                name === 'purple' ? 'ring-violet-300' :
+                                                name === 'blue' ? 'ring-blue-300' :
+                                                'ring-emerald-300'
+                                            }`
+                                            : darkMode
+                                                ? 'border-gray-600 hover:border-gray-500'
+                                                : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                >
+                                    <div className={`h-12 rounded-lg mb-2 ${themeColors[name]}`} />
+                                    <p className={`font-medium capitalize ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{name}</p>
+                                </button>
+                            );
+                        })}
                     </div>
                 </Card>
 
                 {/* Language */}
                 <Card>
                     <div className="flex items-center gap-3 mb-4">
-                        <Globe className={`w-5 h-5 ${theme.textColor}`} />
-                        <h2 className="font-semibold text-gray-800">Preferred Language</h2>
+                        <Globe className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`} />
+                        <h2 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Preferred Language</h2>
                     </div>
-                    <select
-                        value={settings.preferred_language}
-                        onChange={(e) => handleChange('preferred_language', e.target.value)}
-                        className={`w-full px-4 py-3 border-2 rounded-xl ${theme.focusBorder} focus:outline-none`}
-                    >
-                        {LANGUAGES.map((lang) => (
-                            <option key={lang.code} value={lang.code}>
-                                {lang.name}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="relative">
+                        <select
+                            value={settings.preferred_language}
+                            onChange={(e) => handleChange('preferred_language', e.target.value)}
+                            className={`w-full px-4 py-3 pr-10 border-2 rounded-xl ${theme.focusBorder} focus:outline-none appearance-none cursor-pointer transition-colors ${
+                                darkMode
+                                    ? 'bg-gray-700 text-white border-gray-600 [&>option]:bg-gray-700 [&>option:checked]:bg-violet-600 [&>option:hover]:bg-violet-500'
+                                    : 'bg-white text-gray-800 border-gray-200 [&>option]:bg-white [&>option:checked]:bg-violet-100 [&>option:hover]:bg-gray-100'
+                            }`}
+                        >
+                            {LANGUAGES.map((lang) => (
+                                <option key={lang.code} value={lang.code}>
+                                    {lang.name}
+                                </option>
+                            ))}
+                        </select>
+                        <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                    </div>
                 </Card>
 
                 {/* Notifications */}
                 <Card>
                     <div className="flex items-center gap-3 mb-4">
-                        <Bell className={`w-5 h-5 ${theme.textColor}`} />
-                        <h2 className="font-semibold text-gray-800">Notifications</h2>
+                        <Bell className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`} />
+                        <h2 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Notifications</h2>
                     </div>
                     <div className="space-y-4">
                         <label className="flex items-center justify-between cursor-pointer">
-                            <span className="text-gray-700">Sound Effects</span>
+                            <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>Sound Effects</span>
                             <input
                                 type="checkbox"
                                 checked={settings.sound_enabled}
@@ -155,7 +208,7 @@ export default function SettingsPage() {
                             />
                         </label>
                         <label className="flex items-center justify-between cursor-pointer">
-                            <span className="text-gray-700">Email Notifications</span>
+                            <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>Email Notifications</span>
                             <input
                                 type="checkbox"
                                 checked={settings.email_notifications}
@@ -169,14 +222,14 @@ export default function SettingsPage() {
                 {/* Privacy */}
                 <Card>
                     <div className="flex items-center gap-3 mb-4">
-                        <Eye className={`w-5 h-5 ${theme.textColor}`} />
-                        <h2 className="font-semibold text-gray-800">Privacy</h2>
+                        <Eye className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`} />
+                        <h2 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Privacy</h2>
                     </div>
                     <div className="space-y-4">
                         <label className="flex items-center justify-between cursor-pointer">
                             <div>
-                                <span className="text-gray-700">Public Profile</span>
-                                <p className="text-sm text-gray-500">Allow others to see your profile</p>
+                                <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>Public Profile</span>
+                                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Allow others to see your profile</p>
                             </div>
                             <input
                                 type="checkbox"
@@ -187,8 +240,8 @@ export default function SettingsPage() {
                         </label>
                         <label className="flex items-center justify-between cursor-pointer">
                             <div>
-                                <span className="text-gray-700">Show Statistics</span>
-                                <p className="text-sm text-gray-500">Display your stats on leaderboards</p>
+                                <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>Show Statistics</span>
+                                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Display your stats on leaderboards</p>
                             </div>
                             <input
                                 type="checkbox"
@@ -202,12 +255,20 @@ export default function SettingsPage() {
 
                 {/* Messages */}
                 {error && (
-                    <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl">
+                    <div className={`p-4 rounded-xl border ${
+                        darkMode
+                            ? 'bg-red-900/30 border-red-800 text-red-400'
+                            : 'bg-red-50 border-red-200 text-red-600'
+                    }`}>
                         {error}
                     </div>
                 )}
                 {success && (
-                    <div className="p-4 bg-green-50 border border-green-200 text-green-600 rounded-xl">
+                    <div className={`p-4 rounded-xl border ${
+                        darkMode
+                            ? 'bg-green-900/30 border-green-800 text-green-400'
+                            : 'bg-green-50 border-green-200 text-green-600'
+                    }`}>
                         {success}
                     </div>
                 )}
