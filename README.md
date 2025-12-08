@@ -78,7 +78,7 @@ A full-stack word similarity guessing game inspired by [Contexto](https://contex
 ## Architecture
 
 ```
-+-------------+      HTTP       +-------------+      gRPC       +-------------+
++-------------+      HTTP      +-------------+      gRPC      +-------------+
 |  Frontend   |<-------------->|   Backend   |<-------------->|   Compute   |
 |   (React)   |     :3000      |    (Go)     |    :50051      |  (Python)   |
 +-------------+                +------+------+                +-------------+
