@@ -1,6 +1,7 @@
+import { forwardRef } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 
-export default function Input({
+const Input = forwardRef(function Input({
     label,
     type = 'text',
     value,
@@ -10,7 +11,7 @@ export default function Input({
     disabled = false,
     error,
     className = '',
-}) {
+}, ref) {
     const { theme } = useTheme();
 
     return (
@@ -21,6 +22,7 @@ export default function Input({
                 </label>
             )}
             <input
+                ref={ref}
                 type={type}
                 value={value}
                 onChange={onChange}
@@ -40,4 +42,6 @@ export default function Input({
             )}
         </div>
     );
-}
+});
+
+export default Input;

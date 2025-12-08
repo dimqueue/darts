@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, Trophy, RotateCcw, Globe } from 'lucide-react';
 import api from '@/api';
 import { useTheme } from '../contexts/ThemeContext';
+import { useGame } from '../contexts/GameContext';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -22,13 +23,31 @@ export default function GamePage() {
     const [language, setLanguage] = useState('en');
     const [gameStatus, setGameStatus] = useState('in_progress');
     const initializedRef = useRef(false);
+    const inputRef = useRef(null);
 
     const { theme } = useTheme();
+    const { gameState, saveGame, clearGame } = useGame();
+
+    useEffect(() => {
+        if (gameId && !initializing) {
+            saveGame({ gameId, guesses, language, status: gameStatus });
+        }
+    }, [gameId, guesses, language, gameStatus, initializing]);
 
     useEffect(() => {
         if (initializedRef.current) return;
         initializedRef.current = true;
-        startNewGame();
+
+        if (gameState && gameState.status === 'in_progress') {
+            setGameId(gameState.gameId);
+            setGuesses(gameState.guesses || []);
+            setLanguage(gameState.language || 'en');
+            setGameStatus(gameState.status);
+            setInitializing(false);
+            setTimeout(() => inputRef.current?.focus(), 100);
+        } else {
+            startNewGame();
+        }
     }, []);
 
     const startNewGame = async (lang = language) => {
@@ -44,6 +63,7 @@ export default function GamePage() {
             setError('Failed to start game: ' + err.message);
         } finally {
             setInitializing(false);
+            setTimeout(() => inputRef.current?.focus(), 100);
         }
     };
 
@@ -74,13 +94,25 @@ export default function GamePage() {
             return;
         }
 
+        const alreadyGuessed = guesses.some(
+            (g) => g.guess_word.toLowerCase() === validation.word.toLowerCase()
+        );
+        if (alreadyGuessed) {
+            setError('You already guessed this word');
+            return;
+        }
+
         setLoading(true);
         setError('');
 
         try {
             const result = await api.createGuess(gameId, validation.word);
 
-            // Check if won (distance === 1)
+            if (result.distance === 0) {
+                setError('Word not found in vocabulary');
+                return;
+            }
+
             if (result.distance === 1) {
                 setGameStatus('won');
             }
@@ -92,6 +124,7 @@ export default function GamePage() {
             setError(err.message);
         } finally {
             setLoading(false);
+            setTimeout(() => inputRef.current?.focus(), 50);
         }
     };
 
@@ -102,7 +135,7 @@ export default function GamePage() {
     };
 
     const getDistanceColor = (distance) => {
-        if (distance === 0) return 'bg-green-500 text-white';
+        if (distance === 1) return 'bg-green-500 text-white';
         if (distance < 100) return 'bg-green-100 text-green-800';
         if (distance < 500) return 'bg-yellow-100 text-yellow-800';
         if (distance < 1000) return 'bg-orange-100 text-orange-800';
@@ -155,7 +188,7 @@ export default function GamePage() {
                     <Card className={`${theme.gradient} text-white text-center`}>
                         <Trophy className="w-12 h-12 mx-auto mb-2" />
                         <h2 className="text-2xl font-bold mb-1">Congratulations!</h2>
-                        <p className="text-lg opacity-90">You found the word in {guesses.length} guesses!</p>
+                        <p className="text-lg opacity-90">You found the word in {guesses.filter((g) => g.distance > 0).length} guesses!</p>
                     </Card>
                 )}
 
@@ -163,6 +196,7 @@ export default function GamePage() {
                 <Card>
                     <div className="flex gap-3">
                         <Input
+                            ref={inputRef}
                             value={inputWord}
                             onChange={(e) => setInputWord(e.target.value)}
                             onKeyPress={handleKeyPress}
@@ -191,7 +225,7 @@ export default function GamePage() {
                 <Card>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="font-semibold text-gray-700">
-                            Your Guesses ({guesses.length})
+                            Your Guesses ({guesses.filter((g) => g.distance > 0).length})
                         </h3>
                         <Button
                             onClick={() => startNewGame(language)}
@@ -203,7 +237,7 @@ export default function GamePage() {
                         </Button>
                     </div>
 
-                    {guesses.length === 0 ? (
+                    {guesses.filter((g) => g.distance > 0).length === 0 ? (
                         <div className="text-center py-12 text-gray-400">
                             <p>Make your first guess!</p>
                             <p className="text-sm mt-1">The closer to 0, the closer you are</p>
@@ -211,6 +245,7 @@ export default function GamePage() {
                     ) : (
                         <div className="space-y-2">
                             {guesses
+                                .filter((g) => g.distance > 0)
                                 .slice()
                                 .sort((a, b) => a.distance - b.distance)
                                 .map((guess, index) => (
@@ -220,7 +255,7 @@ export default function GamePage() {
                                     >
                                         <span className="font-medium">{guess.guess_word}</span>
                                         <span className="font-bold">
-                                            {guess.distance === 0 ? 'FOUND!' : guess.distance}
+                                            {guess.distance === 1 ? 'FOUND!' : guess.distance}
                                         </span>
                                     </div>
                                 ))}

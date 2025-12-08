@@ -1,34 +1,50 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
 import Navbar from './Navbar';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import config from '../../config/env';
 import { mockWords } from '../../api/mockData';
 
+const DEMO_DISMISSED_KEY = 'demo_toast_dismissed';
+
 function DemoToast() {
     const [visible, setVisible] = useState(false);
+    const { user } = useAuth();
+    const location = useLocation();
+
+    const isGamePage = location.pathname === '/game';
 
     useEffect(() => {
-        if (!config.useMockApi) return;
+        if (!config.useMockApi || !user || !isGamePage) {
+            setVisible(false);
+            return;
+        }
 
-        const showTimer = setTimeout(() => setVisible(true), 500);
+        const dismissed = localStorage.getItem(DEMO_DISMISSED_KEY);
+        if (dismissed) {
+            setVisible(false);
+            return;
+        }
 
-        const hideTimer = setTimeout(() => setVisible(false), 10500);
+        const timer = setTimeout(() => setVisible(true), 500);
+        return () => clearTimeout(timer);
+    }, [user, isGamePage]);
 
-        return () => {
-            clearTimeout(showTimer);
-            clearTimeout(hideTimer);
-        };
-    }, []);
+    const handleClose = () => {
+        setVisible(false);
+        localStorage.setItem(DEMO_DISMISSED_KEY, 'true');
+    };
 
-    if (!config.useMockApi || !visible) return null;
+    if (!config.useMockApi || !visible || !user || !isGamePage) return null;
 
     return (
         <div className="fixed bottom-4 right-4 z-50 max-w-sm bg-white rounded-xl shadow-2xl border border-amber-200 overflow-hidden animate-slide-up">
             <div className="bg-amber-500 px-4 py-2 flex items-center justify-between">
                 <span className="text-white font-semibold text-sm">Demo Mode</span>
                 <button
-                    onClick={() => setVisible(false)}
+                    onClick={handleClose}
                     className="text-white/80 hover:text-white"
                 >
                     <X className="w-4 h-4" />

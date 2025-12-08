@@ -1,9 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { GameProvider } from './contexts/GameContext';
 
 import AuthPage from './pages/AuthPage';
 import GamePage from './pages/GamePage';
+import GameModesPage from './pages/GameModesPage';
 import ProfilePage from './pages/ProfilePage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import SettingsPage from './pages/SettingsPage';
@@ -65,6 +67,14 @@ function AppRoutes() {
                 }
             />
             <Route
+                path="/modes"
+                element={
+                    <ProtectedRoute>
+                        <GameModesPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
                 path="/profile"
                 element={
                     <ProtectedRoute>
@@ -100,7 +110,9 @@ export default function App() {
         <BrowserRouter basename={import.meta.env.BASE_URL}>
             <AuthProvider>
                 <ThemeProvider>
-                    <AppRoutes />
+                    <GameProvider>
+                        <AppRoutes />
+                    </GameProvider>
                 </ThemeProvider>
             </AuthProvider>
         </BrowserRouter>

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Trophy, User, BarChart3, Settings, LogOut, Palette } from 'lucide-react';
+import { Trophy, User, BarChart3, Settings, LogOut, Palette, Gamepad2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme, THEMES } from '../../contexts/ThemeContext';
 import { useState, useRef, useEffect } from 'react';
@@ -26,7 +26,8 @@ export default function Navbar() {
     }, []);
 
     const navLinks = [
-        { to: '/game', label: 'Game', icon: Trophy },
+        { to: '/game', label: 'Play', icon: Trophy },
+        { to: '/modes', label: 'Modes', icon: Gamepad2 },
         { to: '/leaderboard', label: 'Leaderboard', icon: BarChart3 },
     ];
 
