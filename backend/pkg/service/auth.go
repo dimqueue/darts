@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dimqueue/darts/pkg/config"
+	"github.com/dimqueue/darts/pkg/logger"
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
 	"github.com/golang-jwt/jwt"
@@ -38,16 +40,19 @@ func NewAuthService(repo repository.Authorization, profileRepo repository.Profil
 	}
 }
 
-func (s *AuthService) CreateUser(user model.User) (int64, error) {
+func (s *AuthService) CreateUser(ctx context.Context, user model.User) (int64, error) {
+	log := logger.WithContext(ctx).WithField("username", user.Username)
+
 	var err error
 	user.Password, err = s.generatePasswordHash(user.Password)
 	if err != nil {
+		log.WithError(err).Error("failed to hash password")
 		return 0, fmt.Errorf("failed to create user: %w", err)
 	}
 	var userId int64
 
-	err = s.txManager.WithTransaction(func(tx *sqlx.Tx) error {
-		id, err := s.repo.CreateUser(tx, user)
+	err = s.txManager.WithTransaction(ctx, func(tx *sqlx.Tx) error {
+		id, err := s.repo.CreateUser(ctx, tx, user)
 		if err != nil {
 			return fmt.Errorf("failed to create user: %w", err)
 		}
@@ -57,15 +62,15 @@ func (s *AuthService) CreateUser(user model.User) (int64, error) {
 			UserId:   userId,
 			Timezone: "UTC",
 		}
-		if err := s.profileRepo.CreateProfile(tx, profile); err != nil {
+		if err := s.profileRepo.CreateProfile(ctx, tx, profile); err != nil {
 			return fmt.Errorf("failed to create profile: %w", err)
 		}
 
-		if err := s.profileRepo.CreateSettings(tx, userId); err != nil {
+		if err := s.profileRepo.CreateSettings(ctx, tx, userId); err != nil {
 			return fmt.Errorf("failed to create settings: %w", err)
 		}
 
-		if err := s.statsService.InitializeStats(tx, userId); err != nil {
+		if err := s.statsService.InitializeStats(ctx, tx, userId); err != nil {
 			return fmt.Errorf("failed to create statistics: %w", err)
 		}
 
@@ -73,9 +78,11 @@ func (s *AuthService) CreateUser(user model.User) (int64, error) {
 	})
 
 	if err != nil {
+		log.WithError(err).Error("failed to create user")
 		return 0, err
 	}
 
+	log.WithField("user_id", userId).Info("user created")
 	return userId, nil
 }
 
@@ -162,17 +169,22 @@ func (s *AuthService) parseArgon2Hash(encodedHash string) (*Argon2Configuration,
 	return cfg, nil
 }
 
-func (s *AuthService) GenerateToken(username, password string) (string, error) {
-	user, err := s.repo.GetUserByUsername(username)
+func (s *AuthService) GenerateToken(ctx context.Context, username, password string) (string, error) {
+	log := logger.WithContext(ctx).WithField("username", username)
+
+	user, err := s.repo.GetUserByUsername(ctx, username)
 	if err != nil {
+		log.Warn("login attempt for non-existent user")
 		return "", errors.New("invalid credentials")
 	}
 
 	res, err := s.verifyPasswordSecure(user.Password, password)
 	if err != nil {
+		log.WithError(err).Error("password verification failed")
 		return "", fmt.Errorf("failed to verify password: %w", err)
 	}
 	if !res {
+		log.Warn("login attempt with invalid password")
 		return "", errors.New("invalid credentials")
 	}
 
@@ -183,7 +195,15 @@ func (s *AuthService) GenerateToken(username, password string) (string, error) {
 		},
 		user.Id,
 	})
-	return token.SignedString([]byte(config.JWTSecret))
+
+	signedToken, err := token.SignedString([]byte(config.JWTSecret))
+	if err != nil {
+		log.WithError(err).Error("failed to sign token")
+		return "", err
+	}
+
+	log.WithField("user_id", user.Id).Info("user logged in")
+	return signedToken, nil
 }
 
 func (s *AuthService) verifyPasswordSecure(storedHash, providedPassword string) (bool, error) {

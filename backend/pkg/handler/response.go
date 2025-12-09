@@ -1,13 +1,14 @@
 package handler
 
 import (
+	"github.com/dimqueue/darts/pkg/logger"
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
 type errorResponse struct {
-	Code    string `json:"code,omitempty"`
-	Message string `json:"message"`
+	Code      string `json:"code,omitempty"`
+	Message   string `json:"message"`
+	RequestID string `json:"request_id,omitempty"`
 }
 
 type successResponse struct {
@@ -27,8 +28,14 @@ type statusResponse struct {
 }
 
 func newErrorResponse(c *gin.Context, statusCode int, message string) {
-	logrus.Error(message)
-	c.AbortWithStatusJSON(statusCode, errorResponse{Message: message})
+	requestID := GetRequestID(c)
+
+	logger.WithContext(c.Request.Context()).WithField("status_code", statusCode).Error(message)
+
+	c.AbortWithStatusJSON(statusCode, errorResponse{
+		Message:   message,
+		RequestID: requestID,
+	})
 }
 
 func newSuccessResponse(c *gin.Context, statusCode int, data interface{}) {

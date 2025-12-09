@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/dimqueue/darts/pkg/model"
@@ -17,8 +18,8 @@ func NewWordService(repo repository.Word) *WordService {
 	}
 }
 
-func (s *WordService) SelectWord(language string) (*model.Word, error) {
-	word, err := s.repo.GetRandomWordByLanguage(language)
+func (s *WordService) SelectWord(ctx context.Context, language string) (*model.Word, error) {
+	word, err := s.repo.GetRandomWordByLanguage(ctx, language)
 	if err != nil {
 		return nil, fmt.Errorf("failed to select random word: %w", err)
 	}
@@ -26,8 +27,8 @@ func (s *WordService) SelectWord(language string) (*model.Word, error) {
 	return word, nil
 }
 
-func (s *WordService) GetWordById(wordId int64) (*model.Word, error) {
-	return s.repo.GetWordById(wordId)
+func (s *WordService) GetWordById(ctx context.Context, wordId int64) (*model.Word, error) {
+	return s.repo.GetWordById(ctx, wordId)
 }
 
 // - SelectRandomWord(language string, difficulty string) - select by difficulty

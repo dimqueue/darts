@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -16,7 +17,7 @@ func NewProfilePostgres(db *sqlx.DB) *ProfilePostgres {
 	return &ProfilePostgres{db: db}
 }
 
-func (r *ProfilePostgres) GetProfile(userId int64) (*model.UserProfile, error) {
+func (r *ProfilePostgres) GetProfile(ctx context.Context, userId int64) (*model.UserProfile, error) {
 	var profile model.UserProfile
 
 	query := fmt.Sprintf(`
@@ -25,7 +26,7 @@ func (r *ProfilePostgres) GetProfile(userId int64) (*model.UserProfile, error) {
 		WHERE user_id = $1
 	`, profilesTable)
 
-	err := r.db.Get(&profile, query, userId)
+	err := r.db.GetContext(ctx, &profile, query, userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("profile not found")
@@ -36,13 +37,13 @@ func (r *ProfilePostgres) GetProfile(userId int64) (*model.UserProfile, error) {
 	return &profile, nil
 }
 
-func (r *ProfilePostgres) CreateProfile(q Querier, profile *model.UserProfile) error {
+func (r *ProfilePostgres) CreateProfile(ctx context.Context, q Querier, profile *model.UserProfile) error {
 	query := fmt.Sprintf(`
 		INSERT INTO %s (user_id, avatar_url, bio, country_code, timezone, date_of_birth)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`, profilesTable)
 
-	_, err := q.Exec(query,
+	_, err := q.ExecContext(ctx, query,
 		profile.UserId,
 		profile.AvatarURL,
 		profile.Bio,
@@ -54,7 +55,7 @@ func (r *ProfilePostgres) CreateProfile(q Querier, profile *model.UserProfile) e
 	return err
 }
 
-func (r *ProfilePostgres) UpdateProfile(userId int64, input model.UpdateProfileInput) error {
+func (r *ProfilePostgres) UpdateProfile(ctx context.Context, userId int64, input model.UpdateProfileInput) error {
 	query := fmt.Sprintf(`
 		UPDATE %s
 		SET avatar_url = COALESCE($2, avatar_url),
@@ -64,7 +65,7 @@ func (r *ProfilePostgres) UpdateProfile(userId int64, input model.UpdateProfileI
 		WHERE user_id = $1
 	`, profilesTable)
 
-	_, err := r.db.Exec(query,
+	_, err := r.db.ExecContext(ctx, query,
 		userId,
 		input.AvatarURL,
 		input.Bio,
@@ -75,7 +76,7 @@ func (r *ProfilePostgres) UpdateProfile(userId int64, input model.UpdateProfileI
 	return err
 }
 
-func (r *ProfilePostgres) GetSettings(userId int64) (*model.UserSettings, error) {
+func (r *ProfilePostgres) GetSettings(ctx context.Context, userId int64) (*model.UserSettings, error) {
 	var settings model.UserSettings
 
 	query := fmt.Sprintf(`
@@ -85,7 +86,7 @@ func (r *ProfilePostgres) GetSettings(userId int64) (*model.UserSettings, error)
 		WHERE user_id = $1
 	`, settingsTable)
 
-	err := r.db.Get(&settings, query, userId)
+	err := r.db.GetContext(ctx, &settings, query, userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("settings not found")
@@ -96,17 +97,17 @@ func (r *ProfilePostgres) GetSettings(userId int64) (*model.UserSettings, error)
 	return &settings, nil
 }
 
-func (r *ProfilePostgres) CreateSettings(q Querier, userId int64) error {
+func (r *ProfilePostgres) CreateSettings(ctx context.Context, q Querier, userId int64) error {
 	query := fmt.Sprintf(`
 		INSERT INTO %s (user_id)
 		VALUES ($1)
 	`, settingsTable)
 
-	_, err := q.Exec(query, userId)
+	_, err := q.ExecContext(ctx, query, userId)
 	return err
 }
 
-func (r *ProfilePostgres) UpdateSettings(userId int64, input model.UpdateSettingsInput) error {
+func (r *ProfilePostgres) UpdateSettings(ctx context.Context, userId int64, input model.UpdateSettingsInput) error {
 	query := fmt.Sprintf(`
 		UPDATE %s
 		SET preferred_language = COALESCE($2, preferred_language),
@@ -118,7 +119,7 @@ func (r *ProfilePostgres) UpdateSettings(userId int64, input model.UpdateSetting
 		WHERE user_id = $1
 	`, settingsTable)
 
-	_, err := r.db.Exec(query,
+	_, err := r.db.ExecContext(ctx, query,
 		userId,
 		input.PreferredLanguage,
 		input.Theme,
@@ -131,7 +132,7 @@ func (r *ProfilePostgres) UpdateSettings(userId int64, input model.UpdateSetting
 	return err
 }
 
-func (r *ProfilePostgres) GetProfileSummary(userId int64) (*model.UserProfileSummary, error) {
+func (r *ProfilePostgres) GetProfileSummary(ctx context.Context, userId int64) (*model.UserProfileSummary, error) {
 	var summary model.UserProfileSummary
 
 	query := fmt.Sprintf(`
@@ -144,7 +145,7 @@ func (r *ProfilePostgres) GetProfileSummary(userId int64) (*model.UserProfileSum
 		WHERE id = $1
 	`, userProfileSummaryView)
 
-	err := r.db.Get(&summary, query, userId)
+	err := r.db.GetContext(ctx, &summary, query, userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("user not found")
@@ -155,7 +156,7 @@ func (r *ProfilePostgres) GetProfileSummary(userId int64) (*model.UserProfileSum
 	return &summary, nil
 }
 
-func (r *ProfilePostgres) GetProfileByUsername(username string) (*model.UserProfileSummary, error) {
+func (r *ProfilePostgres) GetProfileByUsername(ctx context.Context, username string) (*model.UserProfileSummary, error) {
 	var summary model.UserProfileSummary
 
 	query := fmt.Sprintf(`
@@ -168,7 +169,7 @@ func (r *ProfilePostgres) GetProfileByUsername(username string) (*model.UserProf
 		WHERE username = $1
 	`, userProfileSummaryView)
 
-	err := r.db.Get(&summary, query, username)
+	err := r.db.GetContext(ctx, &summary, query, username)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("user not found")

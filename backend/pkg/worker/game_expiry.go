@@ -12,7 +12,7 @@ import (
 
 // StatsUpdater interface to avoid circular dependency with service package
 type StatsUpdater interface {
-	UpdateGameEndStats(q repository.Querier, update model.StatisticsUpdate) error
+	UpdateGameEndStats(ctx context.Context, q repository.Querier, update model.StatisticsUpdate) error
 }
 
 type GameExpiryWorker struct {
@@ -35,23 +35,23 @@ func (w *GameExpiryWorker) Start(ctx context.Context) {
 	ticker := time.NewTicker(w.interval)
 	defer ticker.Stop()
 
-	logrus.Infof("Game expiry worker started (interval: %s)", w.interval)
+	logrus.WithField("interval", w.interval.String()).Info("game expiry worker started")
 
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Info("Game expiry worker stopped")
+			logrus.Info("game expiry worker stopped")
 			return
 		case <-ticker.C:
-			w.expireGames()
+			w.expireGames(ctx)
 		}
 	}
 }
 
-func (w *GameExpiryWorker) expireGames() {
-	games, err := w.gameRepo.GetExpiredGames()
+func (w *GameExpiryWorker) expireGames(ctx context.Context) {
+	games, err := w.gameRepo.GetExpiredGames(ctx)
 	if err != nil {
-		logrus.Errorf("Failed to get expired games: %v", err)
+		logrus.WithError(err).Error("failed to get expired games")
 		return
 	}
 
@@ -59,24 +59,29 @@ func (w *GameExpiryWorker) expireGames() {
 		return
 	}
 
+	logrus.WithField("count", len(games)).Debug("found expired games")
+
 	expiredCount := 0
 	for _, game := range games {
-		err := w.expireGame(game)
+		err := w.expireGame(ctx, game)
 		if err != nil {
-			logrus.Errorf("Failed to expire game %d: %v", game.Id, err)
+			logrus.WithFields(logrus.Fields{
+				"game_id": game.Id,
+				"user_id": game.UserId,
+			}).WithError(err).Error("failed to expire game")
 			continue
 		}
 		expiredCount++
 	}
 
 	if expiredCount > 0 {
-		logrus.Infof("Expired %d games with statistics updated", expiredCount)
+		logrus.WithField("count", expiredCount).Info("expired games processed")
 	}
 }
 
-func (w *GameExpiryWorker) expireGame(game model.Game) error {
-	return w.txManager.WithTransaction(func(tx *sqlx.Tx) error {
-		lockedGame, err := w.gameRepo.GetGameById(tx, game.Id, true)
+func (w *GameExpiryWorker) expireGame(ctx context.Context, game model.Game) error {
+	return w.txManager.WithTransaction(ctx, func(tx *sqlx.Tx) error {
+		lockedGame, err := w.gameRepo.GetGameById(ctx, tx, game.Id, true)
 		if err != nil {
 			return err
 		}
@@ -85,11 +90,11 @@ func (w *GameExpiryWorker) expireGame(game model.Game) error {
 			return nil
 		}
 
-		if err := w.gameRepo.UpdateGameStatus(tx, game.Id, "lost"); err != nil {
+		if err := w.gameRepo.UpdateGameStatus(ctx, tx, game.Id, "lost"); err != nil {
 			return err
 		}
 
-		guessCount, err := w.gameRepo.CountGuessesByGame(tx, game.Id)
+		guessCount, err := w.gameRepo.CountGuessesByGame(ctx, tx, game.Id)
 		if err != nil {
 			return err
 		}
@@ -102,7 +107,7 @@ func (w *GameExpiryWorker) expireGame(game model.Game) error {
 			ScoreEarned: 0,
 		}
 
-		if err := w.statsUpdater.UpdateGameEndStats(tx, statsUpdate); err != nil {
+		if err := w.statsUpdater.UpdateGameEndStats(ctx, tx, statsUpdate); err != nil {
 			return err
 		}
 

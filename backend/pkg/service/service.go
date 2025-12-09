@@ -1,56 +1,58 @@
 package service
 
 import (
+	"context"
+
 	"github.com/dimqueue/darts/pkg/connections"
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
 )
 
 type Authorization interface {
-	CreateUser(user model.User) (int64, error)
-	GenerateToken(username, password string) (string, error)
-	ParseToken(token string) (int64, error)
+	CreateUser(ctx context.Context, user model.User) (int64, error)
+	GenerateToken(ctx context.Context, username, password string) (string, error)
+	ParseToken(token string) (int64, error) // ParseToken doesn't need ctx - it's CPU-only JWT parsing
 }
 
 type Word interface {
-	SelectWord(language string) (*model.Word, error)
-	GetWordById(wordId int64) (*model.Word, error)
+	SelectWord(ctx context.Context, language string) (*model.Word, error)
+	GetWordById(ctx context.Context, wordId int64) (*model.Word, error)
 }
 
 type Game interface {
-	CreateGame(userId int64, lang string) (int64, error)
-	GetAllGames(userId int64) ([]model.Game, error)
-	GetGameById(userId, gameId int64) (*model.Game, error)
-	UpdateGameStatus(gameId int64, status string) error
-	MakeGuess(userId, gameId int64, guess string) (int, error)
-	GetAllGuessByGame(userId, gameId int64) ([]model.Guess, error)
+	CreateGame(ctx context.Context, userId int64, lang string) (int64, error)
+	GetAllGames(ctx context.Context, userId int64) ([]model.Game, error)
+	GetGameById(ctx context.Context, userId, gameId int64) (*model.Game, error)
+	UpdateGameStatus(ctx context.Context, gameId int64, status string) error
+	MakeGuess(ctx context.Context, userId, gameId int64, guess string) (int, error)
+	GetAllGuessByGame(ctx context.Context, userId, gameId int64) ([]model.Guess, error)
 }
 
 type Stats interface {
-	InitializeStats(q repository.Querier, userId int64) error
-	UpdateGameEndStats(q repository.Querier, update model.StatisticsUpdate) error
-	GetStatistics(userId int64) (*model.UserStatistics, error)
-	GetLanguageStats(userId int64, language string) (*model.UserLanguageStats, error)
-	GetAllLanguageStats(userId int64) ([]model.UserLanguageStats, error)
+	InitializeStats(ctx context.Context, q repository.Querier, userId int64) error
+	UpdateGameEndStats(ctx context.Context, q repository.Querier, update model.StatisticsUpdate) error
+	GetStatistics(ctx context.Context, userId int64) (*model.UserStatistics, error)
+	GetLanguageStats(ctx context.Context, userId int64, language string) (*model.UserLanguageStats, error)
+	GetAllLanguageStats(ctx context.Context, userId int64) ([]model.UserLanguageStats, error)
 }
 
 type Profile interface {
-	GetProfile(userId int64) (*model.UserProfile, error)
-	GetProfileSummary(userId int64) (*model.UserProfileSummary, error)
-	GetProfileByUsername(username string) (*model.UserProfileSummary, error)
-	UpdateProfile(userId int64, input model.UpdateProfileInput) error
-	GetSettings(userId int64) (*model.UserSettings, error)
-	UpdateSettings(userId int64, input model.UpdateSettingsInput) error
-	GetStatistics(userId int64) (*model.UserStatistics, error)
-	GetLanguageStats(userId int64, language string) (*model.UserLanguageStats, error)
-	GetAllLanguageStats(userId int64) ([]model.UserLanguageStats, error)
+	GetProfile(ctx context.Context, userId int64) (*model.UserProfile, error)
+	GetProfileSummary(ctx context.Context, userId int64) (*model.UserProfileSummary, error)
+	GetProfileByUsername(ctx context.Context, username string) (*model.UserProfileSummary, error)
+	UpdateProfile(ctx context.Context, userId int64, input model.UpdateProfileInput) error
+	GetSettings(ctx context.Context, userId int64) (*model.UserSettings, error)
+	UpdateSettings(ctx context.Context, userId int64, input model.UpdateSettingsInput) error
+	GetStatistics(ctx context.Context, userId int64) (*model.UserStatistics, error)
+	GetLanguageStats(ctx context.Context, userId int64, language string) (*model.UserLanguageStats, error)
+	GetAllLanguageStats(ctx context.Context, userId int64) ([]model.UserLanguageStats, error)
 }
 
 type Leaderboard interface {
-	GetLeaderboard(query model.LeaderboardQuery) (*model.LeaderboardResponse, error)
-	GetLeaderboardWithUserRank(userId int64, query model.LeaderboardQuery) (*model.LeaderboardResponse, error)
-	GetUserRank(userId int64, query model.LeaderboardQuery) (*int, error)
-	GetAllUserRanks(userId int64) (*model.UserRanks, error)
+	GetLeaderboard(ctx context.Context, query model.LeaderboardQuery) (*model.LeaderboardResponse, error)
+	GetLeaderboardWithUserRank(ctx context.Context, userId int64, query model.LeaderboardQuery) (*model.LeaderboardResponse, error)
+	GetUserRank(ctx context.Context, userId int64, query model.LeaderboardQuery) (*int, error)
+	GetAllUserRanks(ctx context.Context, userId int64) (*model.UserRanks, error)
 }
 
 type Service struct {

@@ -37,7 +37,7 @@ func (h *Handler) createGuess(c *gin.Context) {
 		return
 	}
 
-	distance, err := h.services.Game.MakeGuess(userId, gameId, input.Guess)
+	distance, err := h.services.Game.MakeGuess(c.Request.Context(), userId, gameId, input.Guess)
 
 	if err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
@@ -66,7 +66,7 @@ func (h *Handler) getAllGuessByGame(c *gin.Context) {
 		return
 	}
 
-	guesses, err := h.services.Game.GetAllGuessByGame(userId, gameId)
+	guesses, err := h.services.Game.GetAllGuessByGame(c.Request.Context(), userId, gameId)
 	if err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return

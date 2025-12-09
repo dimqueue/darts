@@ -25,11 +25,13 @@ func NewHandler(services *service.Service, validator *validation.Validator) *Han
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
 
+	router.Use(RequestIDMiddleware())
+
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     config.CORSOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", RequestIDHeader},
+		ExposeHeaders:    []string{"Content-Length", RequestIDHeader},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))

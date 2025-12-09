@@ -1,17 +1,58 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
 
+	"github.com/dimqueue/darts/pkg/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 const (
 	authorizationHeader = "Authorization"
 	userCtx             = "userId"
+	RequestIDHeader     = "X-Request-Id"
+	RequestIDKey        = "requestId"
 )
+
+func RequestIDMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		requestID := c.GetHeader(RequestIDHeader)
+		if requestID == "" {
+			requestID = uuid.New().String()
+		}
+
+		c.Set(RequestIDKey, requestID)
+
+		ctx := context.WithValue(c.Request.Context(), logger.RequestIDCtxKey, requestID)
+		c.Request = c.Request.WithContext(ctx)
+
+		c.Header(RequestIDHeader, requestID)
+
+		c.Next()
+	}
+}
+
+func GetRequestID(c *gin.Context) string {
+	if id, exists := c.Get(RequestIDKey); exists {
+		if requestID, ok := id.(string); ok {
+			return requestID
+		}
+	}
+	return ""
+}
+
+func GetRequestIDFromContext(ctx context.Context) string {
+	if id := ctx.Value(logger.RequestIDCtxKey); id != nil {
+		if requestID, ok := id.(string); ok {
+			return requestID
+		}
+	}
+	return ""
+}
 
 func (h *Handler) userIdentity(c *gin.Context) {
 	header := c.GetHeader(authorizationHeader)

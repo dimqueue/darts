@@ -41,7 +41,7 @@ func (h *Handler) getLeaderboard(c *gin.Context) {
 		query.Language = &language
 	}
 
-	response, err := h.services.Leaderboard.GetLeaderboard(query)
+	response, err := h.services.Leaderboard.GetLeaderboard(c.Request.Context(), query)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -49,7 +49,7 @@ func (h *Handler) getLeaderboard(c *gin.Context) {
 
 	userId, err := getUserId(c)
 	if err == nil {
-		rank, _ := h.services.Leaderboard.GetUserRank(userId, query)
+		rank, _ := h.services.Leaderboard.GetUserRank(c.Request.Context(), userId, query)
 		response.CurrentUserRank = rank
 	}
 
@@ -70,7 +70,7 @@ func (h *Handler) getMyRank(c *gin.Context) {
 		return
 	}
 
-	ranks, err := h.services.Leaderboard.GetAllUserRanks(userId)
+	ranks, err := h.services.Leaderboard.GetAllUserRanks(c.Request.Context(), userId)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return

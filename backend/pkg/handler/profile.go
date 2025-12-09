@@ -21,7 +21,7 @@ func (h *Handler) getMyProfile(c *gin.Context) {
 		return
 	}
 
-	profile, err := h.services.Profile.GetProfileSummary(userId)
+	profile, err := h.services.Profile.GetProfileSummary(c.Request.Context(), userId)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -40,7 +40,7 @@ func (h *Handler) getMyProfile(c *gin.Context) {
 func (h *Handler) getProfileByUsername(c *gin.Context) {
 	username := c.Param("username")
 
-	profile, err := h.services.Profile.GetProfileByUsername(username)
+	profile, err := h.services.Profile.GetProfileByUsername(c.Request.Context(), username)
 	if err != nil {
 		newErrorResponse(c, http.StatusNotFound, "user not found")
 		return
@@ -76,7 +76,7 @@ func (h *Handler) updateMyProfile(c *gin.Context) {
 		return
 	}
 
-	if err := h.services.Profile.UpdateProfile(userId, input); err != nil {
+	if err := h.services.Profile.UpdateProfile(c.Request.Context(), userId, input); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -98,7 +98,7 @@ func (h *Handler) getMySettings(c *gin.Context) {
 		return
 	}
 
-	settings, err := h.services.Profile.GetSettings(userId)
+	settings, err := h.services.Profile.GetSettings(c.Request.Context(), userId)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -129,7 +129,7 @@ func (h *Handler) updateMySettings(c *gin.Context) {
 		return
 	}
 
-	if err := h.services.Profile.UpdateSettings(userId, input); err != nil {
+	if err := h.services.Profile.UpdateSettings(c.Request.Context(), userId, input); err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -151,7 +151,7 @@ func (h *Handler) getMyStatistics(c *gin.Context) {
 		return
 	}
 
-	stats, err := h.services.Profile.GetStatistics(userId)
+	stats, err := h.services.Profile.GetStatistics(c.Request.Context(), userId)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -178,7 +178,7 @@ func (h *Handler) getMyLanguageStats(c *gin.Context) {
 	language := c.Query("language")
 
 	if language != "" {
-		stats, err := h.services.Profile.GetLanguageStats(userId, language)
+		stats, err := h.services.Profile.GetLanguageStats(c.Request.Context(), userId, language)
 		if err != nil {
 			newErrorResponse(c, http.StatusInternalServerError, err.Error())
 			return
@@ -187,7 +187,7 @@ func (h *Handler) getMyLanguageStats(c *gin.Context) {
 		return
 	}
 
-	stats, err := h.services.Profile.GetAllLanguageStats(userId)
+	stats, err := h.services.Profile.GetAllLanguageStats(c.Request.Context(), userId)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return

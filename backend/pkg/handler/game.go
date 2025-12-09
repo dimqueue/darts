@@ -43,7 +43,7 @@ func (h *Handler) createGame(c *gin.Context) {
 		return
 	}
 
-	gameId, err := h.services.Game.CreateGame(userId, input.Language)
+	gameId, err := h.services.Game.CreateGame(c.Request.Context(), userId, input.Language)
 
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
@@ -75,7 +75,7 @@ func (h *Handler) getAllGames(c *gin.Context) {
 		return
 	}
 
-	games, err := h.services.GetAllGames(userId)
+	games, err := h.services.GetAllGames(c.Request.Context(), userId)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -103,7 +103,7 @@ func (h *Handler) getGameById(c *gin.Context) {
 		return
 	}
 
-	game, err := h.services.GetGameById(userId, gameId)
+	game, err := h.services.GetGameById(c.Request.Context(), userId, gameId)
 	if err != nil {
 		newErrorResponse(c, http.StatusNotFound, err.Error())
 		return
