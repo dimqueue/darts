@@ -18,10 +18,15 @@ const (
 	RequestIDKey        = "requestId"
 )
 
+func isValidUUID(s string) bool {
+	_, err := uuid.Parse(s)
+	return err == nil
+}
+
 func RequestIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		requestID := c.GetHeader(RequestIDHeader)
-		if requestID == "" {
+		if requestID == "" || !isValidUUID(requestID) {
 			requestID = uuid.New().String()
 		}
 
@@ -74,6 +79,7 @@ func (h *Handler) userIdentity(c *gin.Context) {
 
 	c.Set(userCtx, userId)
 
+	c.Next()
 }
 
 func getUserId(c *gin.Context) (int64, error) {

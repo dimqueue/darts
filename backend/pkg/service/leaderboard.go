@@ -117,17 +117,47 @@ func (s *LeaderboardService) GetUserRank(ctx context.Context, userId int64, quer
 
 func (s *LeaderboardService) GetAllUserRanks(ctx context.Context, userId int64) (*model.UserRanks, error) {
 	var ranks model.UserRanks
+	var errs []error
 
-	ranks.GlobalRank, _ = s.leaderboardRepo.GetGlobalUserRank(ctx, userId)
+	var err error
+	ranks.GlobalRank, err = s.leaderboardRepo.GetGlobalUserRank(ctx, userId)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("global rank: %w", err))
+	}
 
-	dayStart, _ := GetPeriodStart("daily")
-	ranks.DailyRank, _ = s.leaderboardRepo.GetPeriodUserRank(ctx, userId, dayStart, nil)
+	dayStart, err := GetPeriodStart("daily")
+	if err != nil {
+		errs = append(errs, fmt.Errorf("daily period: %w", err))
+	} else {
+		ranks.DailyRank, err = s.leaderboardRepo.GetPeriodUserRank(ctx, userId, dayStart, nil)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("daily rank: %w", err))
+		}
+	}
 
-	weekStart, _ := GetPeriodStart("weekly")
-	ranks.WeeklyRank, _ = s.leaderboardRepo.GetPeriodUserRank(ctx, userId, weekStart, nil)
+	weekStart, err := GetPeriodStart("weekly")
+	if err != nil {
+		errs = append(errs, fmt.Errorf("weekly period: %w", err))
+	} else {
+		ranks.WeeklyRank, err = s.leaderboardRepo.GetPeriodUserRank(ctx, userId, weekStart, nil)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("weekly rank: %w", err))
+		}
+	}
 
-	monthStart, _ := GetPeriodStart("monthly")
-	ranks.MonthlyRank, _ = s.leaderboardRepo.GetPeriodUserRank(ctx, userId, monthStart, nil)
+	monthStart, err := GetPeriodStart("monthly")
+	if err != nil {
+		errs = append(errs, fmt.Errorf("monthly period: %w", err))
+	} else {
+		ranks.MonthlyRank, err = s.leaderboardRepo.GetPeriodUserRank(ctx, userId, monthStart, nil)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("monthly rank: %w", err))
+		}
+	}
+
+	if len(errs) > 0 {
+		return &ranks, fmt.Errorf("failed to get some ranks: %v", errs)
+	}
 
 	return &ranks, nil
 }

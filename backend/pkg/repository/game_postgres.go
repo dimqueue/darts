@@ -29,7 +29,7 @@ func (r *GamePostgres) CreateGame(ctx context.Context, game *model.Game) (int64,
 }
 
 func (r *GamePostgres) GetAllGames(ctx context.Context, userId int64) ([]model.Game, error) {
-	games := make([]model.Game, 0)
+	games := make([]model.Game, 0, 100)
 
 	query := fmt.Sprintf("SELECT id, user_id, word_id, status, language, started_at, ended_at, expires_at FROM %s WHERE user_id=$1 ORDER BY started_at DESC LIMIT 100", gamesTable)
 	err := r.db.SelectContext(ctx, &games, query, userId)
@@ -68,7 +68,7 @@ func (r *GamePostgres) CreateGuess(ctx context.Context, q Querier, guess *model.
 }
 
 func (r *GamePostgres) GetAllGuessByGame(ctx context.Context, gameId int64) ([]model.Guess, error) {
-	guesses := make([]model.Guess, 0)
+	guesses := make([]model.Guess, 0, 100)
 	query := fmt.Sprintf("SELECT id, game_id, guess_word, distance, created_at FROM %s WHERE game_id = $1 ORDER BY created_at DESC LIMIT 500", guessesTable)
 
 	err := r.db.SelectContext(ctx, &guesses, query, gameId)
@@ -87,7 +87,7 @@ func (r *GamePostgres) CountGuessesByGame(ctx context.Context, q Querier, gameId
 }
 
 func (r *GamePostgres) GetExpiredGames(ctx context.Context) ([]model.Game, error) {
-	games := make([]model.Game, 0)
+	games := make([]model.Game, 0, 50)
 	query := fmt.Sprintf(`
 		SELECT id, user_id, word_id, status, language, started_at, ended_at, expires_at
 		FROM %s

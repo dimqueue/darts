@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/dimqueue/darts/pkg/model"
@@ -9,6 +10,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
+
+const maxConcurrentExpiry = 10
 
 // StatsUpdater interface to avoid circular dependency with service package
 type StatsUpdater interface {
@@ -61,18 +64,36 @@ func (w *GameExpiryWorker) expireGames(ctx context.Context) {
 
 	logrus.WithField("count", len(games)).Debug("found expired games")
 
-	expiredCount := 0
+	var (
+		wg           sync.WaitGroup
+		expiredCount int
+		countMu      sync.Mutex
+		semaphore    = make(chan struct{}, maxConcurrentExpiry)
+	)
+
 	for _, game := range games {
-		err := w.expireGame(ctx, game)
-		if err != nil {
-			logrus.WithFields(logrus.Fields{
-				"game_id": game.Id,
-				"user_id": game.UserId,
-			}).WithError(err).Error("failed to expire game")
-			continue
-		}
-		expiredCount++
+		wg.Add(1)
+		semaphore <- struct{}{}
+
+		go func(g model.Game) {
+			defer wg.Done()
+			defer func() { <-semaphore }()
+
+			if err := w.expireGame(ctx, g); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"game_id": g.Id,
+					"user_id": g.UserId,
+				}).WithError(err).Error("failed to expire game")
+				return
+			}
+
+			countMu.Lock()
+			expiredCount++
+			countMu.Unlock()
+		}(game)
 	}
+
+	wg.Wait()
 
 	if expiredCount > 0 {
 		logrus.WithField("count", expiredCount).Info("expired games processed")

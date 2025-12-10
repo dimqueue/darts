@@ -178,6 +178,10 @@ func (h *Handler) getMyLanguageStats(c *gin.Context) {
 	language := c.Query("language")
 
 	if language != "" {
+		if err := h.validator.ValidateLanguage(language); err != nil {
+			newErrorResponse(c, http.StatusBadRequest, err.Error())
+			return
+		}
 		stats, err := h.services.Profile.GetLanguageStats(c.Request.Context(), userId, language)
 		if err != nil {
 			newErrorResponse(c, http.StatusInternalServerError, err.Error())

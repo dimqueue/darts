@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -221,7 +222,10 @@ func (r *LeaderboardPostgres) GetGlobalUserRank(ctx context.Context, userId int6
 
 	err := r.db.GetContext(ctx, &rank, query, userId)
 	if err != nil {
-		return nil, nil
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return rank, nil
 }
@@ -231,7 +235,10 @@ func (r *LeaderboardPostgres) GetGlobalUserRankByLanguage(ctx context.Context, u
 	query := fmt.Sprintf(globalUserRankByLanguageQuery, config.LeaderboardMinGamesGlobal)
 	err := r.db.GetContext(ctx, &rank, query, userId, language)
 	if err != nil {
-		return nil, nil
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return rank, nil
 }
@@ -318,7 +325,10 @@ func (r *LeaderboardPostgres) GetPeriodUserRank(ctx context.Context, userId int6
 
 	err := r.db.GetContext(ctx, &rank, query, args...)
 	if err != nil {
-		return nil, nil
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return &rank, nil
 }

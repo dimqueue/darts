@@ -139,11 +139,13 @@ func Init(config Config) error {
 			logrus.Warnf("Failed to open log file %s: %v, using stdout only", config.Output, err)
 			logrus.SetOutput(os.Stdout)
 		} else {
+			logFiles = append(logFiles, file)
 			multiWriter := io.MultiWriter(os.Stdout, file)
 			logrus.SetOutput(multiWriter)
 
 			jsonFile, err := os.OpenFile(config.Output+".json", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 			if err == nil {
+				logFiles = append(logFiles, jsonFile)
 				logrus.AddHook(&JSONFileHook{file: jsonFile})
 			}
 		}
@@ -158,6 +160,17 @@ func Init(config Config) error {
 type JSONFileHook struct {
 	file      *os.File
 	formatter *logrus.JSONFormatter
+}
+
+var logFiles []*os.File
+
+func CloseLogFiles() {
+	for _, f := range logFiles {
+		if f != nil {
+			f.Close()
+		}
+	}
+	logFiles = nil
 }
 
 func (hook *JSONFileHook) Levels() []logrus.Level {
