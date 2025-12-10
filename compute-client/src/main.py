@@ -1,19 +1,42 @@
 import logging
 import sys
+from typing import Optional
 
 from config.settings import Config
 from utils.logging_config import setup_logging
 from models.word_similarity import WordSimilarityModel
 from utils.monitor import ResourceMonitor
+from cache import RedisClient, RankingsCache
 
 logger = logging.getLogger(__name__)
 
 
-def initialize_model(monitor: ResourceMonitor) -> WordSimilarityModel:
+def initialize_redis() -> Optional[RankingsCache]:
+    if not Config.REDIS_ENABLED:
+        logger.info("Redis caching disabled")
+        return None
+
+    logger.info(f"Connecting to Redis at {Config.REDIS_HOST}:{Config.REDIS_PORT}")
+    redis_client = RedisClient.initialize(
+        host=Config.REDIS_HOST,
+        port=Config.REDIS_PORT,
+        db=Config.REDIS_DB,
+        password=Config.REDIS_PASSWORD if Config.REDIS_PASSWORD else None,
+    )
+
+    if not redis_client.is_connected():
+        logger.warning("Redis connection failed, falling back to in-memory cache")
+        return None
+
+    logger.info(f"Redis connected (TTL: {Config.REDIS_CACHE_TTL}s)")
+    return RankingsCache(redis_client, ttl=Config.REDIS_CACHE_TTL)
+
+
+def initialize_model(monitor: ResourceMonitor, rankings_cache: Optional[RankingsCache] = None) -> WordSimilarityModel:
     logger.info(f"Loading model: {Config.MODEL_NAME} for language: {Config.DEFAULT_LANGUAGE}")
     monitor.log_metrics(context="Before Model Load")
 
-    word_model = WordSimilarityModel()
+    word_model = WordSimilarityModel(rankings_cache=rankings_cache)
     word_model.load_model(Config.DEFAULT_LANGUAGE, Config.MODEL_NAME)
     monitor.log_metrics(context="Model Loaded")
 
@@ -69,11 +92,12 @@ def run_grpc_server(word_model: WordSimilarityModel, monitor: ResourceMonitor):
 
 
 def main():
-    setup_logging(service_name="compute-client", log_dir=Config.LOG_DIR)
+    setup_logging(service_name="compute-client", log_dir=Config.LOG_DIR, log_level=Config.LOG_LEVEL)
 
     mode = Config.SERVER_MODE.upper()
     port = Config.GRPC_PORT if Config.SERVER_MODE == "grpc" else Config.HTTP_PORT
     host = f"0.0.0.0:{port}" if Config.SERVER_MODE == "grpc" else f"{Config.HTTP_HOST}:{Config.HTTP_PORT}"
+    redis_status = f"{Config.REDIS_HOST}:{Config.REDIS_PORT}" if Config.REDIS_ENABLED else "disabled"
 
     logger.info("=" * 60)
     logger.info(f"Compute Client - {mode} Server")
@@ -82,13 +106,16 @@ def main():
     logger.info(f"  Address:  {host}")
     logger.info(f"  Model:    {Config.MODEL_NAME}")
     logger.info(f"  Language: {Config.DEFAULT_LANGUAGE}")
+    logger.info(f"  Redis:    {redis_status}")
     logger.info("=" * 60)
 
     monitor = ResourceMonitor()
     monitor.log_metrics(context="Startup")
 
+    rankings_cache = initialize_redis()
+
     try:
-        word_model = initialize_model(monitor)
+        word_model = initialize_model(monitor, rankings_cache)
     except Exception as e:
         logger.error(f"Failed to initialize model: {e}")
         sys.exit(1)

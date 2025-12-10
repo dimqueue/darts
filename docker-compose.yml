@@ -25,13 +25,30 @@ services:
     build:
       context: ./compute-client
       dockerfile: Dockerfile
+    depends_on:
+      - redis
     env_file:
+      - ./.env
       - ./compute-client/.env
+    environment:
+      - REDIS_HOST=redis
     ports:
       - "50051:50051"
       - "5000:5000"
     volumes:
       - ${GENSIM_DATA_DIR:-~/.gensim-data}:/root/gensim-data
+
+  redis:
+    restart: on-failure
+    image: redis:7-alpine
+    container_name: darts-redis
+    env_file:
+      - ./.env
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
 
   frontend:
     restart: on-failure
@@ -60,3 +77,4 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
