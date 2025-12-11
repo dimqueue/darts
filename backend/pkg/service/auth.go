@@ -41,19 +41,22 @@ func NewAuthService(repo repository.Authorization, profileRepo repository.Profil
 }
 
 func (s *AuthService) CreateUser(ctx context.Context, user model.User) (int64, error) {
-	log := logger.WithContext(ctx).WithField("username", user.Username)
+	log := logger.Op(ctx, "AuthService.CreateUser").With(logger.FieldUsername, user.Username)
 
 	var err error
 	user.Password, err = s.generatePasswordHash(user.Password)
 	if err != nil {
-		log.WithError(err).Error("failed to hash password")
-		return 0, fmt.Errorf("failed to create user: %w", err)
+		log.Error("failed to hash password", logger.FieldError, err)
+		return 0, Logged(fmt.Errorf("failed to create user: %w", err))
 	}
 	var userId int64
 
 	err = s.txManager.WithTransaction(ctx, func(tx *sqlx.Tx) error {
 		id, err := s.repo.CreateUser(ctx, tx, user)
 		if err != nil {
+			if errors.Is(err, repository.ErrDuplicateKey) {
+				return ErrUserExists
+			}
 			return fmt.Errorf("failed to create user: %w", err)
 		}
 		userId = id
@@ -78,11 +81,14 @@ func (s *AuthService) CreateUser(ctx context.Context, user model.User) (int64, e
 	})
 
 	if err != nil {
-		log.WithError(err).Error("failed to create user")
-		return 0, err
+		if errors.Is(err, ErrUserExists) {
+			return 0, err
+		}
+		log.Error("failed to create user", logger.FieldError, err)
+		return 0, Logged(err)
 	}
 
-	log.WithField("user_id", userId).Info("user created")
+	log.Info("user created", logger.FieldUserID, userId)
 	return userId, nil
 }
 
@@ -139,11 +145,11 @@ func (s *AuthService) generateCryptographicSalt(saltSize uint32) ([]byte, error)
 func (s *AuthService) parseArgon2Hash(encodedHash string) (*Argon2Configuration, error) {
 	components := strings.Split(encodedHash, "$")
 	if len(components) != 6 {
-		return nil, errors.New("invalid hash format structure")
+		return nil, fmt.Errorf("invalid hash format structure")
 	}
 
 	if !strings.HasPrefix(components[1], "argon2id") {
-		return nil, errors.New("unsupported algorithm variant")
+		return nil, fmt.Errorf("unsupported algorithm variant")
 	}
 
 	var version int
@@ -170,22 +176,22 @@ func (s *AuthService) parseArgon2Hash(encodedHash string) (*Argon2Configuration,
 }
 
 func (s *AuthService) GenerateToken(ctx context.Context, username, password string) (string, error) {
-	log := logger.WithContext(ctx).WithField("username", username)
+	log := logger.Op(ctx, "AuthService.GenerateToken").With(logger.FieldUsername, username)
 
 	user, err := s.repo.GetUserByUsername(ctx, username)
 	if err != nil {
 		log.Warn("login attempt for non-existent user")
-		return "", errors.New("invalid credentials")
+		return "", ErrUnauthorized
 	}
 
 	res, err := s.verifyPasswordSecure(user.Password, password)
 	if err != nil {
-		log.WithError(err).Error("password verification failed")
-		return "", fmt.Errorf("failed to verify password: %w", err)
+		log.Error("password verification failed", logger.FieldError, err)
+		return "", Logged(fmt.Errorf("failed to verify password: %w", err))
 	}
 	if !res {
 		log.Warn("login attempt with invalid password")
-		return "", errors.New("invalid credentials")
+		return "", ErrUnauthorized
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
@@ -198,11 +204,11 @@ func (s *AuthService) GenerateToken(ctx context.Context, username, password stri
 
 	signedToken, err := token.SignedString([]byte(config.JWTSecret))
 	if err != nil {
-		log.WithError(err).Error("failed to sign token")
-		return "", err
+		log.Error("failed to sign token", logger.FieldError, err)
+		return "", Logged(err)
 	}
 
-	log.WithField("user_id", user.Id).Info("user logged in")
+	log.Info("user logged in", logger.FieldUserID, user.Id)
 	return signedToken, nil
 }
 
@@ -228,16 +234,16 @@ func (s *AuthService) verifyPasswordSecure(storedHash, providedPassword string) 
 func (s *AuthService) ParseToken(accessToken string) (int64, error) {
 	token, err := jwt.ParseWithClaims(accessToken, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("invalid signing method")
+			return nil, ErrUnauthorized
 		}
 		return []byte(config.JWTSecret), nil
 	})
 	if err != nil {
-		return 0, err
+		return 0, ErrUnauthorized
 	}
 	claims, ok := token.Claims.(*tokenClaims)
 	if !ok {
-		return 0, errors.New("token claims are not of type *tokenClaims")
+		return 0, ErrUnauthorized
 	}
 	return claims.UserId, nil
 }

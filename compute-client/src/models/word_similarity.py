@@ -70,6 +70,10 @@ class WordSimilarityModel:
         if guess == secret_word:
             return 1, True
 
+        if not self.word_in_vocabulary(guess, language):
+            logger.debug(f"Word '{guess}' not in vocabulary")
+            return -1, False
+
         # Check in-memory cache first
         game_data = self.game_rankings.get(secret_word)
 
@@ -83,7 +87,7 @@ class WordSimilarityModel:
         if not game_data:
             raise ValueError(f"No game data found for secret word: {secret_word}")
 
-        rank = game_data.get(guess, 0)
+        rank = game_data.get(guess, 0)  # 0 = exists but not in top N
         return rank, False
 
     def warm_up(self, language: str):

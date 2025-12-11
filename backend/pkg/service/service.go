@@ -22,8 +22,10 @@ type Word interface {
 type Game interface {
 	CreateGame(ctx context.Context, userId int64, lang string) (int64, error)
 	GetAllGames(ctx context.Context, userId int64) ([]model.Game, error)
+	GetActiveGame(ctx context.Context, userId int64) (*model.Game, error)
 	GetGameById(ctx context.Context, userId, gameId int64) (*model.Game, error)
 	UpdateGameStatus(ctx context.Context, gameId int64, status string) error
+	AbandonGame(ctx context.Context, userId, gameId int64) error
 	MakeGuess(ctx context.Context, userId, gameId int64, guess string) (int, error)
 	GetAllGuessByGame(ctx context.Context, userId, gameId int64) ([]model.Guess, error)
 }

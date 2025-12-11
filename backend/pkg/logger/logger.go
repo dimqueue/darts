@@ -4,17 +4,34 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
-
-	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 type ContextKey string
 
 const RequestIDCtxKey ContextKey = "requestId"
+
+const (
+	FieldRequestID       = "request_id"
+	FieldOp              = "op"
+	FieldUserID          = "user_id"
+	FieldGameID          = "game_id"
+	FieldLanguage        = "language"
+	FieldWord            = "word"
+	FieldGuess           = "guess"
+	FieldDistance        = "distance"
+	FieldUsername        = "username"
+	FieldErrorCode       = "error_code"
+	FieldDurationMs      = "duration_ms"
+	FieldCalculationTime = "calculation_time"
+	FieldError           = "error"
+)
+
+var defaultLogger *slog.Logger
 
 type Config struct {
 	Level        string
@@ -23,7 +40,139 @@ type Config struct {
 	ReportCaller bool
 }
 
-type ConsoleFormatter struct{}
+func Init(cfg Config) error {
+	level := parseLevel(cfg.Level)
+	output, cleanup := getOutput(cfg.Output)
+
+	var handler slog.Handler
+	if strings.ToLower(cfg.Format) == "json" {
+		handler = slog.NewJSONHandler(output, &slog.HandlerOptions{
+			Level: level,
+		})
+	} else {
+		handler = NewColoredTextHandler(output, &slog.HandlerOptions{
+			Level: level,
+		})
+	}
+
+	defaultLogger = slog.New(handler)
+	slog.SetDefault(defaultLogger)
+
+	if cleanup != nil {
+		logFileCleanup = cleanup
+	}
+
+	defaultLogger.Info("logger initialized", "level", cfg.Level, "format", cfg.Format, "output", cfg.Output)
+	return nil
+}
+
+var logFileCleanup func()
+
+func CloseLogFiles() {
+	if logFileCleanup != nil {
+		logFileCleanup()
+		logFileCleanup = nil
+	}
+}
+
+func parseLevel(level string) slog.Level {
+	switch strings.ToLower(level) {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
+}
+
+func getOutput(output string) (io.Writer, func()) {
+	switch strings.ToLower(output) {
+	case "stdout", "":
+		return os.Stdout, nil
+	case "stderr":
+		return os.Stderr, nil
+	default:
+		dir := filepath.Dir(output)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			slog.Warn("failed to create log directory, using stdout", "dir", dir, "error", err)
+			return os.Stdout, nil
+		}
+
+		file, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			slog.Warn("failed to open log file, using stdout", "path", output, "error", err)
+			return os.Stdout, nil
+		}
+
+		multiWriter := io.MultiWriter(os.Stdout, file)
+		cleanup := func() { file.Close() }
+		return multiWriter, cleanup
+	}
+}
+
+func Default() *slog.Logger {
+	if defaultLogger == nil {
+		return slog.Default()
+	}
+	return defaultLogger
+}
+
+func FromContext(ctx context.Context) *slog.Logger {
+	logger := Default()
+	if ctx == nil {
+		return logger
+	}
+
+	if requestID := GetRequestIDFromContext(ctx); requestID != "" {
+		return logger.With(FieldRequestID, requestID)
+	}
+	return logger
+}
+
+func Op(ctx context.Context, operation string) *slog.Logger {
+	return FromContext(ctx).With(FieldOp, operation)
+}
+
+func GetRequestIDFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	if id := ctx.Value(RequestIDCtxKey); id != nil {
+		if requestID, ok := id.(string); ok {
+			return requestID
+		}
+	}
+	return ""
+}
+
+func Info(msg string, args ...any) {
+	Default().Info(msg, args...)
+}
+
+func Error(msg string, args ...any) {
+	Default().Error(msg, args...)
+}
+
+func Warn(msg string, args ...any) {
+	Default().Warn(msg, args...)
+}
+
+func Debug(msg string, args ...any) {
+	Default().Debug(msg, args...)
+}
+
+type ColoredTextHandler struct {
+	opts   *slog.HandlerOptions
+	output io.Writer
+	mu     *sync.Mutex
+	attrs  []slog.Attr
+	groups []string
+}
 
 const (
 	colorReset   = "\033[0m"
@@ -37,204 +186,142 @@ const (
 	colorGray    = "\033[90m"
 )
 
-func (f *ConsoleFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+func NewColoredTextHandler(w io.Writer, opts *slog.HandlerOptions) *ColoredTextHandler {
+	if opts == nil {
+		opts = &slog.HandlerOptions{}
+	}
+	return &ColoredTextHandler{
+		opts:   opts,
+		output: w,
+		mu:     &sync.Mutex{},
+	}
+}
+
+func (h *ColoredTextHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	minLevel := slog.LevelInfo
+	if h.opts.Level != nil {
+		minLevel = h.opts.Level.Level()
+	}
+	return level >= minLevel
+}
+
+func (h *ColoredTextHandler) Handle(ctx context.Context, r slog.Record) error {
 	var levelColor, levelBadge string
-	switch entry.Level {
-	case logrus.DebugLevel:
-		levelColor = colorCyan
-		levelBadge = "[DEBUG]"
-	case logrus.InfoLevel:
-		levelColor = colorGreen
-		levelBadge = "[INFO] "
-	case logrus.WarnLevel:
-		levelColor = colorYellow
-		levelBadge = "[WARN] "
-	case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
-		levelColor = colorRed
-		levelBadge = "[ERROR]"
+	switch r.Level {
+	case slog.LevelDebug:
+		levelColor, levelBadge = colorCyan, "[DEBUG]"
+	case slog.LevelInfo:
+		levelColor, levelBadge = colorGreen, "[INFO] "
+	case slog.LevelWarn:
+		levelColor, levelBadge = colorYellow, "[WARN] "
+	case slog.LevelError:
+		levelColor, levelBadge = colorRed, "[ERROR]"
 	default:
-		levelColor = colorReset
-		levelBadge = "[LOG]  "
+		levelColor, levelBadge = colorReset, "[LOG]  "
 	}
 
-	timestamp := entry.Time.Format("2006/01/02 - 15:04:05")
+	timestamp := r.Time.Format("2006/01/02 - 15:04:05")
 
-	msg := fmt.Sprintf("%s%s%s %s%s%s %s|%s %s",
+	var buf []byte
+	buf = fmt.Appendf(buf, "%s%s%s %s%s%s %s|%s %s",
 		levelColor, levelBadge, colorReset,
 		colorGray, timestamp, colorReset,
 		colorGray, colorReset,
-		entry.Message)
+		r.Message)
 
-	if rid, ok := entry.Data["request_id"]; ok {
-		shortRid := fmt.Sprintf("%v", rid)
-		if len(shortRid) > 8 {
-			shortRid = shortRid[:8]
-		}
-		msg += fmt.Sprintf(" %s|%s %s", colorGray, colorReset, shortRid)
+	for _, a := range h.attrs {
+		buf = h.appendAttr(buf, a)
 	}
 
-	var fields []string
+	r.Attrs(func(a slog.Attr) bool {
+		buf = h.appendAttr(buf, a)
+		return true
+	})
 
-	if val, ok := entry.Data["game_id"]; ok {
-		fields = append(fields, fmt.Sprintf("%sgame_id:%s%s%v%s", colorGray, colorBlue, colorWhite, val, colorReset))
-	}
-	if val, ok := entry.Data["user_id"]; ok {
-		fields = append(fields, fmt.Sprintf("%suser_id:%s%v%s", colorGray, colorMagenta, val, colorReset))
-	}
-	if val, ok := entry.Data["word"]; ok {
-		fields = append(fields, fmt.Sprintf("%sword:%s%s\"%v\"%s", colorGray, colorReset, colorYellow, val, colorReset))
-	}
-	if val, ok := entry.Data["target_word"]; ok {
-		fields = append(fields, fmt.Sprintf("%starget:%s%s\"%v\"%s", colorGray, colorReset, colorYellow, val, colorReset))
-	}
-	if val, ok := entry.Data["guess"]; ok {
-		fields = append(fields, fmt.Sprintf("%sguess:%s%s\"%v\"%s", colorGray, colorReset, colorCyan, val, colorReset))
-	}
-	if val, ok := entry.Data["distance"]; ok {
-		fields = append(fields, fmt.Sprintf("%sdistance:%s%s%v%s", colorGray, colorReset, colorGreen, val, colorReset))
-	}
-	if val, ok := entry.Data["error"]; ok {
-		fields = append(fields, fmt.Sprintf("%serror:%s%s%v%s", colorGray, colorReset, colorRed, val, colorReset))
-	}
-	if val, ok := entry.Data["username"]; ok {
-		fields = append(fields, fmt.Sprintf("%susername:%s%s%v%s", colorGray, colorReset, colorCyan, val, colorReset))
-	}
-	if val, ok := entry.Data["language"]; ok {
-		fields = append(fields, fmt.Sprintf("%slang:%s%v%s", colorGray, colorWhite, val, colorReset))
-	}
-	if val, ok := entry.Data["calculation_time"]; ok {
-		fields = append(fields, fmt.Sprintf("%stime:%s%.3fs%s", colorGray, colorGreen, val, colorReset))
-	}
+	buf = append(buf, '\n')
 
-	if len(fields) > 0 {
-		msg += " " + strings.Join(fields, " ")
-	}
-
-	return []byte(msg + "\n"), nil
-}
-
-func Init(config Config) error {
-	level, err := logrus.ParseLevel(config.Level)
-	if err != nil {
-		logrus.Warnf("Invalid log level %s, defaulting to info", config.Level)
-		level = logrus.InfoLevel
-	}
-	logrus.SetLevel(level)
-
-	logrus.SetFormatter(&ConsoleFormatter{})
-
-	switch strings.ToLower(config.Output) {
-	case "stdout", "":
-		logrus.SetOutput(os.Stdout)
-	case "stderr":
-		logrus.SetOutput(os.Stderr)
-	default:
-		dir := filepath.Dir(config.Output)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			logrus.Warnf("Failed to create log directory %s: %v", dir, err)
-		}
-
-		file, err := os.OpenFile(config.Output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-		if err != nil {
-			logrus.Warnf("Failed to open log file %s: %v, using stdout only", config.Output, err)
-			logrus.SetOutput(os.Stdout)
-		} else {
-			logFiles = append(logFiles, file)
-			multiWriter := io.MultiWriter(os.Stdout, file)
-			logrus.SetOutput(multiWriter)
-
-			jsonFile, err := os.OpenFile(config.Output+".json", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-			if err == nil {
-				logFiles = append(logFiles, jsonFile)
-				logrus.AddHook(&JSONFileHook{file: jsonFile})
-			}
-		}
-	}
-
-	logrus.SetReportCaller(config.ReportCaller)
-	logrus.Infof("Logger initialized - Level: %s, Output: %s", config.Level, config.Output)
-
-	return nil
-}
-
-type JSONFileHook struct {
-	file      *os.File
-	formatter *logrus.JSONFormatter
-}
-
-var logFiles []*os.File
-
-func CloseLogFiles() {
-	for _, f := range logFiles {
-		if f != nil {
-			f.Close()
-		}
-	}
-	logFiles = nil
-}
-
-func (hook *JSONFileHook) Levels() []logrus.Level {
-	return logrus.AllLevels
-}
-
-func (hook *JSONFileHook) Fire(entry *logrus.Entry) error {
-	if hook.formatter == nil {
-		hook.formatter = &logrus.JSONFormatter{
-			TimestampFormat: time.RFC3339,
-		}
-	}
-	line, err := hook.formatter.Format(entry)
-	if err != nil {
-		return err
-	}
-	_, err = hook.file.Write(line)
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	_, err := h.output.Write(buf)
 	return err
 }
 
-func GetLogger() *logrus.Logger {
-	return logrus.StandardLogger()
-}
-
-func WithFields(fields logrus.Fields) *logrus.Entry {
-	return logrus.WithFields(fields)
-}
-
-func WithField(key string, value interface{}) *logrus.Entry {
-	return logrus.WithField(key, value)
-}
-
-func WithContext(ctx context.Context) *logrus.Entry {
-	entry := logrus.NewEntry(logrus.StandardLogger())
-	if ctx == nil {
-		return entry
+func (h *ColoredTextHandler) appendAttr(buf []byte, a slog.Attr) []byte {
+	if a.Equal(slog.Attr{}) {
+		return buf
 	}
-	if requestID := getRequestIDFromContext(ctx); requestID != "" {
-		entry = entry.WithField("request_id", requestID)
-	}
-	return entry
-}
 
-func getRequestIDFromContext(ctx context.Context) string {
-	if id := ctx.Value(RequestIDCtxKey); id != nil {
-		if requestID, ok := id.(string); ok {
-			return requestID
+	if a.Key == FieldRequestID {
+		rid := a.Value.String()
+		if len(rid) > 8 {
+			rid = rid[:8]
 		}
+		return fmt.Appendf(buf, " %s|%s %s", colorGray, colorReset, rid)
 	}
-	return ""
+
+	var color string
+	switch a.Key {
+	case FieldUserID:
+		color = colorMagenta
+	case FieldGameID:
+		color = colorBlue
+	case FieldError:
+		color = colorRed
+	case FieldWord, "target_word", FieldGuess:
+		color = colorYellow
+	case FieldDistance, FieldCalculationTime:
+		color = colorGreen
+	case FieldUsername:
+		color = colorCyan
+	case FieldLanguage:
+		color = colorWhite
+	default:
+		color = colorGray
+	}
+
+	val := a.Value.Any()
+	switch v := val.(type) {
+	case string:
+		if a.Key == FieldWord || a.Key == "target_word" || a.Key == FieldGuess {
+			return fmt.Appendf(buf, " %s%s:%s\"%s\"%s", colorGray, a.Key, color, v, colorReset)
+		}
+		return fmt.Appendf(buf, " %s%s:%s%s%s", colorGray, a.Key, color, v, colorReset)
+	case error:
+		return fmt.Appendf(buf, " %s%s:%s%v%s", colorGray, a.Key, color, v, colorReset)
+	case float64:
+		if a.Key == FieldCalculationTime {
+			return fmt.Appendf(buf, " %stime:%s%.3fs%s", colorGray, color, v, colorReset)
+		}
+		return fmt.Appendf(buf, " %s%s:%s%v%s", colorGray, a.Key, color, v, colorReset)
+	default:
+		return fmt.Appendf(buf, " %s%s:%s%v%s", colorGray, a.Key, color, val, colorReset)
+	}
 }
 
-func ErrorCtx(ctx context.Context, msg string) {
-	WithContext(ctx).Error(msg)
+func (h *ColoredTextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	newAttrs := make([]slog.Attr, len(h.attrs), len(h.attrs)+len(attrs))
+	copy(newAttrs, h.attrs)
+	newAttrs = append(newAttrs, attrs...)
+
+	return &ColoredTextHandler{
+		opts:   h.opts,
+		output: h.output,
+		mu:     h.mu,
+		attrs:  newAttrs,
+		groups: h.groups,
+	}
 }
 
-func WarnCtx(ctx context.Context, msg string) {
-	WithContext(ctx).Warn(msg)
-}
+func (h *ColoredTextHandler) WithGroup(name string) slog.Handler {
+	newGroups := make([]string, len(h.groups), len(h.groups)+1)
+	copy(newGroups, h.groups)
+	newGroups = append(newGroups, name)
 
-func InfoCtx(ctx context.Context, msg string) {
-	WithContext(ctx).Info(msg)
-}
-
-func DebugCtx(ctx context.Context, msg string) {
-	WithContext(ctx).Debug(msg)
+	return &ColoredTextHandler{
+		opts:   h.opts,
+		output: h.output,
+		mu:     h.mu,
+		attrs:  h.attrs,
+		groups: newGroups,
+	}
 }

@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/dimqueue/darts/pkg/config"
@@ -33,16 +31,18 @@ func NewGameService(gameRepo repository.Game, wordService Word, statsService *St
 }
 
 func (s *GameService) CreateGame(ctx context.Context, userId int64, lang string) (int64, error) {
-	log := logger.WithContext(ctx).WithFields(map[string]interface{}{
-		"user_id":  userId,
-		"language": lang,
-	})
+	log := logger.Op(ctx, "GameService.CreateGame").With(
+		logger.FieldUserID, userId,
+		logger.FieldLanguage, lang,
+	)
 
 	selectedWord, err := s.wordService.SelectWord(ctx, lang)
 	if err != nil {
-		log.WithError(err).Error("failed to select word")
-		return 0, fmt.Errorf("failed to select word: %w", err)
+		log.Error("select word failed", logger.FieldError, err)
+		return 0, Logged(err)
 	}
+
+	log.Debug("secret word selected", logger.FieldWord, selectedWord.Word)
 
 	grpcCtx, cancel := context.WithTimeout(ctx, config.GameComputeTimeout)
 	defer cancel()
@@ -52,16 +52,11 @@ func (s *GameService) CreateGame(ctx context.Context, userId int64, lang string)
 		SecretWord: selectedWord.Word,
 	}
 
-	log.WithField("word", selectedWord.Word).Debug("calling compute service to start game")
 	resp, err := s.computeClient.StartGame(grpcCtx, req)
 	if err != nil {
-		log.WithError(err).Error("grpc StartGame failed")
-		return 0, fmt.Errorf("failed to start game on compute client: %w", err)
+		log.Error("compute service StartGame failed", logger.FieldError, err)
+		return 0, ErrComputeService
 	}
-	log.WithFields(map[string]interface{}{
-		"word":      selectedWord.Word,
-		"hint_word": resp.HintWord,
-	}).Debug("compute service responded")
 
 	expiresAt := time.Now().Add(config.GameTTL)
 
@@ -75,14 +70,15 @@ func (s *GameService) CreateGame(ctx context.Context, userId int64, lang string)
 
 	gameId, err := s.gameRepo.CreateGame(ctx, &game)
 	if err != nil {
-		log.WithError(err).Error("failed to save game to database")
-		return 0, err
+		log.Error("db create game failed", logger.FieldError, err)
+		return 0, Logged(err)
 	}
 
-	log.WithFields(map[string]interface{}{
-		"game_id":          gameId,
-		"calculation_time": resp.CalculationTime,
-	}).Info("game created")
+	log.Info("game created",
+		logger.FieldGameID, gameId,
+		logger.FieldWord, selectedWord.Word,
+		logger.FieldCalculationTime, resp.CalculationTime,
+	)
 
 	return gameId, nil
 }
@@ -91,14 +87,18 @@ func (s *GameService) GetAllGames(ctx context.Context, userId int64) ([]model.Ga
 	return s.gameRepo.GetAllGames(ctx, userId)
 }
 
+func (s *GameService) GetActiveGame(ctx context.Context, userId int64) (*model.Game, error) {
+	return s.gameRepo.GetActiveGame(ctx, userId)
+}
+
 func (s *GameService) GetGameById(ctx context.Context, userId, gameId int64) (*model.Game, error) {
 	game, err := s.gameRepo.GetGameById(ctx, s.txManager.DB(), gameId, false)
 	if err != nil {
-		return nil, err
+		return nil, ErrGameNotFound
 	}
 
 	if game.UserId != userId {
-		return nil, fmt.Errorf("unauthorized: access denied")
+		return nil, ErrForbidden
 	}
 
 	return game, nil
@@ -109,10 +109,11 @@ func (s *GameService) UpdateGameStatus(ctx context.Context, gameId int64, status
 }
 
 func (s *GameService) MakeGuess(ctx context.Context, userId, gameId int64, guess string) (int, error) {
-	log := logger.WithContext(ctx).WithFields(map[string]interface{}{
-		"user_id": userId,
-		"game_id": gameId,
-	})
+	log := logger.Op(ctx, "GameService.MakeGuess").With(
+		logger.FieldUserID, userId,
+		logger.FieldGameID, gameId,
+		logger.FieldGuess, guess,
+	)
 
 	game, err := s.GetGameById(ctx, userId, gameId)
 	if err != nil {
@@ -120,23 +121,22 @@ func (s *GameService) MakeGuess(ctx context.Context, userId, gameId int64, guess
 	}
 
 	if game.Status != "in_progress" {
-		log.Warn("attempt to guess on inactive game")
-		return 0, errors.New("game is not active")
+		return 0, ErrGameNotActive
 	}
 
 	exists, err := s.gameRepo.GuessExists(ctx, s.txManager.DB(), gameId, guess)
 	if err != nil {
-		log.WithError(err).Error("failed to check if guess exists")
-		return 0, fmt.Errorf("failed to check guess: %w", err)
+		log.Error("db check guess exists failed", logger.FieldError, err)
+		return 0, Logged(err)
 	}
 	if exists {
-		return 0, errors.New("word already guessed")
+		return 0, ErrWordAlreadyUsed
 	}
 
 	word, err := s.wordService.GetWordById(ctx, game.WordId)
 	if err != nil {
-		log.WithError(err).Error("failed to get target word")
-		return 0, err
+		log.Error("get target word failed", logger.FieldError, err)
+		return 0, Logged(err)
 	}
 
 	var distance int
@@ -154,35 +154,37 @@ func (s *GameService) MakeGuess(ctx context.Context, userId, gameId int64, guess
 			Language:   game.Language,
 		}
 
-		log.WithFields(map[string]interface{}{
-			"target_word": word.Word,
-			"guess":       guess,
-		}).Debug("calling compute service for distance calculation")
 		resp, err := s.computeClient.MakeGuess(grpcCtx, req)
 		if err != nil {
-			log.WithError(err).Error("grpc MakeGuess failed")
-			return 0, err
+			log.Error("compute service MakeGuess failed", logger.FieldError, err)
+			return 0, ErrComputeService
 		}
 		distance = resp.Distance
-		log.WithField("distance", distance).Debug("distance calculated")
+
+		if distance == -1 {
+			return -1, ErrWordNotFound
+		}
+		if distance == 0 {
+			return 0, ErrWordTooFar
+		}
 	}
 
 	err = s.txManager.WithTransaction(ctx, func(tx *sqlx.Tx) error {
 		lockedGame, err := s.gameRepo.GetGameById(ctx, tx, gameId, true)
 		if err != nil {
-			return fmt.Errorf("failed to lock game: %w", err)
+			return err
 		}
 
 		if lockedGame.Status != "in_progress" {
-			return errors.New("game is no longer active")
+			return ErrGameNotActive
 		}
 
 		existsTx, err := s.gameRepo.GuessExists(ctx, tx, gameId, guess)
 		if err != nil {
-			return fmt.Errorf("failed to check guess in transaction: %w", err)
+			return err
 		}
 		if existsTx {
-			return errors.New("word already guessed")
+			return ErrWordAlreadyUsed
 		}
 
 		newGuess := model.Guess{
@@ -191,17 +193,17 @@ func (s *GameService) MakeGuess(ctx context.Context, userId, gameId int64, guess
 			Distance:  distance,
 		}
 		if err := s.gameRepo.CreateGuess(ctx, tx, &newGuess); err != nil {
-			return fmt.Errorf("failed to create guess: %w", err)
+			return err
 		}
 
 		if isWinningGuess {
 			if err := s.gameRepo.UpdateGameStatus(ctx, tx, gameId, "won"); err != nil {
-				return fmt.Errorf("failed to update game status: %w", err)
+				return err
 			}
 
 			guessCount, err := s.gameRepo.CountGuessesByGame(ctx, tx, gameId)
 			if err != nil {
-				return fmt.Errorf("failed to count guesses: %w", err)
+				return err
 			}
 
 			elapsed := int(time.Since(lockedGame.StartedAt).Seconds())
@@ -216,20 +218,27 @@ func (s *GameService) MakeGuess(ctx context.Context, userId, gameId int64, guess
 			}
 
 			if err := s.statsService.UpdateGameEndStats(ctx, tx, statsUpdate); err != nil {
-				return fmt.Errorf("failed to update statistics: %w", err)
+				return err
 			}
 
-			log.WithFields(map[string]interface{}{
-				"guess_count":  guessCount,
-				"time_seconds": elapsed,
-			}).Info("game won")
+			log.Info("game won",
+				"guess_count", guessCount,
+				"time_seconds", elapsed,
+			)
 		}
 		return nil
 	})
 
 	if err != nil {
-		log.WithError(err).Error("failed to process guess transaction")
+		if !IsDomainError(err) {
+			log.Error("guess transaction failed", logger.FieldError, err)
+			return 0, Logged(err)
+		}
 		return 0, err
+	}
+
+	if !isWinningGuess {
+		log.Debug("guess processed", logger.FieldDistance, distance)
 	}
 
 	return distance, nil
@@ -242,4 +251,62 @@ func (s *GameService) GetAllGuessByGame(ctx context.Context, userId, gameId int6
 	}
 
 	return s.gameRepo.GetAllGuessByGame(ctx, gameId)
+}
+
+func (s *GameService) AbandonGame(ctx context.Context, userId, gameId int64) error {
+	log := logger.Op(ctx, "GameService.AbandonGame").With(
+		logger.FieldUserID, userId,
+		logger.FieldGameID, gameId,
+	)
+
+	game, err := s.GetGameById(ctx, userId, gameId)
+	if err != nil {
+		return err
+	}
+
+	if game.Status != "in_progress" {
+		return ErrGameNotActive
+	}
+
+	err = s.txManager.WithTransaction(ctx, func(tx *sqlx.Tx) error {
+		lockedGame, err := s.gameRepo.GetGameById(ctx, tx, gameId, true)
+		if err != nil {
+			return err
+		}
+
+		if lockedGame.Status != "in_progress" {
+			return nil
+		}
+
+		if err := s.gameRepo.UpdateGameStatus(ctx, tx, gameId, "abandoned"); err != nil {
+			return err
+		}
+
+		guessCount, err := s.gameRepo.CountGuessesByGame(ctx, tx, gameId)
+		if err != nil {
+			return err
+		}
+
+		statsUpdate := model.StatisticsUpdate{
+			UserId:      userId,
+			Language:    lockedGame.Language,
+			IsWin:       false,
+			GuessCount:  guessCount,
+			ScoreEarned: 0,
+		}
+
+		if err := s.statsService.UpdateGameEndStats(ctx, tx, statsUpdate); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Error("abandon transaction failed", logger.FieldError, err)
+		return Logged(err)
+	}
+
+	log.Info("game abandoned")
+	return nil
 }

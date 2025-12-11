@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"net/http"
 	"strings"
 
 	"github.com/dimqueue/darts/pkg/logger"
@@ -62,18 +61,18 @@ func GetRequestIDFromContext(ctx context.Context) string {
 func (h *Handler) userIdentity(c *gin.Context) {
 	header := c.GetHeader(authorizationHeader)
 	if header == "" {
-		newErrorResponse(c, http.StatusUnauthorized, "empty auth header")
+		handleError(c, ErrUnauthorized("empty auth header"))
 		return
 	}
 	headerParts := strings.Split(header, " ")
 	if len(headerParts) != 2 {
-		newErrorResponse(c, http.StatusUnauthorized, "invalid auth header")
+		handleError(c, ErrUnauthorized("invalid auth header"))
 		return
 	}
 
 	userId, err := h.services.Authorization.ParseToken(headerParts[1])
 	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, err.Error())
+		handleError(c, err)
 		return
 	}
 

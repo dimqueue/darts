@@ -31,9 +31,39 @@ func (r *GamePostgres) CreateGame(ctx context.Context, game *model.Game) (int64,
 func (r *GamePostgres) GetAllGames(ctx context.Context, userId int64) ([]model.Game, error) {
 	games := make([]model.Game, 0, 100)
 
-	query := fmt.Sprintf("SELECT id, user_id, word_id, status, language, started_at, ended_at, expires_at FROM %s WHERE user_id=$1 ORDER BY started_at DESC LIMIT 100", gamesTable)
+	query := fmt.Sprintf(`
+		SELECT id, user_id, word_id, status, language, started_at, ended_at, expires_at
+		FROM %s
+		WHERE user_id = $1
+		ORDER BY started_at DESC
+		LIMIT 100
+	`, gamesTable)
 	err := r.db.SelectContext(ctx, &games, query, userId)
 	return games, err
+}
+
+func (r *GamePostgres) GetActiveGame(ctx context.Context, userId int64) (*model.Game, error) {
+	var game model.Game
+
+	query := fmt.Sprintf(`
+		SELECT id, user_id, word_id, status, language, started_at, ended_at, expires_at
+		FROM %s
+		WHERE user_id = $1
+		  AND status = 'in_progress'
+		  AND (expires_at IS NULL OR expires_at > NOW())
+		ORDER BY started_at DESC
+		LIMIT 1
+	`, gamesTable)
+
+	err := r.db.GetContext(ctx, &game, query, userId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &game, nil
 }
 
 func (r *GamePostgres) GetGameById(ctx context.Context, q Querier, gameId int64, forUpdate bool) (*model.Game, error) {

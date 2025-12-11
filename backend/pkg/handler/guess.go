@@ -15,32 +15,30 @@ type createGuessInput struct {
 func (h *Handler) createGuess(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, "user not found")
+		handleError(c, ErrUnauthorized("user not found"))
 		return
 	}
-	gameId, err := strconv.ParseInt(c.Param("id"), 10, 64)
 
+	gameId, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		handleError(c, ErrBadRequest("invalid game id"))
 		return
 	}
 
 	var input createGuessInput
-
 	if err = c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		handleError(c, ErrBadRequest("invalid request body"))
 		return
 	}
 
 	if err = h.validator.ValidateWord(input.Guess); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		handleError(c, ErrValidation(err.Error()))
 		return
 	}
 
 	distance, err := h.services.Game.MakeGuess(c.Request.Context(), userId, gameId, input.Guess)
-
 	if err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		handleError(c, err)
 		return
 	}
 
@@ -56,19 +54,19 @@ type getAllGuessByGameResponse struct {
 func (h *Handler) getAllGuessByGame(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, "user not found")
+		handleError(c, ErrUnauthorized("user not found"))
 		return
 	}
 
 	gameId, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		handleError(c, ErrBadRequest("invalid game id"))
 		return
 	}
 
 	guesses, err := h.services.Game.GetAllGuessByGame(c.Request.Context(), userId, gameId)
 	if err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		handleError(c, err)
 		return
 	}
 

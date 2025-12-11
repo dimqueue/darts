@@ -4,16 +4,16 @@ package seeds
 
 import (
 	"embed"
+	"log/slog"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 )
 
 //go:embed postgres/*
 var seedFiles embed.FS
 
 func Run(db *sqlx.DB) error {
-	logrus.Info("Loading seed data (dev mode)...")
+	slog.Info("Loading seed data (dev mode)...")
 
 	content, err := seedFiles.ReadFile("postgres/sample-data.sql")
 	if err != nil {
@@ -24,6 +24,6 @@ func Run(db *sqlx.DB) error {
 		return err
 	}
 
-	logrus.Info("Seed data loaded successfully")
+	slog.Info("Seed data loaded successfully")
 	return nil
 }

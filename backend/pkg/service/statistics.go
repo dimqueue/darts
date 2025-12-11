@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/dimqueue/darts/pkg/logger"
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
 )
@@ -105,8 +106,14 @@ func (s *StatsService) CalculateNewLanguageStats(
 }
 
 func (s *StatsService) UpdateStatsAfterGame(ctx context.Context, q repository.Querier, userId int64, language string, isWin bool, guessCount int, timeSeconds *int, scoreEarned int) error {
+	log := logger.Op(ctx, "StatsService.UpdateStatsAfterGame").With(
+		logger.FieldUserID, userId,
+		logger.FieldLanguage, language,
+	)
+
 	currentStreaks, err := s.statsRepo.GetGlobalStreaks(ctx, q, userId, true)
 	if err != nil {
+		log.Error("failed to get global streaks", logger.FieldError, err)
 		return fmt.Errorf("failed to get global streaks: %w", err)
 	}
 
@@ -114,16 +121,19 @@ func (s *StatsService) UpdateStatsAfterGame(ctx context.Context, q repository.Qu
 
 	if currentStreaks == nil {
 		if err := s.statsRepo.CreateGlobalStreaksWithData(ctx, q, newStreaks); err != nil {
+			log.Error("failed to create global streaks", logger.FieldError, err)
 			return fmt.Errorf("failed to create global streaks: %w", err)
 		}
 	} else {
 		if err := s.statsRepo.UpdateGlobalStreaks(ctx, q, newStreaks); err != nil {
+			log.Error("failed to update global streaks", logger.FieldError, err)
 			return fmt.Errorf("failed to update global streaks: %w", err)
 		}
 	}
 
 	currentLangStats, err := s.statsRepo.GetLanguageStats(ctx, q, userId, language, true)
 	if err != nil {
+		log.Error("failed to get language stats", logger.FieldError, err)
 		return fmt.Errorf("failed to get language stats: %w", err)
 	}
 
@@ -131,10 +141,12 @@ func (s *StatsService) UpdateStatsAfterGame(ctx context.Context, q repository.Qu
 
 	if currentLangStats == nil {
 		if err := s.statsRepo.CreateLanguageStats(ctx, q, newLangStats); err != nil {
+			log.Error("failed to create language stats", logger.FieldError, err)
 			return fmt.Errorf("failed to create language stats: %w", err)
 		}
 	} else {
 		if err := s.statsRepo.UpdateLanguageStats(ctx, q, newLangStats); err != nil {
+			log.Error("failed to update language stats", logger.FieldError, err)
 			return fmt.Errorf("failed to update language stats: %w", err)
 		}
 	}

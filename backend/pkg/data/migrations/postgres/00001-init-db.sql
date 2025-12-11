@@ -27,14 +27,14 @@ CREATE TABLE "games"
     id         BIGSERIAL PRIMARY KEY,
     user_id    BIGINT      NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     word_id    BIGINT      NOT NULL REFERENCES words (id) ON DELETE CASCADE,
-    status     VARCHAR(20) NOT NULL CHECK (status IN ('in_progress', 'won', 'lost')),
+    status     VARCHAR(20) NOT NULL CHECK (status IN ('in_progress', 'won', 'lost', 'abandoned')),
     language   VARCHAR(3)  NOT NULL,
     started_at TIMESTAMPTZ DEFAULT NOW(),
     ended_at   TIMESTAMPTZ,
     expires_at TIMESTAMPTZ,
     CONSTRAINT check_game_completion CHECK (
         (status = 'in_progress' AND ended_at IS NULL) OR
-        (status IN ('won', 'lost') AND ended_at IS NOT NULL)
+        (status IN ('won', 'lost', 'abandoned') AND ended_at IS NOT NULL)
     )
 );
 

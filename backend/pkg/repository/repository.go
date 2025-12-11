@@ -16,6 +16,7 @@ type Authorization interface {
 type Game interface {
 	CreateGame(ctx context.Context, game *model.Game) (int64, error)
 	GetAllGames(ctx context.Context, userId int64) ([]model.Game, error)
+	GetActiveGame(ctx context.Context, userId int64) (*model.Game, error)
 	GetGameById(ctx context.Context, q Querier, gameId int64, forUpdate bool) (*model.Game, error)
 	UpdateGameStatus(ctx context.Context, q Querier, gameId int64, status string) error
 	GetExpiredGames(ctx context.Context) ([]model.Game, error)

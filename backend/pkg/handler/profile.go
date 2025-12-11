@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dimqueue/darts/pkg/model"
+	"github.com/dimqueue/darts/pkg/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,13 +18,13 @@ import (
 func (h *Handler) getMyProfile(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, err.Error())
+		handleError(c, ErrUnauthorized("user not found"))
 		return
 	}
 
 	profile, err := h.services.Profile.GetProfileSummary(c.Request.Context(), userId)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, err)
 		return
 	}
 
@@ -42,12 +43,12 @@ func (h *Handler) getProfileByUsername(c *gin.Context) {
 
 	profile, err := h.services.Profile.GetProfileByUsername(c.Request.Context(), username)
 	if err != nil {
-		newErrorResponse(c, http.StatusNotFound, "user not found")
+		handleError(c, service.ErrProfileNotFound)
 		return
 	}
 
 	if !profile.ShowProfilePublic {
-		newErrorResponse(c, http.StatusForbidden, "profile is private")
+		handleError(c, service.ErrProfilePrivate)
 		return
 	}
 
@@ -66,18 +67,18 @@ func (h *Handler) getProfileByUsername(c *gin.Context) {
 func (h *Handler) updateMyProfile(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, err.Error())
+		handleError(c, ErrUnauthorized("user not found"))
 		return
 	}
 
 	var input model.UpdateProfileInput
 	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "invalid input body")
+		handleError(c, ErrBadRequest("invalid request body"))
 		return
 	}
 
 	if err := h.services.Profile.UpdateProfile(c.Request.Context(), userId, input); err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, err)
 		return
 	}
 
@@ -94,13 +95,13 @@ func (h *Handler) updateMyProfile(c *gin.Context) {
 func (h *Handler) getMySettings(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, err.Error())
+		handleError(c, ErrUnauthorized("user not found"))
 		return
 	}
 
 	settings, err := h.services.Profile.GetSettings(c.Request.Context(), userId)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, err)
 		return
 	}
 
@@ -119,18 +120,18 @@ func (h *Handler) getMySettings(c *gin.Context) {
 func (h *Handler) updateMySettings(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, err.Error())
+		handleError(c, ErrUnauthorized("user not found"))
 		return
 	}
 
 	var input model.UpdateSettingsInput
 	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "invalid input body")
+		handleError(c, ErrBadRequest("invalid request body"))
 		return
 	}
 
 	if err := h.services.Profile.UpdateSettings(c.Request.Context(), userId, input); err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, err)
 		return
 	}
 
@@ -147,13 +148,13 @@ func (h *Handler) updateMySettings(c *gin.Context) {
 func (h *Handler) getMyStatistics(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, err.Error())
+		handleError(c, ErrUnauthorized("user not found"))
 		return
 	}
 
 	stats, err := h.services.Profile.GetStatistics(c.Request.Context(), userId)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, err)
 		return
 	}
 
@@ -171,7 +172,7 @@ func (h *Handler) getMyStatistics(c *gin.Context) {
 func (h *Handler) getMyLanguageStats(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, err.Error())
+		handleError(c, ErrUnauthorized("user not found"))
 		return
 	}
 
@@ -179,12 +180,12 @@ func (h *Handler) getMyLanguageStats(c *gin.Context) {
 
 	if language != "" {
 		if err := h.validator.ValidateLanguage(language); err != nil {
-			newErrorResponse(c, http.StatusBadRequest, err.Error())
+			handleError(c, ErrValidation(err.Error()))
 			return
 		}
 		stats, err := h.services.Profile.GetLanguageStats(c.Request.Context(), userId, language)
 		if err != nil {
-			newErrorResponse(c, http.StatusInternalServerError, err.Error())
+			handleError(c, err)
 			return
 		}
 		c.JSON(http.StatusOK, stats)
@@ -193,7 +194,7 @@ func (h *Handler) getMyLanguageStats(c *gin.Context) {
 
 	stats, err := h.services.Profile.GetAllLanguageStats(c.Request.Context(), userId)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, err)
 		return
 	}
 

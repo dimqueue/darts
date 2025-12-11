@@ -21,12 +21,12 @@ import (
 func (h *Handler) getLeaderboard(c *gin.Context) {
 	leaderboardType := c.Query("type")
 	if leaderboardType == "" {
-		newErrorResponse(c, http.StatusBadRequest, "type parameter is required (global, weekly, monthly)")
+		handleError(c, ErrValidation("type parameter is required (global, weekly, monthly)"))
 		return
 	}
 
 	if leaderboardType != "global" && leaderboardType != "daily" && leaderboardType != "weekly" && leaderboardType != "monthly" {
-		newErrorResponse(c, http.StatusBadRequest, "invalid type: must be global, daily, weekly, or monthly")
+		handleError(c, ErrValidation("invalid type: must be global, daily, weekly, or monthly"))
 		return
 	}
 
@@ -43,7 +43,7 @@ func (h *Handler) getLeaderboard(c *gin.Context) {
 
 	response, err := h.services.Leaderboard.GetLeaderboard(c.Request.Context(), query)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, err)
 		return
 	}
 
@@ -66,13 +66,13 @@ func (h *Handler) getLeaderboard(c *gin.Context) {
 func (h *Handler) getMyRank(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, err.Error())
+		handleError(c, ErrUnauthorized("user not found"))
 		return
 	}
 
 	ranks, err := h.services.Leaderboard.GetAllUserRanks(c.Request.Context(), userId)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, err)
 		return
 	}
 

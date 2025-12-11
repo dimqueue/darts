@@ -2,13 +2,14 @@ package worker
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 	"time"
 
+	"github.com/dimqueue/darts/pkg/logger"
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 )
 
 const maxConcurrentExpiry = 10
@@ -38,12 +39,14 @@ func (w *GameExpiryWorker) Start(ctx context.Context) {
 	ticker := time.NewTicker(w.interval)
 	defer ticker.Stop()
 
-	logrus.WithField("interval", w.interval.String()).Info("game expiry worker started")
+	slog.Info("game expiry worker started", "interval", w.interval.String())
+
+	w.expireGames(ctx)
 
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Info("game expiry worker stopped")
+			slog.Info("game expiry worker stopped")
 			return
 		case <-ticker.C:
 			w.expireGames(ctx)
@@ -54,7 +57,7 @@ func (w *GameExpiryWorker) Start(ctx context.Context) {
 func (w *GameExpiryWorker) expireGames(ctx context.Context) {
 	games, err := w.gameRepo.GetExpiredGames(ctx)
 	if err != nil {
-		logrus.WithError(err).Error("failed to get expired games")
+		slog.Error("failed to get expired games", logger.FieldError, err)
 		return
 	}
 
@@ -62,7 +65,7 @@ func (w *GameExpiryWorker) expireGames(ctx context.Context) {
 		return
 	}
 
-	logrus.WithField("count", len(games)).Debug("found expired games")
+	slog.Debug("found expired games", "count", len(games))
 
 	var (
 		wg           sync.WaitGroup
@@ -80,10 +83,11 @@ func (w *GameExpiryWorker) expireGames(ctx context.Context) {
 			defer func() { <-semaphore }()
 
 			if err := w.expireGame(ctx, g); err != nil {
-				logrus.WithFields(logrus.Fields{
-					"game_id": g.Id,
-					"user_id": g.UserId,
-				}).WithError(err).Error("failed to expire game")
+				slog.Error("failed to expire game",
+					logger.FieldGameID, g.Id,
+					logger.FieldUserID, g.UserId,
+					logger.FieldError, err,
+				)
 				return
 			}
 
@@ -96,7 +100,7 @@ func (w *GameExpiryWorker) expireGames(ctx context.Context) {
 	wg.Wait()
 
 	if expiredCount > 0 {
-		logrus.WithField("count", expiredCount).Info("expired games processed")
+		slog.Info("expired games processed", "count", expiredCount)
 	}
 }
 

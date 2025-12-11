@@ -27,26 +27,24 @@ type CreateGameInput struct {
 func (h *Handler) createGame(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, "user id not found")
+		handleError(c, ErrUnauthorized("user not found"))
 		return
 	}
 
 	var input CreateGameInput
-
 	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		handleError(c, ErrBadRequest("invalid request body"))
 		return
 	}
 
 	if err := h.validator.ValidateLanguage(input.Language); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		handleError(c, ErrValidation(err.Error()))
 		return
 	}
 
 	gameId, err := h.services.Game.CreateGame(c.Request.Context(), userId, input.Language)
-
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, err)
 		return
 	}
 
@@ -71,13 +69,13 @@ type getAllGamesResponse struct {
 func (h *Handler) getAllGames(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, ErrUnauthorized("user not found"))
 		return
 	}
 
 	games, err := h.services.GetAllGames(c.Request.Context(), userId)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, err)
 		return
 	}
 
@@ -90,26 +88,65 @@ type getGameByIdResponse struct {
 	Data *model.Game `json:"data"`
 }
 
-func (h *Handler) getGameById(c *gin.Context) {
+func (h *Handler) getActiveGame(c *gin.Context) {
 	userId, err := getUserId(c)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, "user id not found")
+		handleError(c, ErrUnauthorized("user not found"))
 		return
 	}
 
-	gameId, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	game, err := h.services.Game.GetActiveGame(c.Request.Context(), userId)
 	if err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "invalid game id")
-		return
-	}
-
-	game, err := h.services.GetGameById(c.Request.Context(), userId, gameId)
-	if err != nil {
-		newErrorResponse(c, http.StatusNotFound, err.Error())
+		handleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, getGameByIdResponse{
 		Data: game,
 	})
+}
+
+func (h *Handler) getGameById(c *gin.Context) {
+	userId, err := getUserId(c)
+	if err != nil {
+		handleError(c, ErrUnauthorized("user not found"))
+		return
+	}
+
+	gameId, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		handleError(c, ErrBadRequest("invalid game id"))
+		return
+	}
+
+	game, err := h.services.GetGameById(c.Request.Context(), userId, gameId)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, getGameByIdResponse{
+		Data: game,
+	})
+}
+
+func (h *Handler) abandonGame(c *gin.Context) {
+	userId, err := getUserId(c)
+	if err != nil {
+		handleError(c, ErrUnauthorized("user not found"))
+		return
+	}
+
+	gameId, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		handleError(c, ErrBadRequest("invalid game id"))
+		return
+	}
+
+	if err := h.services.Game.AbandonGame(c.Request.Context(), userId, gameId); err != nil {
+		handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, statusResponse{Status: "abandoned"})
 }

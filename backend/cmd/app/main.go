@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/dimqueue/darts/pkg"
 	_ "github.com/lib/pq"
-	"github.com/sirupsen/logrus"
 )
 
 // @title           Darts API
@@ -23,7 +23,7 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		logrus.Error(err)
+		slog.Error("application error", "error", err)
 		os.Exit(1)
 	}
 }

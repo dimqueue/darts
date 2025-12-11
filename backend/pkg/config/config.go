@@ -1,12 +1,12 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -94,7 +94,7 @@ func loadDatabase() {
 func loadAuth() {
 	JWTSecret = os.Getenv("JWT_SECRET")
 	if JWTSecret == "" {
-		logrus.Fatal("JWT_SECRET environment variable is required")
+		panic(fmt.Sprintf("JWT_SECRET environment variable is required"))
 	}
 
 	if v := getEnvOrViperInt("TOKEN_TTL_HOURS", "auth.tokenTTLHours", 12); v > 0 {
