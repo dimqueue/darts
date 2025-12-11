@@ -34,7 +34,8 @@ A full-stack word similarity guessing game inspired by [Contexto](https://contex
 - Multiple languages (English, Ukrainian)
 - Leaderboards (global, monthly, weekly, daily)
 - User profiles and statistics
-- Multiple themes
+- Dark/light mode with multiple color themes
+- Redis caching for leaderboards
 - Swagger API documentation
 - Mock API mode for frontend-only development
 
@@ -51,12 +52,13 @@ A full-stack word similarity guessing game inspired by [Contexto](https://contex
 - Swagger/OpenAPI (swaggo)
 - gRPC client + Protobuf
 
-  ### ML/Compute Service
+### ML/Compute Service
 - **Python 3.11**
 - **FastAPI 0.104** + Uvicorn (async HTTP)
 - **Pydantic 2.5** (data validation)
 - gRPC server + Protobuf
 - **Gensim 4.3** (Word2Vec, GloVe embeddings)
+- **Redis 7** (game rankings cache)
 - NumPy 1.24 + SciPy 1.10
 - psutil (resource monitoring)
 
@@ -81,13 +83,13 @@ A full-stack word similarity guessing game inspired by [Contexto](https://contex
 +-------------+      HTTP      +-------------+      gRPC      +-------------+
 |  Frontend   |<-------------->|   Backend   |<-------------->|   Compute   |
 |   (React)   |     :3000      |    (Go)     |    :50051      |  (Python)   |
-+-------------+                +------+------+                +-------------+
-                                      |                              |
-                                      v                              v
-                               +-------------+                +-------------+
-                               | PostgreSQL  |                |   Gensim    |
-                               |    :5432    |                |   Models    |
-                               +-------------+                +-------------+
++-------------+                +------+------+                +------+------+
+                                      |                           |      |
+                                      v                           v      v
+                               +-------------+             +-------+  +-------+
+                               | PostgreSQL  |             | Redis |  |Gensim |
+                               |    :5432    |             | :6379 |  |Models |
+                               +-------------+             +-------+  +-------+
 ```
 
 **Architecture Highlights:**
@@ -235,7 +237,7 @@ Swagger UI is available at http://localhost:8080/swagger/index.html when the bac
 - [ ] Google Cloud deployment (Cloud Run / GKE)
 - [ ] CI/CD pipeline (GitHub Actions)
 - [ ] CDN for static assets
-- [ ] Redis caching layer (similarity scores, leaderboards)
+- [x] Redis caching layer (game rankings)
 - [ ] Error monitoring (Sentry)
 - [ ] Rate limiting & API throttling
 
@@ -273,7 +275,7 @@ Swagger UI is available at http://localhost:8080/swagger/index.html when the bac
 - [ ] Sound effects & audio feedback
 - [ ] Accessibility improvements (a11y)
 - [ ] Mobile app (React Native / PWA)
-- [ ] Dark/light theme polish
+- [x] Dark/light mode with theme switcher
 
 ###  Analytics & Insights
 - [ ] Player statistics dashboard
