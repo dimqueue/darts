@@ -13,15 +13,15 @@ export function Skeleton({ className = '', variant = 'text' }) {
         icon: 'h-8 w-8 rounded-lg',
     };
 
-    return (
-        <div className={`${baseClasses} ${variants[variant] || ''} ${className}`} />
-    );
+    return <div className={`${baseClasses} ${variants[variant] || ''} ${className}`} />;
 }
 
 export function SkeletonCard({ children, className = '' }) {
     const { darkMode } = useTheme();
     return (
-        <div className={`rounded-2xl p-6 shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} ${className}`}>
+        <div
+            className={`rounded-2xl p-6 shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} ${className}`}
+        >
             {children}
         </div>
     );

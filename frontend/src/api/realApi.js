@@ -1,5 +1,16 @@
 import config from '../config/env';
 
+// Custom error class with code and request_id
+export class ApiError extends Error {
+    constructor(message, code, status, requestId = null) {
+        super(message);
+        this.name = 'ApiError';
+        this.code = code;
+        this.status = status;
+        this.requestId = requestId;
+    }
+}
+
 class RealApiClient {
     constructor() {
         this.baseURL = config.apiUrl;
@@ -29,23 +40,36 @@ class RealApiClient {
 
         try {
             const response = await fetch(url, fetchConfig);
+            const data = await response.json().catch(() => ({}));
 
-            if (response.status === 401) {
+            const isAuthEndpoint = endpoint.startsWith('/auth/');
+            if (response.status === 401 && !isAuthEndpoint) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 window.location.href = '/auth';
-                throw new Error('Session expired. Please log in again.');
+                throw new ApiError('Session expired. Please log in again.', 'UNAUTHORIZED', 401);
             }
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                throw new ApiError(
+                    data.message || `HTTP error! status: ${response.status}`,
+                    data.code || 'UNKNOWN_ERROR',
+                    response.status,
+                    data.request_id
+                );
             }
 
-            return await response.json();
+            return data;
         } catch (error) {
+            if (error instanceof ApiError) {
+                throw error;
+            }
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                throw new Error('Connection error. Please check your internet.');
+                throw new ApiError(
+                    'Connection error. Please check your internet.',
+                    'CONNECTION_ERROR',
+                    0
+                );
             }
             throw error;
         }
@@ -83,6 +107,10 @@ class RealApiClient {
         return this.request('/api/games', { method: 'GET' });
     }
 
+    async getActiveGame() {
+        return this.request('/api/games/active', { method: 'GET' });
+    }
+
     async getGameById(gameId) {
         return this.request(`/api/games/${gameId}`, { method: 'GET' });
     }
@@ -96,6 +124,10 @@ class RealApiClient {
 
     async deleteGame(gameId) {
         return this.request(`/api/games/${gameId}`, { method: 'DELETE' });
+    }
+
+    async abandonGame(gameId) {
+        return this.request(`/api/games/${gameId}/abandon`, { method: 'POST' });
     }
 
     async createGuess(gameId, guess) {
@@ -156,11 +188,9 @@ class RealApiClient {
         return this.request('/api/leaderboard/my-rank', { method: 'GET' });
     }
 
-
     async getPublicProfile(username) {
         return this.request(`/public/profile/${username}`, { method: 'GET' });
     }
-
 
     clearAllData() {
         localStorage.removeItem('token');

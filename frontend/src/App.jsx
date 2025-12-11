@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { GameProvider } from './contexts/GameContext';
+import { ToastProvider } from './contexts/ToastContext';
+import ErrorBoundary from './components/ErrorBoundary';
+import { ToastContainer } from './components/ui/Toast';
 
 import AuthPage from './pages/AuthPage';
 import GamePage from './pages/GamePage';
@@ -107,14 +110,19 @@ function AppRoutes() {
 
 export default function App() {
     return (
-        <BrowserRouter basename={import.meta.env.BASE_URL}>
-            <AuthProvider>
-                <ThemeProvider>
-                    <GameProvider>
-                        <AppRoutes />
-                    </GameProvider>
-                </ThemeProvider>
-            </AuthProvider>
-        </BrowserRouter>
+        <ErrorBoundary>
+            <BrowserRouter basename={import.meta.env.BASE_URL}>
+                <AuthProvider>
+                    <ThemeProvider>
+                        <ToastProvider>
+                            <GameProvider>
+                                <AppRoutes />
+                                <ToastContainer />
+                            </GameProvider>
+                        </ToastProvider>
+                    </ThemeProvider>
+                </AuthProvider>
+            </BrowserRouter>
+        </ErrorBoundary>
     );
 }

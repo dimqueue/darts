@@ -7,23 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Pagination from '../components/ui/Pagination';
-
-const LANGUAGES = [
-    { code: '', name: 'All Languages' },
-    { code: 'en', name: 'English' },
-    { code: 'ua', name: 'Ukrainian' },
-];
-
-const ITEMS_PER_PAGE = 50;
-
-const getCountryFlag = (countryCode) => {
-    if (!countryCode || countryCode.length !== 2) return null;
-    const codePoints = countryCode
-        .toUpperCase()
-        .split('')
-        .map(char => 127397 + char.charCodeAt(0));
-    return String.fromCodePoint(...codePoints);
-};
+import { LANGUAGES_WITH_ALL, PAGINATION, getCountryFlag } from '../config/constants';
 
 const RankNavigation = ({ ranks, activeTab, onTabChange, theme, darkMode }) => {
     const stats = [
@@ -38,8 +22,14 @@ const RankNavigation = ({ ranks, activeTab, onTabChange, theme, darkMode }) => {
             <div className="flex items-center gap-3 mb-4">
                 <Trophy className={`w-8 h-8 ${darkMode ? theme.textColorDark : theme.textColor}`} />
                 <div>
-                    <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Leaderboard</h1>
-                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Click your rank to switch views</p>
+                    <h1
+                        className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}
+                    >
+                        Leaderboard
+                    </h1>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        Click your rank to switch views
+                    </p>
                 </div>
             </div>
             <div className="flex gap-3">
@@ -53,17 +43,23 @@ const RankNavigation = ({ ranks, activeTab, onTabChange, theme, darkMode }) => {
                                 isActive
                                     ? `${theme.borderColor} ${theme.gradient} text-white shadow-lg scale-105`
                                     : darkMode
-                                        ? 'border-gray-600 bg-gray-700 hover:border-gray-500 hover:bg-gray-600'
-                                        : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
+                                      ? 'border-gray-600 bg-gray-700 hover:border-gray-500 hover:bg-gray-600'
+                                      : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
                             }`}
                         >
-                            <p className={`text-xs font-medium uppercase tracking-wide ${isActive ? 'text-white/80' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <p
+                                className={`text-xs font-medium uppercase tracking-wide ${isActive ? 'text-white/80' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                            >
                                 {stat.label}
                             </p>
-                            <p className={`text-2xl font-bold mt-1 ${isActive ? 'text-white' : darkMode ? 'text-white' : 'text-gray-800'}`}>
+                            <p
+                                className={`text-2xl font-bold mt-1 ${isActive ? 'text-white' : darkMode ? 'text-white' : 'text-gray-800'}`}
+                            >
                                 {stat.value ? `#${stat.value}` : '-'}
                             </p>
-                            {isActive && <div className="w-8 h-1 bg-white/50 rounded-full mx-auto mt-2" />}
+                            {isActive && (
+                                <div className="w-8 h-1 bg-white/50 rounded-full mx-auto mt-2" />
+                            )}
                         </button>
                     );
                 })}
@@ -72,7 +68,15 @@ const RankNavigation = ({ ranks, activeTab, onTabChange, theme, darkMode }) => {
     );
 };
 
-const SortableHeader = ({ label, field, sortBy, sortDirection, onSort, align = 'left', darkMode }) => {
+const SortableHeader = ({
+    label,
+    field,
+    sortBy,
+    sortDirection,
+    onSort,
+    align = 'left',
+    darkMode,
+}) => {
     const isActive = sortBy === field;
     const alignClass = align === 'right' ? 'text-right justify-end' : 'text-left';
 
@@ -85,11 +89,12 @@ const SortableHeader = ({ label, field, sortBy, sortDirection, onSort, align = '
         >
             <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : ''}`}>
                 {label}
-                {isActive && (
-                    sortDirection === 'asc'
-                        ? <ChevronUp className="w-4 h-4" />
-                        : <ChevronDown className="w-4 h-4" />
-                )}
+                {isActive &&
+                    (sortDirection === 'asc' ? (
+                        <ChevronUp className="w-4 h-4" />
+                    ) : (
+                        <ChevronDown className="w-4 h-4" />
+                    ))}
             </div>
         </th>
     );
@@ -120,8 +125,8 @@ export default function LeaderboardPage() {
         setLoading(true);
         setError('');
         try {
-            const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-            const params = { limit: ITEMS_PER_PAGE, offset };
+            const offset = (currentPage - 1) * PAGINATION.DEFAULT_LIMIT;
+            const params = { limit: PAGINATION.DEFAULT_LIMIT, offset };
             const lang = language || null;
 
             const response = await api.getLeaderboard(activeTab, params, lang);
@@ -171,7 +176,7 @@ export default function LeaderboardPage() {
         return sorted;
     }, [data.users, sortBy, sortDirection]);
 
-    const totalPages = Math.ceil(data.total / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(data.total / PAGINATION.DEFAULT_LIMIT);
 
     const handleTabChange = (tab) => {
         setActiveTab(tab);
@@ -193,7 +198,9 @@ export default function LeaderboardPage() {
                 {/* Language Filter */}
                 <div className="flex items-center justify-end">
                     <div className="flex items-center gap-2">
-                        <Globe className={`w-5 h-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                        <Globe
+                            className={`w-5 h-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}
+                        />
                         <select
                             value={language}
                             onChange={(e) => {
@@ -201,10 +208,12 @@ export default function LeaderboardPage() {
                                 setCurrentPage(1);
                             }}
                             className={`px-3 py-2 border-2 rounded-xl ${theme.focusBorder} focus:outline-none ${
-                                darkMode ? 'bg-gray-800 text-white border-gray-600' : 'bg-white text-gray-800 border-gray-200'
+                                darkMode
+                                    ? 'bg-gray-800 text-white border-gray-600'
+                                    : 'bg-white text-gray-800 border-gray-200'
                             }`}
                         >
-                            {LANGUAGES.map((lang) => (
+                            {LANGUAGES_WITH_ALL.map((lang) => (
                                 <option key={lang.code} value={lang.code}>
                                     {lang.name}
                                 </option>
@@ -217,21 +226,33 @@ export default function LeaderboardPage() {
                 <Card padding="p-0">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
-                            <div className={`animate-spin w-8 h-8 border-4 ${theme.textColor.replace('text-', 'border-')} border-t-transparent rounded-full`} />
+                            <div
+                                className={`animate-spin w-8 h-8 border-4 ${theme.textColor.replace('text-', 'border-')} border-t-transparent rounded-full`}
+                            />
                         </div>
                     ) : error ? (
                         <div className="p-6 text-center text-red-500">{error}</div>
                     ) : sortedUsers.length === 0 ? (
-                        <div className={`p-6 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No data available</div>
+                        <div
+                            className={`p-6 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                        >
+                            No data available
+                        </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className={`border-b ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                                <thead
+                                    className={`border-b ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}
+                                >
                                     <tr>
-                                        <th className={`px-6 py-4 text-left text-xs font-semibold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        <th
+                                            className={`px-6 py-4 text-left text-xs font-semibold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                                        >
                                             Rank
                                         </th>
-                                        <th className={`px-6 py-4 text-left text-xs font-semibold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        <th
+                                            className={`px-6 py-4 text-left text-xs font-semibold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                                        >
                                             Player
                                         </th>
                                         <SortableHeader
@@ -281,7 +302,9 @@ export default function LeaderboardPage() {
                                         />
                                     </tr>
                                 </thead>
-                                <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-100'}`}>
+                                <tbody
+                                    className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-100'}`}
+                                >
                                     {sortedUsers.map((entry) => {
                                         const isCurrentUser = entry.username === user?.username;
                                         const flag = getCountryFlag(entry.country_code);
@@ -295,12 +318,14 @@ export default function LeaderboardPage() {
                                                             ? 'bg-violet-900/40 border-l-4 border-l-violet-500 font-semibold'
                                                             : 'bg-violet-100 border-l-4 border-l-violet-500 font-semibold'
                                                         : darkMode
-                                                            ? 'hover:bg-gray-700'
-                                                            : 'hover:bg-gray-50'
+                                                          ? 'hover:bg-gray-700'
+                                                          : 'hover:bg-gray-50'
                                                 }`}
                                             >
                                                 <td className="px-6 py-4">
-                                                    <span className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                    <span
+                                                        className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}
+                                                    >
                                                         #{entry.rank}
                                                     </span>
                                                 </td>
@@ -312,30 +337,47 @@ export default function LeaderboardPage() {
                                                         <div
                                                             className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold ${theme.gradient}`}
                                                         >
-                                                            {entry.username?.[0]?.toUpperCase() || '?'}
+                                                            {entry.username?.[0]?.toUpperCase() ||
+                                                                '?'}
                                                         </div>
                                                         <div>
-                                                            <p className={`font-medium flex items-center gap-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                                                            <p
+                                                                className={`font-medium flex items-center gap-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}
+                                                            >
                                                                 {flag && <span>{flag}</span>}
                                                                 {entry.name || entry.username}
                                                             </p>
-                                                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>@{entry.username}</p>
+                                                            <p
+                                                                className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                                                            >
+                                                                @{entry.username}
+                                                            </p>
                                                         </div>
                                                     </Link>
                                                 </td>
-                                                <td className={`px-6 py-4 text-right font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                                                <td
+                                                    className={`px-6 py-4 text-right font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}
+                                                >
                                                     {entry.total_score?.toLocaleString() || 0}
                                                 </td>
-                                                <td className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                <td
+                                                    className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}
+                                                >
                                                     {entry.total_wins || 0}
                                                 </td>
-                                                <td className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                <td
+                                                    className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}
+                                                >
                                                     {entry.win_rate || 0}%
                                                 </td>
-                                                <td className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                <td
+                                                    className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}
+                                                >
                                                     {entry.average_guesses?.toFixed(1) || '-'}
                                                 </td>
-                                                <td className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                <td
+                                                    className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}
+                                                >
                                                     {entry.best_win_streak || 0}
                                                 </td>
                                             </tr>

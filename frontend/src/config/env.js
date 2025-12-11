@@ -11,7 +11,8 @@
 const runtimeEnv = window.__ENV__ || {};
 
 export const env = {
-    VITE_API_URL: runtimeEnv.VITE_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8080',
+    VITE_API_URL:
+        runtimeEnv.VITE_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8080',
     VITE_USE_MOCK_API: runtimeEnv.VITE_USE_MOCK_API || import.meta.env.VITE_USE_MOCK_API || 'false',
 };
 

@@ -1,5 +1,16 @@
 import { NavLink } from 'react-router-dom';
-import { Target, Crosshair, Layers, Crown, User, Settings, LogOut, Palette, Moon, Sun } from 'lucide-react';
+import {
+    Target,
+    Crosshair,
+    Layers,
+    Crown,
+    User,
+    Settings,
+    LogOut,
+    Palette,
+    Moon,
+    Sun,
+} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGame } from '../../contexts/GameContext';
 import { useTheme, THEMES } from '../../contexts/ThemeContext';
@@ -40,35 +51,46 @@ export default function Navbar() {
     };
 
     return (
-        <nav className={`sticky top-0 z-50 shadow-md transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+        <nav
+            className={`sticky top-0 z-50 shadow-md transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}
+        >
             <div className="max-w-6xl mx-auto px-4">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <NavLink to="/game" className="flex items-center gap-2">
-                        <Target className={`w-8 h-8 ${darkMode ? theme.textColorDark : theme.textColor}`} />
-                        <span className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Darts</span>
+                        <Target
+                            className={`w-8 h-8 ${darkMode ? theme.textColorDark : theme.textColor}`}
+                        />
+                        <span
+                            className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}
+                        >
+                            Darts
+                        </span>
                     </NavLink>
 
                     {/* Nav Links */}
                     <div className="flex items-center gap-1">
-                        {navLinks.map(({ to, label, icon: Icon }) => (
-                            <NavLink
-                                key={to}
-                                to={to}
-                                className={({ isActive }) =>
-                                    `flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                                        isActive
-                                            ? `${theme.gradient} text-white`
-                                            : darkMode
-                                                ? 'text-gray-300 hover:bg-gray-800'
-                                                : 'text-gray-600 hover:bg-gray-100'
-                                    }`
-                                }
-                            >
-                                <Icon className="w-5 h-5" />
-                                <span className="hidden sm:inline">{label}</span>
-                            </NavLink>
-                        ))}
+                        {navLinks.map((link) => {
+                            const LinkIcon = link.icon;
+                            return (
+                                <NavLink
+                                    key={link.to}
+                                    to={link.to}
+                                    className={({ isActive }) =>
+                                        `flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                                            isActive
+                                                ? `${theme.gradient} text-white`
+                                                : darkMode
+                                                  ? 'text-gray-300 hover:bg-gray-800'
+                                                  : 'text-gray-600 hover:bg-gray-100'
+                                        }`
+                                    }
+                                >
+                                    <LinkIcon className="w-5 h-5" />
+                                    <span className="hidden sm:inline">{link.label}</span>
+                                </NavLink>
+                            );
+                        })}
                     </div>
 
                     {/* Right side: Dark Mode + Theme + User */}
@@ -93,10 +115,14 @@ export default function Navbar() {
                                 className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
                                 title="Change theme"
                             >
-                                <Palette className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`} />
+                                <Palette
+                                    className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`}
+                                />
                             </button>
                             {showThemeMenu && (
-                                <div className={`absolute right-0 mt-2 w-40 rounded-xl shadow-lg border py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                                <div
+                                    className={`absolute right-0 mt-2 w-40 rounded-xl shadow-lg border py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
+                                >
                                     {Object.keys(THEMES).map((name) => (
                                         <button
                                             key={name}
@@ -108,7 +134,9 @@ export default function Navbar() {
                                                 darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
                                             } ${themeName === name ? 'font-semibold' : ''} ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}
                                         >
-                                            <span className={`w-4 h-4 rounded-full ${themeColors[name]}`} />
+                                            <span
+                                                className={`w-4 h-4 rounded-full ${themeColors[name]}`}
+                                            />
                                             <span className="capitalize">{name}</span>
                                         </button>
                                     ))}
@@ -122,19 +150,27 @@ export default function Navbar() {
                                 onClick={() => setShowUserMenu(!showUserMenu)}
                                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 ${theme.borderColor} transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'}`}
                             >
-                                <User className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`} />
-                                <span className={`font-medium hidden sm:inline ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                                <User
+                                    className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`}
+                                />
+                                <span
+                                    className={`font-medium hidden sm:inline ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}
+                                >
                                     {user?.username || 'User'}
                                 </span>
                             </button>
                             {showUserMenu && (
-                                <div className={`absolute right-0 mt-2 w-48 rounded-xl shadow-lg border py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                                <div
+                                    className={`absolute right-0 mt-2 w-48 rounded-xl shadow-lg border py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
+                                >
                                     <NavLink
                                         to="/profile"
                                         onClick={() => setShowUserMenu(false)}
                                         className={`w-full px-4 py-2 text-left flex items-center gap-3 ${darkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-50 text-gray-700'}`}
                                     >
-                                        <User className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                                        <User
+                                            className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                                        />
                                         <span>Profile</span>
                                     </NavLink>
                                     <NavLink
@@ -142,10 +178,14 @@ export default function Navbar() {
                                         onClick={() => setShowUserMenu(false)}
                                         className={`w-full px-4 py-2 text-left flex items-center gap-3 ${darkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-50 text-gray-700'}`}
                                     >
-                                        <Settings className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                                        <Settings
+                                            className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                                        />
                                         <span>Settings</span>
                                     </NavLink>
-                                    <hr className={`my-2 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`} />
+                                    <hr
+                                        className={`my-2 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}
+                                    />
                                     <button
                                         onClick={() => {
                                             clearGame();

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 
 const GameContext = createContext(null);
@@ -9,43 +9,50 @@ function getStorageKey(userId) {
     return userId ? `${STORAGE_KEY_PREFIX}${userId}` : null;
 }
 
+function getInitialGameState(userId) {
+    const storageKey = getStorageKey(userId);
+    if (!storageKey) return null;
+
+    const cached = localStorage.getItem(storageKey);
+    if (cached) {
+        try {
+            return JSON.parse(cached);
+        } catch {
+            localStorage.removeItem(storageKey);
+        }
+    }
+    return null;
+}
+
 export function GameProvider({ children }) {
     const { user } = useAuth();
     const userId = user?.id;
+    const prevUserIdRef = useRef(userId);
 
-    const [gameState, setGameState] = useState(null);
+    const [gameState, setGameState] = useState(() => getInitialGameState(userId));
 
     useEffect(() => {
-        const storageKey = getStorageKey(userId);
-        if (!storageKey) {
-            setGameState(null);
-            return;
+        if (prevUserIdRef.current !== userId) {
+            prevUserIdRef.current = userId;
+            setGameState(getInitialGameState(userId));
         }
+    }, [userId]);
 
-        const cached = localStorage.getItem(storageKey);
-        if (cached) {
-            try {
-                setGameState(JSON.parse(cached));
-            } catch {
-                localStorage.removeItem(storageKey);
+    const saveGame = useCallback(
+        (state) => {
+            const storageKey = getStorageKey(userId);
+            const newState = {
+                ...state,
+                savedAt: new Date().toISOString(),
+            };
+            setGameState(newState);
+
+            if (storageKey) {
+                localStorage.setItem(storageKey, JSON.stringify(newState));
             }
-        } else {
-            setGameState(null);
-        }
-    }, [userId]);
-
-    const saveGame = useCallback((state) => {
-        const storageKey = getStorageKey(userId);
-        const newState = {
-            ...state,
-            savedAt: new Date().toISOString(),
-        };
-        setGameState(newState);
-
-        if (storageKey) {
-            localStorage.setItem(storageKey, JSON.stringify(newState));
-        }
-    }, [userId]);
+        },
+        [userId]
+    );
 
     const clearGame = useCallback(() => {
         setGameState(null);
@@ -64,13 +71,15 @@ export function GameProvider({ children }) {
     }, [gameState]);
 
     return (
-        <GameContext.Provider value={{
-            gameState,
-            saveGame,
-            clearGame,
-            hasActiveGame,
-            getCachedGameId,
-        }}>
+        <GameContext.Provider
+            value={{
+                gameState,
+                saveGame,
+                clearGame,
+                hasActiveGame,
+                getCachedGameId,
+            }}
+        >
             {children}
         </GameContext.Provider>
     );
