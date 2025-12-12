@@ -12,17 +12,21 @@ import (
 
 // Server
 var (
-	Port = "8080"
+	Port    = "8080"
+	GinMode = "debug"
 )
 
 // Database
 var (
-	DBHost     = "localhost"
-	DBPort     = "5432"
-	DBUser     = "admin"
-	DBName     = "dartsdb"
-	DBSSLMode  = "disable"
-	DBPassword string
+	DBHost            = "localhost"
+	DBPort            = "5432"
+	DBUser            = "admin"
+	DBName            = "dartsdb"
+	DBSSLMode         = "disable"
+	DBPassword        string
+	DBMaxOpenConns    = 25
+	DBMaxIdleConns    = 5
+	DBConnMaxLifetime = 5
 )
 
 // Auth
@@ -80,6 +84,7 @@ func Load() {
 
 func loadServer() {
 	Port = getEnvOrViper("APP_PORT", "port", Port)
+	GinMode = getEnvOrViper("GIN_MODE", "server.ginMode", GinMode)
 }
 
 func loadDatabase() {
@@ -89,6 +94,9 @@ func loadDatabase() {
 	DBName = getEnvOrViper("POSTGRES_DB", "db.dbname", DBName)
 	DBSSLMode = getEnvOrViper("POSTGRES_SSLMODE", "db.sslmode", DBSSLMode)
 	DBPassword = os.Getenv("POSTGRES_PASSWORD")
+	DBMaxOpenConns = getEnvOrViperInt("DB_MAX_OPEN_CONNS", "db.maxOpenConns", DBMaxOpenConns)
+	DBMaxIdleConns = getEnvOrViperInt("DB_MAX_IDLE_CONNS", "db.maxIdleConns", DBMaxIdleConns)
+	DBConnMaxLifetime = getEnvOrViperInt("DB_CONN_MAX_LIFETIME", "db.connMaxLifetime", DBConnMaxLifetime)
 }
 
 func loadAuth() {

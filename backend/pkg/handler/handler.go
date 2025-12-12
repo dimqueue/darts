@@ -23,7 +23,10 @@ func NewHandler(services *service.Service, validator *validation.Validator) *Han
 }
 
 func (h *Handler) InitRoutes() *gin.Engine {
+	gin.SetMode(config.GinMode)
 	router := gin.New()
+
+	router.GET("/health", h.healthCheck)
 
 	router.Use(RequestIDMiddleware())
 
