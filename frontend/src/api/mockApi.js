@@ -12,9 +12,8 @@ class MockApiClient {
     }
 
     delay(ms = 300) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
-
 
     async signUp(username, password, name = '') {
         await this.delay();
@@ -84,7 +83,6 @@ class MockApiClient {
         return { message: 'Game deleted' };
     }
 
-
     async createGuess(gameId, guess) {
         await this.delay();
         const gameGuesses = this.guesses.get(gameId) || [];
@@ -111,11 +109,10 @@ class MockApiClient {
     async getGuessById(gameId, guessId) {
         await this.delay();
         const gameGuesses = this.guesses.get(gameId) || [];
-        const guess = gameGuesses.find(g => g.id === guessId);
+        const guess = gameGuesses.find((g) => g.id === guessId);
         if (!guess) throw new Error('Guess not found');
         return guess;
     }
-
 
     async getMyProfile() {
         await this.delay();
@@ -127,6 +124,7 @@ class MockApiClient {
                 currentUser = JSON.parse(savedUser);
             }
         } catch {
+            // Ignore JSON parse errors, use default user
         }
 
         return {
@@ -189,14 +187,25 @@ class MockApiClient {
         await this.delay();
         return {
             data: [
-                { language: 'en', games_played: 30, games_won: 20, average_guesses: 4.2, total_score: 900 },
-                { language: 'ua', games_played: 12, games_won: 8, average_guesses: 5.1, total_score: 350 },
+                {
+                    language: 'en',
+                    games_played: 30,
+                    games_won: 20,
+                    average_guesses: 4.2,
+                    total_score: 900,
+                },
+                {
+                    language: 'ua',
+                    games_played: 12,
+                    games_won: 8,
+                    average_guesses: 5.1,
+                    total_score: 350,
+                },
             ],
         };
     }
 
-
-    async getLeaderboard(type = 'global', params = {}, language = null) {
+    async getLeaderboard(type = 'global', _params = {}, language = null) {
         await this.delay();
 
         let currentUser = null;
@@ -206,32 +215,113 @@ class MockApiClient {
                 currentUser = JSON.parse(savedUser);
             }
         } catch {
+            // Ignore JSON parse errors, use default user
         }
 
         const mockNames = [
-            'Alex Storm', 'Maria Chen', 'John Smith', 'Emma Wilson', 'Oleksandr Petrov',
-            'Sophie Martin', 'Michael Brown', 'Anna Kovalenko', 'David Lee', 'Julia Schmidt',
-            'James Taylor', 'Katya Bondarenko', 'Robert Garcia', 'Nina Ivanova', 'William Davis',
-            'Elena Moroz', 'Daniel Miller', 'Oksana Shevchenko', 'Christopher Moore', 'Tetiana Lysenko',
-            'Matthew Anderson', 'Iryna Tkachenko', 'Andrew Jackson', 'Viktoria Melnyk', 'Joshua White',
-            'Natalia Kravchenko', 'Ryan Harris', 'Svitlana Boyko', 'Brandon Clark', 'Daryna Savchenko',
-            'Kevin Lewis', 'Alina Rudenko', 'Jason Robinson', 'Maryna Kozak', 'Justin Walker',
-            'Yulia Polishchuk', 'Eric Hall', 'Olena Marchenko', 'Adam Young', 'Karina Stepanenko',
-            'Tyler King', 'Larysa Hryhorenko', 'Aaron Wright', 'Veronika Fedorova', 'Nicholas Scott',
-            'Anastasia Zaitseva', 'Patrick Green', 'Diana Romanova', 'Sean Baker', 'Polina Sokolova',
+            'Alex Storm',
+            'Maria Chen',
+            'John Smith',
+            'Emma Wilson',
+            'Oleksandr Petrov',
+            'Sophie Martin',
+            'Michael Brown',
+            'Anna Kovalenko',
+            'David Lee',
+            'Julia Schmidt',
+            'James Taylor',
+            'Katya Bondarenko',
+            'Robert Garcia',
+            'Nina Ivanova',
+            'William Davis',
+            'Elena Moroz',
+            'Daniel Miller',
+            'Oksana Shevchenko',
+            'Christopher Moore',
+            'Tetiana Lysenko',
+            'Matthew Anderson',
+            'Iryna Tkachenko',
+            'Andrew Jackson',
+            'Viktoria Melnyk',
+            'Joshua White',
+            'Natalia Kravchenko',
+            'Ryan Harris',
+            'Svitlana Boyko',
+            'Brandon Clark',
+            'Daryna Savchenko',
+            'Kevin Lewis',
+            'Alina Rudenko',
+            'Jason Robinson',
+            'Maryna Kozak',
+            'Justin Walker',
+            'Yulia Polishchuk',
+            'Eric Hall',
+            'Olena Marchenko',
+            'Adam Young',
+            'Karina Stepanenko',
+            'Tyler King',
+            'Larysa Hryhorenko',
+            'Aaron Wright',
+            'Veronika Fedorova',
+            'Nicholas Scott',
+            'Anastasia Zaitseva',
+            'Patrick Green',
+            'Diana Romanova',
+            'Sean Baker',
+            'Polina Sokolova',
         ];
 
         const mockUsernames = [
-            'alexstorm', 'mariachen', 'johnsmith', 'emmawilson', 'oleksandrp',
-            'sophiem', 'mikebrown', 'annakov', 'davidlee', 'juliaschmidt',
-            'jamest', 'katyab', 'robertg', 'ninaiv', 'williamd',
-            'elenam', 'danmiller', 'oksanas', 'chrismoore', 'tetianal',
-            'mattanderson', 'irynat', 'andrewj', 'viktoriamelnyk', 'joshwhite',
-            'nataliak', 'ryanharris', 'svitlanab', 'brandonc', 'darynas',
-            'kevinlewis', 'alinar', 'jasonr', 'marynakozak', 'justinw',
-            'yuliap', 'erichall', 'olenam', 'adamyoung', 'karinas',
-            'tylerk', 'larysah', 'aaronwright', 'veronikaf', 'nicholasscott',
-            'anastasiaz', 'patrickg', 'dianar', 'seanbaker', 'polinas',
+            'alexstorm',
+            'mariachen',
+            'johnsmith',
+            'emmawilson',
+            'oleksandrp',
+            'sophiem',
+            'mikebrown',
+            'annakov',
+            'davidlee',
+            'juliaschmidt',
+            'jamest',
+            'katyab',
+            'robertg',
+            'ninaiv',
+            'williamd',
+            'elenam',
+            'danmiller',
+            'oksanas',
+            'chrismoore',
+            'tetianal',
+            'mattanderson',
+            'irynat',
+            'andrewj',
+            'viktoriamelnyk',
+            'joshwhite',
+            'nataliak',
+            'ryanharris',
+            'svitlanab',
+            'brandonc',
+            'darynas',
+            'kevinlewis',
+            'alinar',
+            'jasonr',
+            'marynakozak',
+            'justinw',
+            'yuliap',
+            'erichall',
+            'olenam',
+            'adamyoung',
+            'karinas',
+            'tylerk',
+            'larysah',
+            'aaronwright',
+            'veronikaf',
+            'nicholasscott',
+            'anastasiaz',
+            'patrickg',
+            'dianar',
+            'seanbaker',
+            'polinas',
         ];
 
         const ranksByType = {
@@ -257,8 +347,8 @@ class MockApiClient {
                     total_wins: 50 - (rank - 1),
                     total_games: 60 - (rank - 1),
                     best_win_streak: 10 - Math.floor((rank - 1) / 5),
-                    average_guesses: 3.5 + ((rank - 1) * 0.1),
-                    win_rate: ((50 - (rank - 1)) / (60 - (rank - 1)) * 100).toFixed(1),
+                    average_guesses: 3.5 + (rank - 1) * 0.1,
+                    win_rate: (((50 - (rank - 1)) / (60 - (rank - 1))) * 100).toFixed(1),
                 };
             }
 
@@ -273,8 +363,8 @@ class MockApiClient {
                 total_wins: 50 - i,
                 total_games: 60 - i,
                 best_win_streak: 10 - Math.floor(i / 5),
-                average_guesses: 3.5 + (i * 0.1),
-                win_rate: ((50 - i) / (60 - i) * 100).toFixed(1),
+                average_guesses: 3.5 + i * 0.1,
+                win_rate: (((50 - i) / (60 - i)) * 100).toFixed(1),
             };
         });
 
@@ -296,7 +386,6 @@ class MockApiClient {
             monthly_rank: 18,
         };
     }
-
 
     async getPublicProfile(username) {
         await this.delay();

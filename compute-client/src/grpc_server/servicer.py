@@ -74,9 +74,10 @@ class ComputeServiceServicer(service_pb2_grpc.ComputeServiceServicer):
 
         guess = request.guess.lower().strip()
         secret_word = request.secret_word
+        language = request.language 
 
         try:
-            distance, found = self.word_model.get_guess_distance(secret_word, guess)
+            distance, found = self.word_model.get_guess_distance(secret_word, guess, language)
 
             response = service_pb2.MakeGuessResponse(
                 distance=distance

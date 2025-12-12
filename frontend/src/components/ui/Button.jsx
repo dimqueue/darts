@@ -12,7 +12,8 @@ export default function Button({
 }) {
     const { theme } = useTheme();
 
-    const baseStyles = 'px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    const baseStyles =
+        'px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
     const variants = {
         primary: `${theme.gradient} text-white hover:brightness-110`,

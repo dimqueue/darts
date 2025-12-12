@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -163,7 +165,7 @@ func buildLanguageFilter(periodStart time.Time, language *string) (langFilter st
 	return
 }
 
-func (r *LeaderboardPostgres) GetGlobalLeaderboard(limit, offset int) ([]model.LeaderboardUser, error) {
+func (r *LeaderboardPostgres) GetGlobalLeaderboard(ctx context.Context, limit, offset int) ([]model.LeaderboardUser, error) {
 	users := make([]model.LeaderboardUser, 0)
 
 	query := fmt.Sprintf(`
@@ -175,25 +177,25 @@ func (r *LeaderboardPostgres) GetGlobalLeaderboard(limit, offset int) ([]model.L
 		LIMIT $1 OFFSET $2
 	`, globalLeaderboardView)
 
-	err := r.db.Select(&users, query, limit, offset)
+	err := r.db.SelectContext(ctx, &users, query, limit, offset)
 	return users, err
 }
 
-func (r *LeaderboardPostgres) GetGlobalLeaderboardByLanguage(language string, limit, offset int) ([]model.LeaderboardUser, error) {
+func (r *LeaderboardPostgres) GetGlobalLeaderboardByLanguage(ctx context.Context, language string, limit, offset int) ([]model.LeaderboardUser, error) {
 	users := make([]model.LeaderboardUser, 0)
 	query := fmt.Sprintf(globalLeaderboardByLanguageQuery, config.LeaderboardMinGamesGlobal)
-	err := r.db.Select(&users, query, language, limit, offset)
+	err := r.db.SelectContext(ctx, &users, query, language, limit, offset)
 	return users, err
 }
 
-func (r *LeaderboardPostgres) GetGlobalLeaderboardCount() (int, error) {
+func (r *LeaderboardPostgres) GetGlobalLeaderboardCount(ctx context.Context) (int, error) {
 	var count int
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM %s`, globalLeaderboardView)
-	err := r.db.Get(&count, query)
+	err := r.db.GetContext(ctx, &count, query)
 	return count, err
 }
 
-func (r *LeaderboardPostgres) GetGlobalLeaderboardByLanguageCount(language string) (int, error) {
+func (r *LeaderboardPostgres) GetGlobalLeaderboardByLanguageCount(ctx context.Context, language string) (int, error) {
 	var count int
 
 	query := fmt.Sprintf(`
@@ -205,11 +207,11 @@ func (r *LeaderboardPostgres) GetGlobalLeaderboardByLanguageCount(language strin
 		    AND uls.games_played >= %d
 	`, config.LeaderboardMinGamesGlobal)
 
-	err := r.db.Get(&count, query, language)
+	err := r.db.GetContext(ctx, &count, query, language)
 	return count, err
 }
 
-func (r *LeaderboardPostgres) GetGlobalUserRank(userId int64) (*int, error) {
+func (r *LeaderboardPostgres) GetGlobalUserRank(ctx context.Context, userId int64) (*int, error) {
 	var rank *int
 
 	query := fmt.Sprintf(`
@@ -218,24 +220,30 @@ func (r *LeaderboardPostgres) GetGlobalUserRank(userId int64) (*int, error) {
 		WHERE user_id = $1
 	`, globalLeaderboardView)
 
-	err := r.db.Get(&rank, query, userId)
+	err := r.db.GetContext(ctx, &rank, query, userId)
 	if err != nil {
-		return nil, nil
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return rank, nil
 }
 
-func (r *LeaderboardPostgres) GetGlobalUserRankByLanguage(userId int64, language string) (*int, error) {
+func (r *LeaderboardPostgres) GetGlobalUserRankByLanguage(ctx context.Context, userId int64, language string) (*int, error) {
 	var rank *int
 	query := fmt.Sprintf(globalUserRankByLanguageQuery, config.LeaderboardMinGamesGlobal)
-	err := r.db.Get(&rank, query, userId, language)
+	err := r.db.GetContext(ctx, &rank, query, userId, language)
 	if err != nil {
-		return nil, nil
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return rank, nil
 }
 
-func (r *LeaderboardPostgres) GetPeriodLeaderboard(periodStart time.Time, language *string, limit, offset int) ([]model.LeaderboardUser, error) {
+func (r *LeaderboardPostgres) GetPeriodLeaderboard(ctx context.Context, periodStart time.Time, language *string, limit, offset int) ([]model.LeaderboardUser, error) {
 	users := make([]model.LeaderboardUser, 0)
 	langFilter, args, argNum := buildLanguageFilter(periodStart, language)
 
@@ -264,11 +272,11 @@ func (r *LeaderboardPostgres) GetPeriodLeaderboard(periodStart time.Time, langua
 		LIMIT $%d OFFSET $%d
 	`, gameGuessesCTE, streaksCTE, statsCTE, leaderboardSelectFields, argNum, argNum+1)
 
-	err := r.db.Select(&users, query, args...)
+	err := r.db.SelectContext(ctx, &users, query, args...)
 	return users, err
 }
 
-func (r *LeaderboardPostgres) GetPeriodLeaderboardCount(periodStart time.Time, language *string) (int, error) {
+func (r *LeaderboardPostgres) GetPeriodLeaderboardCount(ctx context.Context, periodStart time.Time, language *string) (int, error) {
 	var count int
 
 	langFilter := ""
@@ -293,11 +301,11 @@ func (r *LeaderboardPostgres) GetPeriodLeaderboardCount(periodStart time.Time, l
 		) AS eligible_users
 	`, langFilter, config.LeaderboardMinGamesPeriod)
 
-	err := r.db.Get(&count, query, args...)
+	err := r.db.GetContext(ctx, &count, query, args...)
 	return count, err
 }
 
-func (r *LeaderboardPostgres) GetPeriodUserRank(userId int64, periodStart time.Time, language *string) (*int, error) {
+func (r *LeaderboardPostgres) GetPeriodUserRank(ctx context.Context, userId int64, periodStart time.Time, language *string) (*int, error) {
 	var rank int
 	langFilter, args, argNum := buildLanguageFilter(periodStart, language)
 
@@ -315,9 +323,12 @@ func (r *LeaderboardPostgres) GetPeriodUserRank(userId int64, periodStart time.T
 		SELECT rank FROM ranked WHERE user_id = $%d
 	`, gameGuessesCTE, scoresCTE, argNum)
 
-	err := r.db.Get(&rank, query, args...)
+	err := r.db.GetContext(ctx, &rank, query, args...)
 	if err != nil {
-		return nil, nil
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return &rank, nil
 }

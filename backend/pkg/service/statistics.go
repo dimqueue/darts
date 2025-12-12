@@ -1,8 +1,10 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/dimqueue/darts/pkg/logger"
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
 )
@@ -19,8 +21,8 @@ func NewStatsService(statsRepo repository.Statistics, txManager *repository.Tran
 	}
 }
 
-func (s *StatsService) InitializeStats(q repository.Querier, userId int64) error {
-	return s.statsRepo.CreateGlobalStreaks(q, userId)
+func (s *StatsService) InitializeStats(ctx context.Context, q repository.Querier, userId int64) error {
+	return s.statsRepo.CreateGlobalStreaks(ctx, q, userId)
 }
 
 func (s *StatsService) CalculateNewStreaks(current *model.UserGlobalStreaks, userId int64, isWin bool) *model.UserGlobalStreaks {
@@ -103,37 +105,48 @@ func (s *StatsService) CalculateNewLanguageStats(
 	return result
 }
 
-func (s *StatsService) UpdateStatsAfterGame(q repository.Querier, userId int64, language string, isWin bool, guessCount int, timeSeconds *int, scoreEarned int) error {
-	currentStreaks, err := s.statsRepo.GetGlobalStreaks(q, userId, true)
+func (s *StatsService) UpdateStatsAfterGame(ctx context.Context, q repository.Querier, userId int64, language string, isWin bool, guessCount int, timeSeconds *int, scoreEarned int) error {
+	log := logger.Op(ctx, "StatsService.UpdateStatsAfterGame").With(
+		logger.FieldUserID, userId,
+		logger.FieldLanguage, language,
+	)
+
+	currentStreaks, err := s.statsRepo.GetGlobalStreaks(ctx, q, userId, true)
 	if err != nil {
+		log.Error("failed to get global streaks", logger.FieldError, err)
 		return fmt.Errorf("failed to get global streaks: %w", err)
 	}
 
 	newStreaks := s.CalculateNewStreaks(currentStreaks, userId, isWin)
 
 	if currentStreaks == nil {
-		if err := s.statsRepo.CreateGlobalStreaksWithData(q, newStreaks); err != nil {
+		if err := s.statsRepo.CreateGlobalStreaksWithData(ctx, q, newStreaks); err != nil {
+			log.Error("failed to create global streaks", logger.FieldError, err)
 			return fmt.Errorf("failed to create global streaks: %w", err)
 		}
 	} else {
-		if err := s.statsRepo.UpdateGlobalStreaks(q, newStreaks); err != nil {
+		if err := s.statsRepo.UpdateGlobalStreaks(ctx, q, newStreaks); err != nil {
+			log.Error("failed to update global streaks", logger.FieldError, err)
 			return fmt.Errorf("failed to update global streaks: %w", err)
 		}
 	}
 
-	currentLangStats, err := s.statsRepo.GetLanguageStats(q, userId, language, true)
+	currentLangStats, err := s.statsRepo.GetLanguageStats(ctx, q, userId, language, true)
 	if err != nil {
+		log.Error("failed to get language stats", logger.FieldError, err)
 		return fmt.Errorf("failed to get language stats: %w", err)
 	}
 
 	newLangStats := s.CalculateNewLanguageStats(currentLangStats, userId, language, isWin, guessCount, timeSeconds, scoreEarned)
 
 	if currentLangStats == nil {
-		if err := s.statsRepo.CreateLanguageStats(q, newLangStats); err != nil {
+		if err := s.statsRepo.CreateLanguageStats(ctx, q, newLangStats); err != nil {
+			log.Error("failed to create language stats", logger.FieldError, err)
 			return fmt.Errorf("failed to create language stats: %w", err)
 		}
 	} else {
-		if err := s.statsRepo.UpdateLanguageStats(q, newLangStats); err != nil {
+		if err := s.statsRepo.UpdateLanguageStats(ctx, q, newLangStats); err != nil {
+			log.Error("failed to update language stats", logger.FieldError, err)
 			return fmt.Errorf("failed to update language stats: %w", err)
 		}
 	}
@@ -141,8 +154,9 @@ func (s *StatsService) UpdateStatsAfterGame(q repository.Querier, userId int64, 
 	return nil
 }
 
-func (s *StatsService) UpdateGameEndStats(q repository.Querier, update model.StatisticsUpdate) error {
+func (s *StatsService) UpdateGameEndStats(ctx context.Context, q repository.Querier, update model.StatisticsUpdate) error {
 	return s.UpdateStatsAfterGame(
+		ctx,
 		q,
 		update.UserId,
 		update.Language,
@@ -153,14 +167,14 @@ func (s *StatsService) UpdateGameEndStats(q repository.Querier, update model.Sta
 	)
 }
 
-func (s *StatsService) GetStatistics(userId int64) (*model.UserStatistics, error) {
-	return s.statsRepo.GetStatistics(userId)
+func (s *StatsService) GetStatistics(ctx context.Context, userId int64) (*model.UserStatistics, error) {
+	return s.statsRepo.GetStatistics(ctx, userId)
 }
 
-func (s *StatsService) GetLanguageStats(userId int64, language string) (*model.UserLanguageStats, error) {
-	return s.statsRepo.GetLanguageStats(s.txManager.DB(), userId, language, false)
+func (s *StatsService) GetLanguageStats(ctx context.Context, userId int64, language string) (*model.UserLanguageStats, error) {
+	return s.statsRepo.GetLanguageStats(ctx, s.txManager.DB(), userId, language, false)
 }
 
-func (s *StatsService) GetAllLanguageStats(userId int64) ([]model.UserLanguageStats, error) {
-	return s.statsRepo.GetAllLanguageStats(userId)
+func (s *StatsService) GetAllLanguageStats(ctx context.Context, userId int64) ([]model.UserLanguageStats, error) {
+	return s.statsRepo.GetAllLanguageStats(ctx, userId)
 }

@@ -111,6 +111,7 @@ class PlainFormatter(logging.Formatter):
 def setup_logging(
     service_name: str = "compute-client",
     log_dir: str = "logs",
+    log_level: str = "DEBUG",
     max_bytes: int = 10 * 1024 * 1024,  # 10 MB
     backup_count: int = 5,
     use_colors: bool = True,
@@ -123,18 +124,20 @@ def setup_logging(
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_filename = log_path / f"{service_name}_{timestamp}.log"
 
+    level = getattr(logging, log_level.upper(), logging.INFO)
+
     # Create formatters
     console_formatter = ColoredFormatter(use_colors=use_colors)
     file_formatter = PlainFormatter()
 
     # Configure root logger
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
+    root_logger.setLevel(level)
     root_logger.handlers.clear()
 
     # Console handler (colored)
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(level)
     console_handler.setFormatter(console_formatter)
     root_logger.addHandler(console_handler)
 
@@ -145,7 +148,7 @@ def setup_logging(
         backupCount=backup_count,
         encoding='utf-8'
     )
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(level)
     file_handler.setFormatter(file_formatter)
     root_logger.addHandler(file_handler)
 

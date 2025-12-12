@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -8,10 +9,10 @@ import (
 )
 
 type Querier interface {
-	Get(dest interface{}, query string, args ...interface{}) error
-	Select(dest interface{}, query string, args ...interface{}) error
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
+	GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
 }
 
 type TransactionManager struct {
@@ -26,9 +27,8 @@ func NewTransactionManager(db *sqlx.DB) *TransactionManager {
 	return &TransactionManager{db: db}
 }
 
-func (tm *TransactionManager) WithTransaction(fn func(*sqlx.Tx) error) error {
-
-	tx, err := tm.db.Beginx()
+func (tm *TransactionManager) WithTransaction(ctx context.Context, fn func(*sqlx.Tx) error) error {
+	tx, err := tm.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
@@ -43,7 +43,6 @@ func (tm *TransactionManager) WithTransaction(fn func(*sqlx.Tx) error) error {
 	err = fn(tx)
 
 	if err != nil {
-
 		tx.Rollback()
 		return err
 	}

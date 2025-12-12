@@ -23,13 +23,18 @@ func NewHandler(services *service.Service, validator *validation.Validator) *Han
 }
 
 func (h *Handler) InitRoutes() *gin.Engine {
+	gin.SetMode(config.GinMode)
 	router := gin.New()
+
+	router.GET("/health", h.healthCheck)
+
+	router.Use(RequestIDMiddleware())
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     config.CORSOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", RequestIDHeader},
+		ExposeHeaders:    []string{"Content-Length", RequestIDHeader},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
@@ -45,14 +50,15 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		{
 			games.POST("", h.createGame)
 			games.GET("", h.getAllGames)
+			games.GET("/active", h.getActiveGame)
 			games.GET("/:id", h.getGameById)
+			games.POST("/:id/abandon", h.abandonGame)
 
 			guess := games.Group(":id/guesses")
 			{
 				guess.POST("", h.createGuess)
 				guess.GET("", h.getAllGuessByGame)
 				guess.GET("/:guess_id", h.getGuessById)
-
 			}
 		}
 

@@ -3,6 +3,7 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,7 +21,6 @@ import (
 	"github.com/dimqueue/darts/pkg/validation"
 	"github.com/dimqueue/darts/pkg/worker"
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 )
 
 type command string
@@ -72,13 +72,13 @@ func InitLogger() error {
 }
 
 func runMigrateUp(db *sqlx.DB) error {
-	logrus.Info("Running database migrations...")
+	slog.Info("Running database migrations...")
 
 	if err := migrations.Up(db); err != nil {
 		return fmt.Errorf("migration failed: %w", err)
 	}
 
-	logrus.Info("Migrations completed successfully")
+	slog.Info("Migrations completed successfully")
 	return nil
 }
 
@@ -90,13 +90,13 @@ func runSeed(db *sqlx.DB) error {
 }
 
 func runMigrateDown(db *sqlx.DB) error {
-	logrus.Info("Rolling back database migrations...")
+	slog.Info("Rolling back database migrations...")
 
 	if err := migrations.Down(db); err != nil {
 		return fmt.Errorf("rollback failed: %w", err)
 	}
 
-	logrus.Info("Migrations rolled back successfully")
+	slog.Info("Migrations rolled back successfully")
 	return nil
 }
 
@@ -121,9 +121,9 @@ func runServer(db *sqlx.DB) error {
 	defer cancel()
 
 	if resp, err := computeClient.HealthCheck(ctx); err != nil || len(resp.LoadedLanguages) == 0 {
-		logrus.Warnf("Compute service not available or failed to load languages: %v", err)
+		slog.Warn("Compute service not available or failed to load languages", logger.FieldError, err)
 	} else {
-		logrus.Infof("Compute service ready with languages: %v", resp.LoadedLanguages)
+		slog.Info("Compute service ready", "languages", resp.LoadedLanguages)
 	}
 
 	services := service.NewService(repos, computeClient)
@@ -146,7 +146,7 @@ func runServer(db *sqlx.DB) error {
 	serverErrors := make(chan error, 1)
 
 	go func() {
-		logrus.Infof("Starting server on port %s", config.Port)
+		slog.Info("Starting server", "port", config.Port)
 		serverErrors <- srv.Run(config.Port, router)
 	}()
 
@@ -158,7 +158,7 @@ func runServer(db *sqlx.DB) error {
 		return fmt.Errorf("server error: %w", err)
 
 	case sig := <-shutdown:
-		logrus.Infof("Received signal: %v. Starting graceful shutdown...", sig)
+		slog.Info("Received signal, starting graceful shutdown", "signal", sig)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -167,7 +167,7 @@ func runServer(db *sqlx.DB) error {
 			return fmt.Errorf("server shutdown error: %w", err)
 		}
 
-		logrus.Info("Server stopped gracefully")
+		slog.Info("Server stopped gracefully")
 	}
 
 	return nil

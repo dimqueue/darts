@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -24,12 +25,15 @@ const (
 )
 
 type Config struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
-	DBName   string
-	SSLMode  string
+	Host            string
+	Port            string
+	Username        string
+	Password        string
+	DBName          string
+	SSLMode         string
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime time.Duration
 }
 
 func NewPostgresDB(cfg Config) (*sqlx.DB, error) {
@@ -38,6 +42,10 @@ func NewPostgresDB(cfg Config) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	db.SetMaxOpenConns(cfg.MaxOpenConns)
+	db.SetMaxIdleConns(cfg.MaxIdleConns)
+	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 
 	err = db.Ping()
 	if err != nil {

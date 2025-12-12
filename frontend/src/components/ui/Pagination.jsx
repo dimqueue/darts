@@ -1,11 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
-export default function Pagination({
-    currentPage,
-    totalPages,
-    onPageChange,
-}) {
+export default function Pagination({ currentPage, totalPages, onPageChange }) {
     const { theme } = useTheme();
 
     if (totalPages <= 1) return null;
@@ -26,7 +22,8 @@ export default function Pagination({
         return pages;
     };
 
-    const buttonBase = 'px-3 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+    const buttonBase =
+        'px-3 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
     return (
         <div className="flex items-center justify-center gap-2">

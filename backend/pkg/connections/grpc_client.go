@@ -5,15 +5,30 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dimqueue/darts/pkg/logger"
 	computev1 "github.com/dimqueue/darts/pkg/proto/compute/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
+
+const RequestIDMetadataKey = "x-request-id"
 
 type GRPCComputeClient struct {
 	conn    *grpc.ClientConn
 	client  computev1.ComputeServiceClient
 	timeout time.Duration
+}
+
+func requestIDInterceptor() grpc.UnaryClientInterceptor {
+	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		if requestID := ctx.Value(logger.RequestIDCtxKey); requestID != nil {
+			if id, ok := requestID.(string); ok && id != "" {
+				ctx = metadata.AppendToOutgoingContext(ctx, RequestIDMetadataKey, id)
+			}
+		}
+		return invoker(ctx, method, req, reply, cc, opts...)
+	}
 }
 
 func NewGRPCComputeClient(cfg Config) (*GRPCComputeClient, error) {
@@ -31,6 +46,7 @@ func NewGRPCComputeClient(cfg Config) (*GRPCComputeClient, error) {
 		cfg.BaseURL,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
+		grpc.WithUnaryInterceptor(requestIDInterceptor()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to gRPC server: %w", err)

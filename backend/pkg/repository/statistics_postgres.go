@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -16,7 +17,7 @@ func NewStatisticsPostgres(db *sqlx.DB) *StatisticsPostgres {
 	return &StatisticsPostgres{db: db}
 }
 
-func (r *StatisticsPostgres) GetStatistics(userId int64) (*model.UserStatistics, error) {
+func (r *StatisticsPostgres) GetStatistics(ctx context.Context, userId int64) (*model.UserStatistics, error) {
 	var stats model.UserStatistics
 
 	query := fmt.Sprintf(`
@@ -27,24 +28,24 @@ func (r *StatisticsPostgres) GetStatistics(userId int64) (*model.UserStatistics,
 		WHERE user_id = $1
 	`, userStatisticsView)
 
-	if err := r.db.Get(&stats, query, userId); err != nil {
+	if err := r.db.GetContext(ctx, &stats, query, userId); err != nil {
 		return nil, err
 	}
 
 	return &stats, nil
 }
 
-func (r *StatisticsPostgres) CreateGlobalStreaks(q Querier, userId int64) error {
+func (r *StatisticsPostgres) CreateGlobalStreaks(ctx context.Context, q Querier, userId int64) error {
 	query := fmt.Sprintf(`
 		INSERT INTO %s (user_id)
 		VALUES ($1)
 	`, globalStreaksTable)
 
-	_, err := q.Exec(query, userId)
+	_, err := q.ExecContext(ctx, query, userId)
 	return err
 }
 
-func (r *StatisticsPostgres) GetGlobalStreaks(q Querier, userId int64, forUpdate bool) (*model.UserGlobalStreaks, error) {
+func (r *StatisticsPostgres) GetGlobalStreaks(ctx context.Context, q Querier, userId int64, forUpdate bool) (*model.UserGlobalStreaks, error) {
 	var streaks model.UserGlobalStreaks
 
 	query := fmt.Sprintf(`
@@ -57,7 +58,7 @@ func (r *StatisticsPostgres) GetGlobalStreaks(q Querier, userId int64, forUpdate
 		query += " FOR UPDATE"
 	}
 
-	err := q.Get(&streaks, query, userId)
+	err := q.GetContext(ctx, &streaks, query, userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -68,17 +69,17 @@ func (r *StatisticsPostgres) GetGlobalStreaks(q Querier, userId int64, forUpdate
 	return &streaks, nil
 }
 
-func (r *StatisticsPostgres) CreateGlobalStreaksWithData(q Querier, streaks *model.UserGlobalStreaks) error {
+func (r *StatisticsPostgres) CreateGlobalStreaksWithData(ctx context.Context, q Querier, streaks *model.UserGlobalStreaks) error {
 	query := fmt.Sprintf(`
 		INSERT INTO %s (user_id, current_streak, best_streak, last_game_at)
 		VALUES ($1, $2, $3, NOW())
 	`, globalStreaksTable)
 
-	_, err := q.Exec(query, streaks.UserId, streaks.CurrentStreak, streaks.BestStreak)
+	_, err := q.ExecContext(ctx, query, streaks.UserId, streaks.CurrentStreak, streaks.BestStreak)
 	return err
 }
 
-func (r *StatisticsPostgres) UpdateGlobalStreaks(q Querier, streaks *model.UserGlobalStreaks) error {
+func (r *StatisticsPostgres) UpdateGlobalStreaks(ctx context.Context, q Querier, streaks *model.UserGlobalStreaks) error {
 	query := fmt.Sprintf(`
 		UPDATE %s
 		SET current_streak = $2,
@@ -87,11 +88,11 @@ func (r *StatisticsPostgres) UpdateGlobalStreaks(q Querier, streaks *model.UserG
 		WHERE user_id = $1
 	`, globalStreaksTable)
 
-	_, err := q.Exec(query, streaks.UserId, streaks.CurrentStreak, streaks.BestStreak)
+	_, err := q.ExecContext(ctx, query, streaks.UserId, streaks.CurrentStreak, streaks.BestStreak)
 	return err
 }
 
-func (r *StatisticsPostgres) GetLanguageStats(q Querier, userId int64, language string, forUpdate bool) (*model.UserLanguageStats, error) {
+func (r *StatisticsPostgres) GetLanguageStats(ctx context.Context, q Querier, userId int64, language string, forUpdate bool) (*model.UserLanguageStats, error) {
 	var stats model.UserLanguageStats
 
 	query := fmt.Sprintf(`
@@ -106,7 +107,7 @@ func (r *StatisticsPostgres) GetLanguageStats(q Querier, userId int64, language 
 		query += " FOR UPDATE"
 	}
 
-	err := q.Get(&stats, query, userId, language)
+	err := q.GetContext(ctx, &stats, query, userId, language)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -117,7 +118,7 @@ func (r *StatisticsPostgres) GetLanguageStats(q Querier, userId int64, language 
 	return &stats, nil
 }
 
-func (r *StatisticsPostgres) GetAllLanguageStats(userId int64) ([]model.UserLanguageStats, error) {
+func (r *StatisticsPostgres) GetAllLanguageStats(ctx context.Context, userId int64) ([]model.UserLanguageStats, error) {
 	stats := []model.UserLanguageStats{}
 
 	query := fmt.Sprintf(`
@@ -128,7 +129,7 @@ func (r *StatisticsPostgres) GetAllLanguageStats(userId int64) ([]model.UserLang
 		ORDER BY games_played DESC
 	`, languageStatsTable)
 
-	err := r.db.Select(&stats, query, userId)
+	err := r.db.SelectContext(ctx, &stats, query, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -136,14 +137,14 @@ func (r *StatisticsPostgres) GetAllLanguageStats(userId int64) ([]model.UserLang
 	return stats, nil
 }
 
-func (r *StatisticsPostgres) CreateLanguageStats(q Querier, stats *model.UserLanguageStats) error {
+func (r *StatisticsPostgres) CreateLanguageStats(ctx context.Context, q Querier, stats *model.UserLanguageStats) error {
 	query := fmt.Sprintf(`
 		INSERT INTO %s (user_id, language, games_played, games_won, total_guesses,
 		                best_streak, current_streak, total_score, fastest_win_seconds, fewest_guesses_win)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`, languageStatsTable)
 
-	_, err := q.Exec(query,
+	_, err := q.ExecContext(ctx, query,
 		stats.UserId,
 		stats.Language,
 		stats.GamesPlayed,
@@ -158,7 +159,7 @@ func (r *StatisticsPostgres) CreateLanguageStats(q Querier, stats *model.UserLan
 	return err
 }
 
-func (r *StatisticsPostgres) UpdateLanguageStats(q Querier, stats *model.UserLanguageStats) error {
+func (r *StatisticsPostgres) UpdateLanguageStats(ctx context.Context, q Querier, stats *model.UserLanguageStats) error {
 	query := fmt.Sprintf(`
 		UPDATE %s
 		SET games_played = $3,
@@ -172,7 +173,7 @@ func (r *StatisticsPostgres) UpdateLanguageStats(q Querier, stats *model.UserLan
 		WHERE user_id = $1 AND language = $2
 	`, languageStatsTable)
 
-	_, err := q.Exec(query,
+	_, err := q.ExecContext(ctx, query,
 		stats.UserId,
 		stats.Language,
 		stats.GamesPlayed,

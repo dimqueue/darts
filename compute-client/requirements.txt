@@ -9,3 +9,4 @@ scipy==1.10.1
 psutil==5.9.6
 grpcio>=1.68.0
 protobuf>=6.33.0
+redis>=5.0.0

@@ -1,18 +1,22 @@
 import gensim.downloader as api
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 import time
 import logging
 
 from utils.progress import Spinner
+
+if TYPE_CHECKING:
+    from cache import RankingsCache
 
 logger = logging.getLogger(__name__)
 
 
 class WordSimilarityModel:
 
-    def __init__(self):
+    def __init__(self, rankings_cache: Optional["RankingsCache"] = None):
         self.models = {}
         self.game_rankings: Dict[str, Dict[str, int]] = {}
+        self.rankings_cache = rankings_cache
 
     def load_model(self, language: str, model_name: str = "glove-twitter-25"):
         logger.info(f"Loading model '{model_name}' for language: {language}")
@@ -37,6 +41,12 @@ class WordSimilarityModel:
             return False
 
     def calculate_distance(self, secret_word: str, language: str, top_n: int) -> Tuple[Dict[str, int], float]:
+        if self.rankings_cache:
+            cached = self.rankings_cache.get_rankings(language, secret_word)
+            if cached:
+                logger.debug(f"Using cached rankings for '{secret_word}'")
+                self.game_rankings[secret_word] = cached  # Also store in memory for fast access
+                return cached, 0.0
 
         start_time = time.time()
 
@@ -49,21 +59,35 @@ class WordSimilarityModel:
 
         calculation_time = time.time() - start_time
 
+        if self.rankings_cache:
+            self.rankings_cache.set_rankings(language, secret_word, rankings)
+
         self.game_rankings[secret_word] = rankings
 
         return rankings, calculation_time
 
-    def get_guess_distance(self, secret_word: str, guess: str) -> Tuple[int, bool]:
+    def get_guess_distance(self, secret_word: str, guess: str, language: str = "en") -> Tuple[int, bool]:
+        if guess == secret_word:
+            return 1, True
 
+        if not self.word_in_vocabulary(guess, language):
+            logger.debug(f"Word '{guess}' not in vocabulary")
+            return -1, False
+
+        # Check in-memory cache first
         game_data = self.game_rankings.get(secret_word)
+
+        # If not in memory, try Redis
+        if not game_data and self.rankings_cache:
+            game_data = self.rankings_cache.get_rankings(language, secret_word)
+            if game_data:
+                logger.debug(f"Loaded rankings from Redis for '{secret_word}'")
+                self.game_rankings[secret_word] = game_data
 
         if not game_data:
             raise ValueError(f"No game data found for secret word: {secret_word}")
 
-        if guess == secret_word:
-            return 1, True
-
-        rank = game_data.get(guess, 0)
+        rank = game_data.get(guess, 0)  # 0 = exists but not in top N
         return rank, False
 
     def warm_up(self, language: str):

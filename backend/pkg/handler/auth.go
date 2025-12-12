@@ -22,14 +22,13 @@ func (h *Handler) signUp(c *gin.Context) {
 	var input model.User
 
 	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		handleError(c, ErrBadRequest("invalid request body"))
 		return
 	}
 
-	id, err := h.services.Authorization.CreateUser(input)
-
+	id, err := h.services.Authorization.CreateUser(c.Request.Context(), input)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, err)
 		return
 	}
 
@@ -58,14 +57,13 @@ func (h *Handler) signIn(c *gin.Context) {
 	var input signInInput
 
 	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		handleError(c, ErrBadRequest("invalid request body"))
 		return
 	}
 
-	token, err := h.services.Authorization.GenerateToken(input.Username, input.Password)
-
+	token, err := h.services.Authorization.GenerateToken(c.Request.Context(), input.Username, input.Password)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		handleError(c, err)
 		return
 	}
 

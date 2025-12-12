@@ -1,10 +1,12 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/dimqueue/darts/pkg/config"
+	"github.com/dimqueue/darts/pkg/logger"
 	"github.com/dimqueue/darts/pkg/model"
 	"github.com/dimqueue/darts/pkg/repository"
 )
@@ -33,11 +35,16 @@ func GetPeriodStart(periodType string) (time.Time, error) {
 	case "monthly":
 		return time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC), nil
 	default:
-		return time.Time{}, fmt.Errorf("invalid period type: %s", periodType)
+		return time.Time{}, ErrInvalidInput
 	}
 }
 
-func (s *LeaderboardService) GetLeaderboard(query model.LeaderboardQuery) (*model.LeaderboardResponse, error) {
+func (s *LeaderboardService) GetLeaderboard(ctx context.Context, query model.LeaderboardQuery) (*model.LeaderboardResponse, error) {
+	log := logger.Op(ctx, "LeaderboardService.GetLeaderboard").With(
+		"type", query.Type,
+		"limit", query.Limit,
+	)
+
 	if query.Limit <= 0 {
 		query.Limit = config.LeaderboardDefaultLimit
 	}
@@ -51,32 +58,43 @@ func (s *LeaderboardService) GetLeaderboard(query model.LeaderboardQuery) (*mode
 
 	if query.Type == "global" {
 		if query.Language != nil {
-			users, err = s.leaderboardRepo.GetGlobalLeaderboardByLanguage(*query.Language, query.Limit, query.Offset)
+			users, err = s.leaderboardRepo.GetGlobalLeaderboardByLanguage(ctx, *query.Language, query.Limit, query.Offset)
 			if err != nil {
-				return nil, err
+				log.Error("failed to get global leaderboard by language", logger.FieldError, err)
+				return nil, Logged(err)
 			}
-			total, err = s.leaderboardRepo.GetGlobalLeaderboardByLanguageCount(*query.Language)
+			total, err = s.leaderboardRepo.GetGlobalLeaderboardByLanguageCount(ctx, *query.Language)
+			if err != nil {
+				log.Error("failed to get global leaderboard count by language", logger.FieldError, err)
+				return nil, Logged(err)
+			}
 		} else {
-			users, err = s.leaderboardRepo.GetGlobalLeaderboard(query.Limit, query.Offset)
+			users, err = s.leaderboardRepo.GetGlobalLeaderboard(ctx, query.Limit, query.Offset)
 			if err != nil {
-				return nil, err
+				log.Error("failed to get global leaderboard", logger.FieldError, err)
+				return nil, Logged(err)
 			}
-			total, err = s.leaderboardRepo.GetGlobalLeaderboardCount()
+			total, err = s.leaderboardRepo.GetGlobalLeaderboardCount(ctx)
+			if err != nil {
+				log.Error("failed to get global leaderboard count", logger.FieldError, err)
+				return nil, Logged(err)
+			}
 		}
 	} else {
 		periodStart, err := GetPeriodStart(query.Type)
 		if err != nil {
 			return nil, err
 		}
-		users, err = s.leaderboardRepo.GetPeriodLeaderboard(periodStart, query.Language, query.Limit, query.Offset)
+		users, err = s.leaderboardRepo.GetPeriodLeaderboard(ctx, periodStart, query.Language, query.Limit, query.Offset)
 		if err != nil {
-			return nil, err
+			log.Error("failed to get period leaderboard", logger.FieldError, err)
+			return nil, Logged(err)
 		}
-		total, err = s.leaderboardRepo.GetPeriodLeaderboardCount(periodStart, query.Language)
-	}
-
-	if err != nil {
-		return nil, err
+		total, err = s.leaderboardRepo.GetPeriodLeaderboardCount(ctx, periodStart, query.Language)
+		if err != nil {
+			log.Error("failed to get period leaderboard count", logger.FieldError, err)
+			return nil, Logged(err)
+		}
 	}
 
 	return &model.LeaderboardResponse{
@@ -87,46 +105,79 @@ func (s *LeaderboardService) GetLeaderboard(query model.LeaderboardQuery) (*mode
 	}, nil
 }
 
-func (s *LeaderboardService) GetLeaderboardWithUserRank(userId int64, query model.LeaderboardQuery) (*model.LeaderboardResponse, error) {
-	response, err := s.GetLeaderboard(query)
+func (s *LeaderboardService) GetLeaderboardWithUserRank(ctx context.Context, userId int64, query model.LeaderboardQuery) (*model.LeaderboardResponse, error) {
+	response, err := s.GetLeaderboard(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 
-	userRank, _ := s.GetUserRank(userId, query)
+	userRank, _ := s.GetUserRank(ctx, userId, query)
 	response.CurrentUserRank = userRank
 
 	return response, nil
 }
 
-func (s *LeaderboardService) GetUserRank(userId int64, query model.LeaderboardQuery) (*int, error) {
+func (s *LeaderboardService) GetUserRank(ctx context.Context, userId int64, query model.LeaderboardQuery) (*int, error) {
 	if query.Type == "global" {
 		if query.Language != nil {
-			return s.leaderboardRepo.GetGlobalUserRankByLanguage(userId, *query.Language)
+			return s.leaderboardRepo.GetGlobalUserRankByLanguage(ctx, userId, *query.Language)
 		}
-		return s.leaderboardRepo.GetGlobalUserRank(userId)
+		return s.leaderboardRepo.GetGlobalUserRank(ctx, userId)
 	}
 
 	periodStart, err := GetPeriodStart(query.Type)
 	if err != nil {
 		return nil, err
 	}
-	return s.leaderboardRepo.GetPeriodUserRank(userId, periodStart, query.Language)
+	return s.leaderboardRepo.GetPeriodUserRank(ctx, userId, periodStart, query.Language)
 }
 
-func (s *LeaderboardService) GetAllUserRanks(userId int64) (*model.UserRanks, error) {
+func (s *LeaderboardService) GetAllUserRanks(ctx context.Context, userId int64) (*model.UserRanks, error) {
+	log := logger.Op(ctx, "LeaderboardService.GetAllUserRanks").With(logger.FieldUserID, userId)
+
 	var ranks model.UserRanks
+	var errs []error
 
-	ranks.GlobalRank, _ = s.leaderboardRepo.GetGlobalUserRank(userId)
+	var err error
+	ranks.GlobalRank, err = s.leaderboardRepo.GetGlobalUserRank(ctx, userId)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("global rank: %w", err))
+	}
 
-	dayStart, _ := GetPeriodStart("daily")
-	ranks.DailyRank, _ = s.leaderboardRepo.GetPeriodUserRank(userId, dayStart, nil)
+	dayStart, err := GetPeriodStart("daily")
+	if err != nil {
+		errs = append(errs, fmt.Errorf("daily period: %w", err))
+	} else {
+		ranks.DailyRank, err = s.leaderboardRepo.GetPeriodUserRank(ctx, userId, dayStart, nil)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("daily rank: %w", err))
+		}
+	}
 
-	weekStart, _ := GetPeriodStart("weekly")
-	ranks.WeeklyRank, _ = s.leaderboardRepo.GetPeriodUserRank(userId, weekStart, nil)
+	weekStart, err := GetPeriodStart("weekly")
+	if err != nil {
+		errs = append(errs, fmt.Errorf("weekly period: %w", err))
+	} else {
+		ranks.WeeklyRank, err = s.leaderboardRepo.GetPeriodUserRank(ctx, userId, weekStart, nil)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("weekly rank: %w", err))
+		}
+	}
 
-	monthStart, _ := GetPeriodStart("monthly")
-	ranks.MonthlyRank, _ = s.leaderboardRepo.GetPeriodUserRank(userId, monthStart, nil)
+	monthStart, err := GetPeriodStart("monthly")
+	if err != nil {
+		errs = append(errs, fmt.Errorf("monthly period: %w", err))
+	} else {
+		ranks.MonthlyRank, err = s.leaderboardRepo.GetPeriodUserRank(ctx, userId, monthStart, nil)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("monthly rank: %w", err))
+		}
+	}
+
+	if len(errs) > 0 {
+		log.Error("failed to get some ranks", logger.FieldError, fmt.Errorf("%v", errs))
+		return &ranks, Logged(fmt.Errorf("failed to get some ranks: %v", errs))
+	}
 
 	return &ranks, nil
 }

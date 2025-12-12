@@ -22,9 +22,13 @@ EXPOSE 8080
 ENTRYPOINT ["/entrypoint.sh"]
 
 FROM alpine:3.19 AS prod
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates && \
+    adduser -D -g '' appuser
 COPY --from=build-prod /usr/local/bin/darts /usr/local/bin/darts
+COPY configs/config.yml /app/configs/config.yml
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+WORKDIR /app
+USER appuser
 EXPOSE 8080
 ENTRYPOINT ["/entrypoint.sh"]

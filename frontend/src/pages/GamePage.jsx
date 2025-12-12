@@ -8,11 +8,14 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { GamePageSkeleton } from '../components/ui/Skeleton';
-
-const LANGUAGES = [
-    { code: 'en', name: 'English' },
-    { code: 'ua', name: 'Ukrainian' },
-];
+import {
+    LANGUAGES,
+    TIMEOUTS,
+    GAME,
+    PATTERNS,
+    ERROR_CODES,
+    getErrorMessage,
+} from '../config/constants';
 
 export default function GamePage() {
     const [gameId, setGameId] = useState(null);
@@ -27,7 +30,7 @@ export default function GamePage() {
     const inputRef = useRef(null);
 
     const { theme, darkMode } = useTheme();
-    const { gameState, saveGame } = useGame();
+    const { saveGame } = useGame();
 
     useEffect(() => {
         if (gameId && !initializing) {
@@ -41,25 +44,8 @@ export default function GamePage() {
 
         const loadActiveGame = async () => {
             try {
-                if (gameState && gameState.status === 'in_progress' && gameState.gameId) {
-                    try {
-                        const gameResponse = await api.getGameById(gameState.gameId);
-                        if (gameResponse.data && gameResponse.data.status === 'in_progress') {
-                            setGameId(gameState.gameId);
-                            setGuesses(gameState.guesses || []);
-                            setLanguage(gameState.language || 'en');
-                            setGameStatus(gameState.status);
-                            setInitializing(false);
-                            setTimeout(() => inputRef.current?.focus(), 100);
-                            return;
-                        }
-                    } catch {
-                    }
-                }
-
-                const response = await api.getAllGames();
-                const games = response.data || [];
-                const activeGame = games.find(g => g.status === 'in_progress');
+                const response = await api.getActiveGame();
+                const activeGame = response.data;
 
                 if (activeGame) {
                     setGameId(activeGame.id);
@@ -69,23 +55,27 @@ export default function GamePage() {
                     const guessesResponse = await api.getAllGuessByGame(activeGame.id);
                     setGuesses(guessesResponse.data || []);
                     setInitializing(false);
-                    setTimeout(() => inputRef.current?.focus(), 100);
+                    setTimeout(() => inputRef.current?.focus(), TIMEOUTS.FOCUS_DELAY);
                 } else {
-                    startNewGame();
+                    await startNewGame('en', false);
                 }
             } catch (err) {
                 console.error('Failed to load active game:', err);
-                startNewGame();
+                await startNewGame('en', false);
             }
         };
 
         loadActiveGame();
     }, []);
 
-    const startNewGame = async (lang = language) => {
+    const startNewGame = async (lang = language, abandonCurrent = true) => {
         setInitializing(true);
         setError('');
         try {
+            if (abandonCurrent && gameId && gameStatus === 'in_progress') {
+                await api.abandonGame(gameId).catch(() => {});
+            }
+
             const game = await api.createGame(lang);
             setGameId(game.id);
             setGuesses([]);
@@ -95,7 +85,7 @@ export default function GamePage() {
             setError('Failed to start game: ' + err.message);
         } finally {
             setInitializing(false);
-            setTimeout(() => inputRef.current?.focus(), 100);
+            setTimeout(() => inputRef.current?.focus(), TIMEOUTS.FOCUS_DELAY);
         }
     };
 
@@ -105,13 +95,19 @@ export default function GamePage() {
         if (!trimmed) {
             return { valid: false, error: 'Please enter a word' };
         }
-        if (trimmed.length < 2) {
-            return { valid: false, error: 'Word must be at least 2 characters' };
+        if (trimmed.length < GAME.MIN_WORD_LENGTH) {
+            return {
+                valid: false,
+                error: `Word must be at least ${GAME.MIN_WORD_LENGTH} characters`,
+            };
         }
-        if (trimmed.length > 50) {
-            return { valid: false, error: 'Word must be less than 50 characters' };
+        if (trimmed.length > GAME.MAX_WORD_LENGTH) {
+            return {
+                valid: false,
+                error: `Word must be less than ${GAME.MAX_WORD_LENGTH} characters`,
+            };
         }
-        if (!/^[\p{L}\p{M}]+$/u.test(trimmed)) {
+        if (!PATTERNS.WORD.test(trimmed)) {
             return { valid: false, error: 'Word must contain only letters' };
         }
         return { valid: true, word: trimmed };
@@ -139,13 +135,19 @@ export default function GamePage() {
 
         try {
             const result = await api.createGuess(gameId, validation.word);
+            const distance = result.distance;
 
-            if (result.distance === 0) {
-                setError('Word not found in vocabulary');
+            if (distance === -1) {
+                setError('Word not found in vocabulary. Check spelling.');
                 return;
             }
 
-            if (result.distance === 1) {
+            if (distance === 0) {
+                setError('Word is too far from the target. Try something closer!');
+                return;
+            }
+
+            if (distance === 1) {
                 setGameStatus('won');
             }
 
@@ -153,10 +155,17 @@ export default function GamePage() {
             setGuesses(response.data || []);
             setInputWord('');
         } catch (err) {
-            setError(err.message);
+            if (err.code === ERROR_CODES.WORD_ALREADY_USED) {
+                setError(getErrorMessage(err));
+            } else if (err.code === ERROR_CODES.GAME_NOT_ACTIVE) {
+                setError(getErrorMessage(err));
+                setGameStatus('lost');
+            } else {
+                setError(getErrorMessage(err));
+            }
         } finally {
             setLoading(false);
-            setTimeout(() => inputRef.current?.focus(), 50);
+            setTimeout(() => inputRef.current?.focus(), TIMEOUTS.FOCUS_DELAY_SHORT);
         }
     };
 
@@ -203,19 +212,33 @@ export default function GamePage() {
                 <Card>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Trophy className={`w-8 h-8 ${darkMode ? theme.textColorDark : theme.textColor}`} />
+                            <Trophy
+                                className={`w-8 h-8 ${darkMode ? theme.textColorDark : theme.textColor}`}
+                            />
                             <div>
-                                <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>Daily Challenge</h1>
-                                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Guess the secret word</p>
+                                <h1
+                                    className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}
+                                >
+                                    Daily Challenge
+                                </h1>
+                                <p
+                                    className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                                >
+                                    Guess the secret word
+                                </p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Globe className={`w-5 h-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                            <Globe
+                                className={`w-5 h-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}
+                            />
                             <select
                                 value={language}
                                 onChange={(e) => startNewGame(e.target.value)}
                                 className={`px-3 py-2 border-2 rounded-xl ${theme.focusBorder} focus:outline-none ${
-                                    darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-800 border-gray-200'
+                                    darkMode
+                                        ? 'bg-gray-700 text-white border-gray-600'
+                                        : 'bg-white text-gray-800 border-gray-200'
                                 }`}
                             >
                                 {LANGUAGES.map((lang) => (
@@ -233,7 +256,10 @@ export default function GamePage() {
                     <Card className={`${theme.gradient} text-white text-center`}>
                         <Trophy className="w-12 h-12 mx-auto mb-2" />
                         <h2 className="text-2xl font-bold mb-1">Congratulations!</h2>
-                        <p className="text-lg opacity-90">You found the word in {guesses.filter((g) => g.distance > 0).length} guesses!</p>
+                        <p className="text-lg opacity-90">
+                            You found the word in {guesses.filter((g) => g.distance > 0).length}{' '}
+                            guesses!
+                        </p>
                     </Card>
                 )}
 
@@ -260,11 +286,13 @@ export default function GamePage() {
                     </div>
 
                     {error && (
-                        <div className={`mt-3 p-3 rounded-xl text-sm border ${
-                            darkMode
-                                ? 'bg-red-900/30 border-red-800 text-red-400'
-                                : 'bg-red-50 border-red-200 text-red-600'
-                        }`}>
+                        <div
+                            className={`mt-3 p-3 rounded-xl text-sm border ${
+                                darkMode
+                                    ? 'bg-red-900/30 border-red-800 text-red-400'
+                                    : 'bg-red-50 border-red-200 text-red-600'
+                            }`}
+                        >
                             {error}
                         </div>
                     )}
@@ -273,7 +301,9 @@ export default function GamePage() {
                 {/* Guesses List */}
                 <Card>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                        <h3
+                            className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}
+                        >
                             Your Guesses ({guesses.filter((g) => g.distance > 0).length})
                         </h3>
                         <Button
