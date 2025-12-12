@@ -3,6 +3,9 @@
 proto:
 	@echo "Generating protobuf code..."
 	buf generate
+	@if [ -f compute-client/src/proto/compute/v1/service_pb2_grpc.py ]; then \
+		sed -i 's/from compute\.v1 import/from proto.compute.v1 import/g' compute-client/src/proto/compute/v1/service_pb2_grpc.py; \
+	fi
 	@echo "Proto generation complete!"
 
 proto-lint:
