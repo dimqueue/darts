@@ -83,6 +83,14 @@ class MockApiClient {
         return { message: 'Game deleted' };
     }
 
+    async abandonGame(gameId) {
+        await this.delay();
+        const game = this.games.get(gameId);
+        if (!game) throw new Error('Game not found');
+        game.status = 'abandoned';
+        return { message: 'Game abandoned' };
+    }
+
     async createGuess(gameId, guess) {
         await this.delay();
         const gameGuesses = this.guesses.get(gameId) || [];
