@@ -1,0 +1,110 @@
+name: Deploy to GCP
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  REGISTRY: ${{ secrets.GCP_REGION }}-docker.pkg.dev
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write  # Required for Workload Identity Federation
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Buf
+        uses: bufbuild/buf-setup-action@v1
+        with:
+          version: 'latest'
+
+      - name: Generate proto
+        run: |
+          buf generate
+          sed -i 's/from compute\.v1 import/from proto.compute.v1 import/g' compute-client/src/proto/compute/v1/service_pb2_grpc.py
+
+      - name: Auth to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      # Build and push Backend
+      - name: Build and push Backend
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/darts/backend:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/darts/backend:latest \
+            --target prod \
+            ./backend
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/darts/backend --all-tags
+
+      # Build and push Frontend
+      - name: Build and push Frontend
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/darts/frontend:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/darts/frontend:latest \
+            ./frontend
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/darts/frontend --all-tags
+
+      # Deploy Backend to Cloud Run
+      - name: Deploy Backend
+        run: |
+          gcloud run deploy darts-backend \
+            --image=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/darts/backend:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --port=8080 \
+            --memory=512Mi \
+            --min-instances=0 \
+            --max-instances=3 \
+            --allow-unauthenticated \
+            --add-cloudsql-instances=${{ secrets.CLOUDSQL_CONNECTION_NAME }} \
+            --set-env-vars="APP_ENV=production,GIN_MODE=release,LOG_FORMAT=json,POSTGRES_HOST=/cloudsql/${{ secrets.CLOUDSQL_CONNECTION_NAME }},POSTGRES_PORT=5432,POSTGRES_USER=darts_backend_user,POSTGRES_DB=dartsdb,POSTGRES_SSLMODE=disable,WORD_SERVICE_TYPE=grpc,WORD_SERVICE_URL=${{ secrets.COMPUTE_VM_IP }}:50051" \
+            --set-secrets="POSTGRES_PASSWORD=db-root:latest,JWT_SECRET=jwt-secret:latest"
+
+      # Get Backend URL for Frontend
+      - name: Get Backend URL
+        id: backend
+        run: |
+          URL=$(gcloud run services describe darts-backend --region=${{ env.REGION }} --format='value(status.url)')
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      # Deploy Frontend to Cloud Run
+      - name: Deploy Frontend
+        run: |
+          gcloud run deploy darts-frontend \
+            --image=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/darts/frontend:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --port=80 \
+            --memory=256Mi \
+            --min-instances=0 \
+            --max-instances=2 \
+            --allow-unauthenticated \
+            --set-env-vars="VITE_API_URL=${{ steps.backend.outputs.url }}"
+
+      # Show deployed URLs
+      - name: Show URLs
+        run: |
+          echo "=========================================="
+          echo "Deployment Complete!"
+          echo "=========================================="
+          echo "Backend:  ${{ steps.backend.outputs.url }}"
+          echo "Frontend: $(gcloud run services describe darts-frontend --region=${{ env.REGION }} --format='value(status.url)')"
+          echo "Compute:  ${{ secrets.COMPUTE_VM_IP }}:50051"
+          echo "=========================================="
