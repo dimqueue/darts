@@ -24,7 +24,7 @@ class Config:
     GRPC_PORT: int = int(os.getenv("GRPC_PORT", "50051"))
     HTTP_HOST: str = os.getenv("HTTP_HOST", "0.0.0.0")
 
-    MODEL_NAME: str = os.getenv("MODEL_NAME", "word2vec-google-news-300")
+    MODEL_NAME: str = os.getenv("MODEL_NAME", "glove-twitter-25")
     DEFAULT_LANGUAGE: str = os.getenv("DEFAULT_LANGUAGE", "en")
 
     MONITORING_INTERVAL: int = int(os.getenv("MONITORING_INTERVAL", "60"))
