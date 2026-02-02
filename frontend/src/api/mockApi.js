@@ -95,18 +95,26 @@ class MockApiClient {
         await this.delay();
         const gameGuesses = this.guesses.get(gameId) || [];
         const targetWord = this.targetWords.get(gameId) || 'ocean';
-        const distance = calculateDistance(guess, targetWord);
+        const rank = calculateDistance(guess, targetWord);
+
+        const found = guess.toLowerCase() === targetWord.toLowerCase();
+        const inVocabulary = rank !== -1;
 
         const newGuess = {
             id: this.nextGuessId++,
             game_id: gameId,
             guess_word: guess,
-            distance: distance,
+            distance: Math.max(0, rank), // Keep distance for display
             created_at: new Date().toISOString(),
         };
         gameGuesses.push(newGuess);
         this.guesses.set(gameId, gameGuesses);
-        return newGuess;
+
+        return {
+            rank: Math.max(0, rank),
+            found: found,
+            in_vocabulary: inVocabulary,
+        };
     }
 
     async getAllGuessByGame(gameId) {

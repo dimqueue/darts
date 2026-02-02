@@ -34,7 +34,7 @@ func TestCreateGuess_Success(t *testing.T) {
 		},
 	}
 	mockGame := &servicemocks.MockGameService{
-		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (int, error) {
+		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (*model.GuessResult, error) {
 			if userId != 42 {
 				t.Errorf("expected userId 42, got: %d", userId)
 			}
@@ -44,7 +44,7 @@ func TestCreateGuess_Success(t *testing.T) {
 			if guess != "hello" {
 				t.Errorf("expected guess 'hello', got: %s", guess)
 			}
-			return 150, nil
+			return &model.GuessResult{Rank: 150, Found: false, InVocabulary: true}, nil
 		},
 	}
 
@@ -70,8 +70,14 @@ func TestCreateGuess_Success(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if response["distance"] != float64(150) {
-		t.Errorf("expected distance 150, got: %v", response["distance"])
+	if response["rank"] != float64(150) {
+		t.Errorf("expected rank 150, got: %v", response["rank"])
+	}
+	if response["found"] != false {
+		t.Errorf("expected found false, got: %v", response["found"])
+	}
+	if response["in_vocabulary"] != true {
+		t.Errorf("expected in_vocabulary true, got: %v", response["in_vocabulary"])
 	}
 }
 
@@ -82,8 +88,8 @@ func TestCreateGuess_CorrectWord(t *testing.T) {
 		},
 	}
 	mockGame := &servicemocks.MockGameService{
-		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (int, error) {
-			return 1, nil // Distance 1 means correct word
+		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (*model.GuessResult, error) {
+			return &model.GuessResult{Rank: 1, Found: true, InVocabulary: true}, nil
 		},
 	}
 
@@ -109,8 +115,11 @@ func TestCreateGuess_CorrectWord(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if response["distance"] != float64(1) {
-		t.Errorf("expected distance 1, got: %v", response["distance"])
+	if response["rank"] != float64(1) {
+		t.Errorf("expected rank 1, got: %v", response["rank"])
+	}
+	if response["found"] != true {
+		t.Errorf("expected found true, got: %v", response["found"])
 	}
 }
 
@@ -251,8 +260,8 @@ func TestCreateGuess_GameNotFound(t *testing.T) {
 		},
 	}
 	mockGame := &servicemocks.MockGameService{
-		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (int, error) {
-			return 0, service.ErrGameNotFound
+		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (*model.GuessResult, error) {
+			return nil, service.ErrGameNotFound
 		},
 	}
 
@@ -281,8 +290,8 @@ func TestCreateGuess_GameNotActive(t *testing.T) {
 		},
 	}
 	mockGame := &servicemocks.MockGameService{
-		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (int, error) {
-			return 0, service.ErrGameNotActive
+		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (*model.GuessResult, error) {
+			return nil, service.ErrGameNotActive
 		},
 	}
 
@@ -311,8 +320,8 @@ func TestCreateGuess_WordAlreadyUsed(t *testing.T) {
 		},
 	}
 	mockGame := &servicemocks.MockGameService{
-		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (int, error) {
-			return 0, service.ErrWordAlreadyUsed
+		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (*model.GuessResult, error) {
+			return nil, service.ErrWordAlreadyUsed
 		},
 	}
 
@@ -341,8 +350,8 @@ func TestCreateGuess_WordNotFound(t *testing.T) {
 		},
 	}
 	mockGame := &servicemocks.MockGameService{
-		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (int, error) {
-			return 0, service.ErrWordNotFound
+		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (*model.GuessResult, error) {
+			return &model.GuessResult{Rank: 0, Found: false, InVocabulary: false}, service.ErrWordNotFound
 		},
 	}
 
@@ -371,8 +380,8 @@ func TestCreateGuess_ServiceError(t *testing.T) {
 		},
 	}
 	mockGame := &servicemocks.MockGameService{
-		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (int, error) {
-			return 0, errors.New("compute service error")
+		MakeGuessFn: func(ctx context.Context, userId, gameId int64, guess string) (*model.GuessResult, error) {
+			return nil, errors.New("compute service error")
 		},
 	}
 

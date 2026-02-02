@@ -72,10 +72,16 @@ async def make_guess(request_data: GuessRequest, request: Request):
     )
 
     try:
-        distance, found = word_model.get_guess_distance(secret_word, guess)
+        rank, found = word_model.get_guess_distance(secret_word, guess)
+        # Map the result to new response fields:
+        # rank == -1 means word not in vocabulary
+        # rank == 0 means word too far (not in top N)
+        # rank == 1 means found (WIN)
+        # rank > 1 means ranked guess
+        in_vocabulary = rank != -1
         logger.info(
             f"[{getattr(request.state, 'request_id', 'N/A')}] Guess result: "
-            f"distance={distance}"
+            f"rank={rank}, found={found}, in_vocabulary={in_vocabulary}"
         )
     except ValueError as e:
         logger.error(
@@ -83,7 +89,7 @@ async def make_guess(request_data: GuessRequest, request: Request):
         )
         raise HTTPException(status_code=404, detail=str(e))
 
-    return GuessResponse(distance=distance)
+    return GuessResponse(rank=max(0, rank), found=found, in_vocabulary=in_vocabulary)
 
 
 @router.get("/health", response_model=HealthResponse)

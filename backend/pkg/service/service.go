@@ -26,7 +26,7 @@ type Game interface {
 	GetGameById(ctx context.Context, userId, gameId int64) (*model.Game, error)
 	UpdateGameStatus(ctx context.Context, gameId int64, status string) error
 	AbandonGame(ctx context.Context, userId, gameId int64) error
-	MakeGuess(ctx context.Context, userId, gameId int64, guess string) (int, error)
+	MakeGuess(ctx context.Context, userId, gameId int64, guess string) (*model.GuessResult, error)
 	GetAllGuessByGame(ctx context.Context, userId, gameId int64) ([]model.Guess, error)
 }
 

@@ -11,7 +11,6 @@ var (
 	// Guess errors
 	ErrWordNotFound    = errors.New("word not found in vocabulary")
 	ErrWordAlreadyUsed = errors.New("word already guessed")
-	ErrWordTooFar      = errors.New("word too far from target")
 
 	// Auth errors
 	ErrUnauthorized = errors.New("unauthorized")
@@ -65,7 +64,6 @@ func IsDomainError(err error) bool {
 		errors.Is(err, ErrGameExpired),
 		errors.Is(err, ErrWordNotFound),
 		errors.Is(err, ErrWordAlreadyUsed),
-		errors.Is(err, ErrWordTooFar),
 		errors.Is(err, ErrUnauthorized),
 		errors.Is(err, ErrUserExists),
 		errors.Is(err, ErrForbidden),

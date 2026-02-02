@@ -30,7 +30,12 @@ message MakeGuessRequest {
 }
 
 message MakeGuessResponse {
-  int32 distance = 1;
+  // Position in similarity ranking (1-N). 0 if word is not in top N (too far)
+  int32 rank = 1;
+  // True if this guess is the correct word (WIN condition)
+  bool found = 2;
+  // False if the guessed word doesn't exist in the model's vocabulary
+  bool in_vocabulary = 3;
 }
 
 message HealthCheckRequest {}

@@ -13,7 +13,7 @@ type MockGameService struct {
 	GetGameByIdFn       func(ctx context.Context, userId, gameId int64) (*model.Game, error)
 	UpdateGameStatusFn  func(ctx context.Context, gameId int64, status string) error
 	AbandonGameFn       func(ctx context.Context, userId, gameId int64) error
-	MakeGuessFn         func(ctx context.Context, userId, gameId int64, guess string) (int, error)
+	MakeGuessFn         func(ctx context.Context, userId, gameId int64, guess string) (*model.GuessResult, error)
 	GetAllGuessByGameFn func(ctx context.Context, userId, gameId int64) ([]model.Guess, error)
 }
 
@@ -59,11 +59,11 @@ func (m *MockGameService) AbandonGame(ctx context.Context, userId, gameId int64)
 	return nil
 }
 
-func (m *MockGameService) MakeGuess(ctx context.Context, userId, gameId int64, guess string) (int, error) {
+func (m *MockGameService) MakeGuess(ctx context.Context, userId, gameId int64, guess string) (*model.GuessResult, error) {
 	if m.MakeGuessFn != nil {
 		return m.MakeGuessFn(ctx, userId, gameId, guess)
 	}
-	return 100, nil
+	return &model.GuessResult{Rank: 100, Found: false, InVocabulary: true}, nil
 }
 
 func (m *MockGameService) GetAllGuessByGame(ctx context.Context, userId, gameId int64) ([]model.Guess, error) {

@@ -116,18 +116,20 @@ class TestComputeServiceServicer:
     # --- MakeGuess Tests ---
 
     def test_make_guess_success(self, servicer, start_game_request, make_guess_request, mock_grpc_context):
-        """Test successful guess with distance returned."""
+        """Test successful guess with rank returned."""
         # First start a game to populate rankings
         servicer.StartGame(start_game_request, mock_grpc_context)
 
         # Now make a guess
         response = servicer.MakeGuess(make_guess_request, mock_grpc_context)
 
-        # Should return distance (dog is at rank 2)
-        assert response.distance == 2
+        # Should return rank (dog is at rank 2)
+        assert response.rank == 2
+        assert response.found is False
+        assert response.in_vocabulary is True
 
     def test_make_guess_exact_match(self, servicer, start_game_request, mock_grpc_context):
-        """Test guessing the exact word returns distance 1."""
+        """Test guessing the exact word returns found=True."""
         from proto.compute.v1 import service_pb2
 
         # First start a game
@@ -142,10 +144,12 @@ class TestComputeServiceServicer:
 
         response = servicer.MakeGuess(request, mock_grpc_context)
 
-        assert response.distance == 1
+        assert response.rank == 1
+        assert response.found is True
+        assert response.in_vocabulary is True
 
     def test_make_guess_not_in_vocabulary(self, servicer, start_game_request, mock_grpc_context):
-        """Test guess with unknown word returns -1."""
+        """Test guess with unknown word returns in_vocabulary=False."""
         from proto.compute.v1 import service_pb2
 
         # First start a game to populate rankings
@@ -162,8 +166,10 @@ class TestComputeServiceServicer:
 
         response = servicer.MakeGuess(request, mock_grpc_context)
 
-        # Word not in vocabulary should return -1
-        assert response.distance == -1
+        # Word not in vocabulary should return in_vocabulary=False
+        assert response.rank == 0
+        assert response.found is False
+        assert response.in_vocabulary is False
 
     def test_make_guess_normalizes_input(self, servicer, start_game_request, mock_grpc_context):
         """Test that guess is normalized (lowercase, stripped)."""
@@ -181,7 +187,8 @@ class TestComputeServiceServicer:
         response = servicer.MakeGuess(request, mock_grpc_context)
 
         # Should still find dog at rank 2
-        assert response.distance == 2
+        assert response.rank == 2
+        assert response.in_vocabulary is True
 
     def test_make_guess_no_game_data(self, servicer, mock_grpc_context):
         """Test guess without starting game first."""

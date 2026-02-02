@@ -17,10 +17,10 @@ type GameService struct {
 	wordService   Word
 	gameRepo      repository.Game
 	statsService  *StatsService
-	txManager     *repository.TransactionManager
+	txManager     repository.TxManager
 }
 
-func NewGameService(gameRepo repository.Game, wordService Word, statsService *StatsService, txManager *repository.TransactionManager, computeClient connections.ComputeClient) *GameService {
+func NewGameService(gameRepo repository.Game, wordService Word, statsService *StatsService, txManager repository.TxManager, computeClient connections.ComputeClient) *GameService {
 	return &GameService{
 		computeClient: computeClient,
 		wordService:   wordService,
@@ -108,7 +108,7 @@ func (s *GameService) UpdateGameStatus(ctx context.Context, gameId int64, status
 	return s.gameRepo.UpdateGameStatus(ctx, s.txManager.DB(), gameId, status)
 }
 
-func (s *GameService) MakeGuess(ctx context.Context, userId, gameId int64, guess string) (int, error) {
+func (s *GameService) MakeGuess(ctx context.Context, userId, gameId int64, guess string) (*model.GuessResult, error) {
 	log := logger.Op(ctx, "GameService.MakeGuess").With(
 		logger.FieldUserID, userId,
 		logger.FieldGameID, gameId,
@@ -117,33 +117,38 @@ func (s *GameService) MakeGuess(ctx context.Context, userId, gameId int64, guess
 
 	game, err := s.GetGameById(ctx, userId, gameId)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if game.Status != "in_progress" {
-		return 0, ErrGameNotActive
+		return nil, ErrGameNotActive
 	}
 
 	exists, err := s.gameRepo.GuessExists(ctx, s.txManager.DB(), gameId, guess)
 	if err != nil {
 		log.Error("db check guess exists failed", logger.FieldError, err)
-		return 0, Logged(err)
+		return nil, Logged(err)
 	}
 	if exists {
-		return 0, ErrWordAlreadyUsed
+		return nil, ErrWordAlreadyUsed
 	}
 
 	word, err := s.wordService.GetWordById(ctx, game.WordId)
 	if err != nil {
 		log.Error("get target word failed", logger.FieldError, err)
-		return 0, Logged(err)
+		return nil, Logged(err)
 	}
 
-	var distance int
+	result := &model.GuessResult{
+		Rank:         0,
+		Found:        false,
+		InVocabulary: true,
+	}
 	isWinningGuess := guess == word.Word
 
 	if isWinningGuess {
-		distance = 1
+		result.Rank = 1
+		result.Found = true
 	} else {
 		grpcCtx, cancel := context.WithTimeout(ctx, config.GameComputeTimeout)
 		defer cancel()
@@ -157,16 +162,18 @@ func (s *GameService) MakeGuess(ctx context.Context, userId, gameId int64, guess
 		resp, err := s.computeClient.MakeGuess(grpcCtx, req)
 		if err != nil {
 			log.Error("compute service MakeGuess failed", logger.FieldError, err)
-			return 0, ErrComputeService
+			return nil, ErrComputeService
 		}
-		distance = resp.Distance
 
-		if distance == -1 {
-			return -1, ErrWordNotFound
+		result.Rank = resp.Rank
+		result.Found = resp.Found
+		result.InVocabulary = resp.InVocabulary
+
+		if !resp.InVocabulary {
+			return result, ErrWordNotFound
 		}
-		if distance == 0 {
-			return 0, ErrWordTooFar
-		}
+		// rank == 0 means word is too far, but we still save it to the database
+		// so the user can see it in their guess history
 	}
 
 	err = s.txManager.WithTransaction(ctx, func(tx *sqlx.Tx) error {
@@ -190,7 +197,7 @@ func (s *GameService) MakeGuess(ctx context.Context, userId, gameId int64, guess
 		newGuess := model.Guess{
 			GameId:    gameId,
 			GuessWord: guess,
-			Distance:  distance,
+			Distance:  result.Rank,
 		}
 		if err := s.gameRepo.CreateGuess(ctx, tx, &newGuess); err != nil {
 			return err
@@ -232,16 +239,16 @@ func (s *GameService) MakeGuess(ctx context.Context, userId, gameId int64, guess
 	if err != nil {
 		if !IsDomainError(err) {
 			log.Error("guess transaction failed", logger.FieldError, err)
-			return 0, Logged(err)
+			return nil, Logged(err)
 		}
-		return 0, err
+		return nil, err
 	}
 
 	if !isWinningGuess {
-		log.Debug("guess processed", logger.FieldDistance, distance)
+		log.Debug("guess processed", "rank", result.Rank, "in_vocabulary", result.InVocabulary)
 	}
 
-	return distance, nil
+	return result, nil
 }
 
 func (s *GameService) GetAllGuessByGame(ctx context.Context, userId, gameId int64) ([]model.Guess, error) {

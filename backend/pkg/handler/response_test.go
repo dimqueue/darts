@@ -27,7 +27,6 @@ func TestHandleError_DomainErrors(t *testing.T) {
 		{"ErrGameExpired", service.ErrGameExpired, http.StatusBadRequest, CodeGameExpired},
 		{"ErrWordNotFound", service.ErrWordNotFound, http.StatusOK, CodeWordNotFound},
 		{"ErrWordAlreadyUsed", service.ErrWordAlreadyUsed, http.StatusBadRequest, CodeWordAlreadyUsed},
-		{"ErrWordTooFar", service.ErrWordTooFar, http.StatusOK, CodeWordTooFar},
 		{"ErrUnauthorized", service.ErrUnauthorized, http.StatusUnauthorized, CodeUnauthorized},
 		{"ErrUserExists", service.ErrUserExists, http.StatusConflict, CodeUserExists},
 		{"ErrForbidden", service.ErrForbidden, http.StatusForbidden, CodeForbidden},

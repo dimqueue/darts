@@ -21,7 +21,6 @@ const (
 	CodeGameExpired     = "GAME_EXPIRED"
 	CodeWordNotFound    = "WORD_NOT_FOUND"
 	CodeWordAlreadyUsed = "WORD_ALREADY_USED"
-	CodeWordTooFar      = "WORD_TOO_FAR"
 	CodeComputeError    = "COMPUTE_SERVICE_ERROR"
 	CodeProfilePrivate  = "PROFILE_PRIVATE"
 	CodeProfileNotFound = "PROFILE_NOT_FOUND"
@@ -43,7 +42,6 @@ var errorMap = map[error]httpError{
 	// Guess errors
 	service.ErrWordNotFound:    {http.StatusOK, CodeWordNotFound, "Word not found in vocabulary"},
 	service.ErrWordAlreadyUsed: {http.StatusBadRequest, CodeWordAlreadyUsed, "This word has already been guessed"},
-	service.ErrWordTooFar:      {http.StatusOK, CodeWordTooFar, "Word is too far from target"},
 
 	// Auth errors
 	service.ErrUnauthorized: {http.StatusUnauthorized, CodeUnauthorized, "Invalid credentials"},

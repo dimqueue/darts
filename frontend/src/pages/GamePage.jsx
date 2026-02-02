@@ -135,19 +135,13 @@ export default function GamePage() {
 
         try {
             const result = await api.createGuess(gameId, validation.word);
-            const distance = result.distance;
 
-            if (distance === -1) {
+            if (!result.in_vocabulary) {
                 setError('Word not found in vocabulary. Check spelling.');
                 return;
             }
 
-            if (distance === 0) {
-                setError('Word is too far from the target. Try something closer!');
-                return;
-            }
-
-            if (distance === 1) {
+            if (result.found) {
                 setGameStatus('won');
             }
 
@@ -177,6 +171,11 @@ export default function GamePage() {
 
     const getDistanceColor = (distance) => {
         if (distance === 1) return 'bg-green-500 text-white';
+        if (distance === 0) {
+            return darkMode
+                ? 'bg-gray-700/50 text-gray-400 border border-gray-600'
+                : 'bg-gray-100 text-gray-500 border border-gray-300';
+        }
         if (distance < 100) {
             return darkMode
                 ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-500/50'
@@ -316,7 +315,7 @@ export default function GamePage() {
                         </Button>
                     </div>
 
-                    {guesses.filter((g) => g.distance > 0).length === 0 ? (
+                    {guesses.filter((g) => g.distance >= 0).length === 0 ? (
                         <div className="text-center py-12 text-gray-400">
                             <p>Make your first guess!</p>
                             <p className="text-sm mt-1">The closer to 0, the closer you are</p>
@@ -324,9 +323,14 @@ export default function GamePage() {
                     ) : (
                         <div className="space-y-2">
                             {guesses
-                                .filter((g) => g.distance > 0)
+                                .filter((g) => g.distance >= 0)
                                 .slice()
-                                .sort((a, b) => a.distance - b.distance)
+                                .sort((a, b) => {
+                                    // Put distance 0 (too far) at the bottom
+                                    if (a.distance === 0 && b.distance !== 0) return 1;
+                                    if (b.distance === 0 && a.distance !== 0) return -1;
+                                    return a.distance - b.distance;
+                                })
                                 .map((guess, index) => (
                                     <div
                                         key={guess.id || index}
@@ -334,7 +338,11 @@ export default function GamePage() {
                                     >
                                         <span className="font-medium">{guess.guess_word}</span>
                                         <span className="font-bold">
-                                            {guess.distance === 1 ? 'FOUND!' : guess.distance}
+                                            {guess.distance === 1
+                                                ? 'FOUND!'
+                                                : guess.distance === 0
+                                                  ? '∞'
+                                                  : guess.distance}
                                         </span>
                                     </div>
                                 ))}

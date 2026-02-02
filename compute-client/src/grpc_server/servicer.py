@@ -8,7 +8,6 @@ from models.word_similarity import WordSimilarityModel
 
 logger = logging.getLogger(__name__)
 
-
 class ComputeServiceServicer(service_pb2_grpc.ComputeServiceServicer):
 
     def __init__(self, word_model: WordSimilarityModel):
@@ -16,7 +15,6 @@ class ComputeServiceServicer(service_pb2_grpc.ComputeServiceServicer):
         logger.info("ComputeServiceServicer initialized")
 
     def StartGame(self, request, context):
-        # Extract client info from context
         peer = context.peer()
 
         logger.info(
@@ -64,7 +62,6 @@ class ComputeServiceServicer(service_pb2_grpc.ComputeServiceServicer):
             return service_pb2.StartGameResponse()
 
     def MakeGuess(self, request, context):
-        # Extract client info from context
         peer = context.peer()
 
         logger.info(
@@ -74,16 +71,25 @@ class ComputeServiceServicer(service_pb2_grpc.ComputeServiceServicer):
 
         guess = request.guess.lower().strip()
         secret_word = request.secret_word
-        language = request.language 
+        language = request.language
 
         try:
-            distance, found = self.word_model.get_guess_distance(secret_word, guess, language)
+            rank, found = self.word_model.get_guess_distance(secret_word, guess, language)
+
+            # Map the result to new response fields:
+            # rank == -1 means word not in vocabulary
+            # rank == 0 means word too far (not in top N)
+            # rank == 1 means found (WIN)
+            # rank > 1 means ranked guess
+            in_vocabulary = rank != -1
 
             response = service_pb2.MakeGuessResponse(
-                distance=distance
+                rank=max(0, rank),  # Convert -1 to 0 for not in vocab
+                found=found,
+                in_vocabulary=in_vocabulary
             )
 
-            logger.info(f"MakeGuess result: distance={distance}, client={peer}")
+            logger.info(f"MakeGuess result: rank={rank}, found={found}, in_vocabulary={in_vocabulary}, client={peer}")
             return response
 
         except ValueError as e:
@@ -93,7 +99,6 @@ class ComputeServiceServicer(service_pb2_grpc.ComputeServiceServicer):
             return service_pb2.MakeGuessResponse()
 
     def HealthCheck(self, request, context):
-        # Extract client info from context
         peer = context.peer()
 
         logger.info(f"HealthCheck request from {peer}")

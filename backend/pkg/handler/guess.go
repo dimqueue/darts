@@ -36,14 +36,16 @@ func (h *Handler) createGuess(c *gin.Context) {
 		return
 	}
 
-	distance, err := h.services.Game.MakeGuess(c.Request.Context(), userId, gameId, input.Guess)
+	result, err := h.services.Game.MakeGuess(c.Request.Context(), userId, gameId, input.Guess)
 	if err != nil {
 		handleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"distance": distance,
+		"rank":          result.Rank,
+		"found":         result.Found,
+		"in_vocabulary": result.InVocabulary,
 	})
 }
 

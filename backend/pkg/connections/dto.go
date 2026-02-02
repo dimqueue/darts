@@ -17,7 +17,9 @@ type GuessRequest struct {
 }
 
 type GuessResponse struct {
-	Distance int `json:"distance"`
+	Rank         int  `json:"rank"`
+	Found        bool `json:"found"`
+	InVocabulary bool `json:"in_vocabulary"`
 }
 
 type HealthResponse struct {

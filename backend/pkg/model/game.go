@@ -20,3 +20,9 @@ type Guess struct {
 	Distance  int       `db:"distance" json:"distance"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }
+
+type GuessResult struct {
+	Rank         int  `json:"rank"`
+	Found        bool `json:"found"`
+	InVocabulary bool `json:"in_vocabulary"`
+}

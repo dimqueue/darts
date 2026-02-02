@@ -15,6 +15,11 @@ type Querier interface {
 	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
 }
 
+type TxManager interface {
+	DB() Querier
+	WithTransaction(ctx context.Context, fn func(*sqlx.Tx) error) error
+}
+
 type TransactionManager struct {
 	db *sqlx.DB
 }

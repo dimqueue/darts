@@ -100,7 +100,9 @@ func (c *GRPCComputeClient) MakeGuess(ctx context.Context, req *GuessRequest) (*
 
 	// Convert Proto to DTO
 	return &GuessResponse{
-		Distance: int(protoResp.Distance),
+		Rank:         int(protoResp.Rank),
+		Found:        protoResp.Found,
+		InVocabulary: protoResp.InVocabulary,
 	}, nil
 }
 

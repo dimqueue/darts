@@ -355,8 +355,8 @@ func TestMakeGuess_WordNotInVocabulary(t *testing.T) {
 
 	mockCompute := &mocks.MockComputeClient{
 		MakeGuessFn: func(ctx context.Context, req *connections.GuessRequest) (*connections.GuessResponse, error) {
-			// Return -1 for word not found
-			return &connections.GuessResponse{Distance: -1}, nil
+			// Return not in vocabulary
+			return &connections.GuessResponse{Rank: 0, Found: false, InVocabulary: false}, nil
 		},
 	}
 
@@ -367,12 +367,12 @@ func TestMakeGuess_WordNotInVocabulary(t *testing.T) {
 		txManager:     &repository.TransactionManager{},
 	}
 
-	distance, err := service.MakeGuess(ctx, userId, gameId, "unknownword")
+	result, err := service.MakeGuess(ctx, userId, gameId, "unknownword")
 	if !errors.Is(err, ErrWordNotFound) {
 		t.Errorf("expected ErrWordNotFound, got: %v", err)
 	}
-	if distance != -1 {
-		t.Errorf("expected distance -1, got %d", distance)
+	if result == nil || result.InVocabulary {
+		t.Errorf("expected InVocabulary false")
 	}
 }
 
@@ -380,6 +380,7 @@ func TestMakeGuess_WordTooFar(t *testing.T) {
 	ctx := context.Background()
 	userId := int64(1)
 	gameId := int64(100)
+	guessSaved := false
 
 	mockGameRepo := &mocks.MockGameRepository{
 		GetGameByIdFn: func(ctx context.Context, q repository.Querier, gId int64, forUpdate bool) (*model.Game, error) {
@@ -394,6 +395,13 @@ func TestMakeGuess_WordTooFar(t *testing.T) {
 		GuessExistsFn: func(ctx context.Context, q repository.Querier, gId int64, guessWord string) (bool, error) {
 			return false, nil
 		},
+		CreateGuessFn: func(ctx context.Context, q repository.Querier, guess *model.Guess) error {
+			if guess.Distance != 0 {
+				t.Errorf("expected distance 0 for too far guess, got %d", guess.Distance)
+			}
+			guessSaved = true
+			return nil
+		},
 	}
 
 	mockWord := &servicemocks.MockWordService{
@@ -404,20 +412,30 @@ func TestMakeGuess_WordTooFar(t *testing.T) {
 
 	mockCompute := &mocks.MockComputeClient{
 		MakeGuessFn: func(ctx context.Context, req *connections.GuessRequest) (*connections.GuessResponse, error) {
-			return &connections.GuessResponse{Distance: 0}, nil
+			return &connections.GuessResponse{Rank: 0, Found: false, InVocabulary: true}, nil
 		},
 	}
 
-	service := &GameService{
-		gameRepo:      mockGameRepo,
-		wordService:   mockWord,
-		computeClient: mockCompute,
-		txManager:     &repository.TransactionManager{},
+	mockTxMgr := &MockTxManager{
+		WithTransactionFn: func(ctx context.Context, fn func(*sqlx.Tx) error) error {
+			return fn(nil)
+		},
 	}
 
-	_, err := service.MakeGuess(ctx, userId, gameId, "unrelatedword")
-	if !errors.Is(err, ErrWordTooFar) {
-		t.Errorf("expected ErrWordTooFar, got: %v", err)
+	service := NewGameServiceWithTxManager(mockGameRepo, mockWord, nil, mockTxMgr, mockCompute)
+
+	result, err := service.MakeGuess(ctx, userId, gameId, "unrelatedword")
+	if err != nil {
+		t.Errorf("expected no error for too far guess, got: %v", err)
+	}
+	if result.Rank != 0 {
+		t.Errorf("expected rank 0, got: %d", result.Rank)
+	}
+	if !result.InVocabulary {
+		t.Error("expected InVocabulary true for too far guess")
+	}
+	if !guessSaved {
+		t.Error("expected guess to be saved to database")
 	}
 }
 
