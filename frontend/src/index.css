@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+    background-color: #f3e8ff;
+    overflow-y: scroll;
+}
+
+html.dark {
+    background-color: #111827;
+}
+
 @keyframes slide-up {
     from {
         opacity: 0;
