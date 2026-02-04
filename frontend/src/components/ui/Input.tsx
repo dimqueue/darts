@@ -31,7 +31,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     },
     ref
 ) {
-    const { theme, darkMode } = useTheme();
+    const { theme } = useTheme();
     const generatedId = useId();
     const inputId = providedId || generatedId;
     const errorId = error ? `${inputId}-error` : undefined;
@@ -41,7 +41,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             {label && (
                 <label
                     htmlFor={inputId}
-                    className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}
+                    className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200"
                 >
                     {label}
                 </label>
@@ -62,20 +62,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
                     ${
                         error
                             ? 'border-red-500 focus:border-red-500'
-                            : darkMode
-                              ? `border-gray-600 ${theme.focusBorder}`
-                              : `border-gray-300 ${theme.focusBorder}`
+                            : `border-gray-300 dark:border-gray-600 ${theme.focusBorder}`
                     }
                     ${
                         disabled
-                            ? darkMode
-                                ? 'bg-gray-700 cursor-not-allowed text-gray-400'
-                                : 'bg-gray-100 cursor-not-allowed'
-                            : darkMode
-                              ? 'bg-gray-700 text-white'
-                              : 'bg-white text-gray-800'
+                            ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-500 dark:text-gray-400'
+                            : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white'
                     }
-                    ${darkMode ? 'placeholder:text-gray-500' : 'placeholder:text-gray-400'}`}
+                    placeholder:text-gray-400 dark:placeholder:text-gray-500`}
             />
             {error && (
                 <p id={errorId} className="mt-1 text-sm text-red-500" role="alert">

@@ -1,13 +1,10 @@
-import { useTheme } from '../../contexts/ThemeContext';
-
 interface SkeletonProps {
     className?: string;
     variant?: 'text' | 'title' | 'avatar' | 'button' | 'card' | 'icon';
 }
 
 export function Skeleton({ className = '', variant = 'text' }: SkeletonProps) {
-    const { darkMode } = useTheme();
-    const baseClasses = `animate-pulse rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`;
+    const baseClasses = 'animate-pulse rounded bg-gray-200 dark:bg-gray-700';
 
     const variants = {
         text: 'h-4 w-full',
@@ -27,10 +24,9 @@ interface SkeletonCardProps {
 }
 
 export function SkeletonCard({ children, className = '' }: SkeletonCardProps) {
-    const { darkMode } = useTheme();
     return (
         <div
-            className={`rounded-2xl p-6 shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'} ${className}`}
+            className={`rounded-2xl p-6 shadow-sm bg-white dark:bg-gray-800 ${className}`}
         >
             {children}
         </div>

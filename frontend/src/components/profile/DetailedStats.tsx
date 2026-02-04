@@ -1,5 +1,4 @@
 import Card from '../ui/Card';
-import { useTheme } from '../../contexts/ThemeContext';
 import type { StatisticsData } from '../../types/api';
 
 interface DetailedStatsProps {
@@ -7,8 +6,6 @@ interface DetailedStatsProps {
 }
 
 export default function DetailedStats({ stats }: DetailedStatsProps) {
-    const { darkMode } = useTheme();
-
     const statItems = [
         { label: 'Current Streak', value: stats?.current_win_streak || 0 },
         { label: 'Avg. Guesses', value: stats?.average_guesses?.toFixed(1) || '0.0' },
@@ -23,22 +20,16 @@ export default function DetailedStats({ stats }: DetailedStatsProps) {
 
     return (
         <Card>
-            <h2
-                className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-800'}`}
-            >
+            <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
                 Detailed Statistics
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {statItems.map((item) => (
                     <div key={item.label}>
-                        <p
-                            className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                        >
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                             {item.label}
                         </p>
-                        <p
-                            className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}
-                        >
+                        <p className="text-xl font-bold text-gray-800 dark:text-white">
                             {item.value}
                         </p>
                     </div>

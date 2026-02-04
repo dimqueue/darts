@@ -1,23 +1,21 @@
-import { Trophy } from 'lucide-react';
+import { Trophy } from '../ui/BoxIcon';
 import Card from '../ui/Card';
-import type { Theme } from '../../types';
+import { useTheme } from '../../contexts/ThemeContext';
 import type { RankData } from '../../types/api';
 
 interface RankNavigationProps {
     ranks: RankData | null;
     activeTab: string;
     onTabChange: (tab: string) => void;
-    theme: Theme;
-    darkMode: boolean;
 }
 
 export default function RankNavigation({
     ranks,
     activeTab,
     onTabChange,
-    theme,
-    darkMode,
 }: RankNavigationProps) {
+    const { theme, darkMode } = useTheme();
+
     const stats = [
         { id: 'global', label: 'Global', value: ranks?.global_rank },
         { id: 'monthly', label: 'Monthly', value: ranks?.monthly_rank },
@@ -30,12 +28,10 @@ export default function RankNavigation({
             <div className="flex items-center gap-3 mb-4">
                 <Trophy className={`w-8 h-8 ${darkMode ? theme.textColorDark : theme.textColor}`} />
                 <div>
-                    <h1
-                        className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}
-                    >
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
                         Leaderboard
                     </h1>
-                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                         Click your rank to switch views
                     </p>
                 </div>
@@ -50,20 +46,18 @@ export default function RankNavigation({
                             className={`px-3 sm:px-4 py-3 sm:py-4 rounded-xl text-center border-2 transition-all cursor-pointer ${
                                 isActive
                                     ? `${theme.borderColor} ${theme.gradient} text-white shadow-lg`
-                                    : darkMode
-                                      ? 'border-gray-600 bg-gray-700 hover:border-gray-500 hover:bg-gray-600'
-                                      : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100'
+                                    : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600'
                             }`}
                             role="tab"
                             aria-selected={isActive}
                         >
                             <p
-                                className={`text-xs font-medium uppercase tracking-wide ${isActive ? 'text-white/80' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                                className={`text-xs font-medium uppercase tracking-wide ${isActive ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'}`}
                             >
                                 {stat.label}
                             </p>
                             <p
-                                className={`text-xl sm:text-2xl font-bold mt-1 ${isActive ? 'text-white' : darkMode ? 'text-white' : 'text-gray-800'}`}
+                                className={`text-xl sm:text-2xl font-bold mt-1 ${isActive ? 'text-white' : 'text-gray-800 dark:text-white'}`}
                             >
                                 {stat.value ? `#${stat.value}` : '-'}
                             </p>

@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
+import type { BoxIconType } from './BoxIcon';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface ButtonProps {
@@ -9,7 +9,7 @@ interface ButtonProps {
     variant?: 'primary' | 'secondary' | 'outline' | 'danger';
     type?: 'button' | 'submit' | 'reset';
     className?: string;
-    icon?: LucideIcon;
+    icon?: BoxIconType;
     'aria-label'?: string;
 }
 
@@ -29,10 +29,9 @@ export default function Button({
     const baseStyles =
         'px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
-    const secondaryClass = darkMode
-        ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-        : 'bg-gray-100 text-gray-700 hover:bg-gray-200';
+    const secondaryClass = 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600';
 
+    // Keep ternary for outline - uses theme colors which are dynamic
     const outlineClass = darkMode
         ? `border-2 ${theme.borderColor} ${theme.textColorDark} bg-transparent ${theme.hoverBgDark}`
         : `border-2 ${theme.borderColor} ${theme.textColor} bg-transparent ${theme.hoverBg}`;

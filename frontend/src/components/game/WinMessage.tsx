@@ -1,4 +1,4 @@
-import { Trophy } from 'lucide-react';
+import { Trophy } from '../ui/BoxIcon';
 import Card from '../ui/Card';
 import { useTheme } from '../../contexts/ThemeContext';
 

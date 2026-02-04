@@ -3,7 +3,6 @@ import Card from '../ui/Card';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import SortableHeader from './SortableHeader';
 import LeaderboardRow from './LeaderboardRow';
-import type { Theme } from '../../types';
 import type { LeaderboardEntry } from '../../types/api';
 
 interface LeaderboardTableProps {
@@ -11,8 +10,6 @@ interface LeaderboardTableProps {
     loading: boolean;
     error: string;
     currentUsername: string | undefined;
-    theme: Theme;
-    darkMode: boolean;
     sortBy: string;
     sortDirection: 'asc' | 'desc';
     onSort: (field: string) => void;
@@ -23,8 +20,6 @@ const LeaderboardTable = memo(function LeaderboardTable({
     loading,
     error,
     currentUsername,
-    theme,
-    darkMode,
     sortBy,
     sortDirection,
     onSort,
@@ -52,9 +47,7 @@ const LeaderboardTable = memo(function LeaderboardTable({
     if (entries.length === 0) {
         return (
             <Card padding="p-0">
-                <div
-                    className={`p-6 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                >
+                <div className="p-6 text-center text-gray-500 dark:text-gray-400">
                     No data available
                 </div>
             </Card>
@@ -65,18 +58,12 @@ const LeaderboardTable = memo(function LeaderboardTable({
         <Card padding="p-0">
             <div className="overflow-x-auto">
                 <table className="w-full">
-                    <thead
-                        className={`border-b ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}
-                    >
+                    <thead className="border-b bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                         <tr>
-                            <th
-                                className={`px-6 py-4 text-left text-xs font-semibold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                            >
+                            <th className="px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
                                 Rank
                             </th>
-                            <th
-                                className={`px-6 py-4 text-left text-xs font-semibold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                            >
+                            <th className="px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
                                 Player
                             </th>
                             <SortableHeader
@@ -86,7 +73,6 @@ const LeaderboardTable = memo(function LeaderboardTable({
                                 sortDirection={sortDirection}
                                 onSort={onSort}
                                 align="right"
-                                darkMode={darkMode}
                             />
                             <SortableHeader
                                 label="Wins"
@@ -95,7 +81,6 @@ const LeaderboardTable = memo(function LeaderboardTable({
                                 sortDirection={sortDirection}
                                 onSort={onSort}
                                 align="right"
-                                darkMode={darkMode}
                             />
                             <SortableHeader
                                 label="Win Rate"
@@ -104,7 +89,6 @@ const LeaderboardTable = memo(function LeaderboardTable({
                                 sortDirection={sortDirection}
                                 onSort={onSort}
                                 align="right"
-                                darkMode={darkMode}
                             />
                             <SortableHeader
                                 label="Avg Guesses"
@@ -113,7 +97,6 @@ const LeaderboardTable = memo(function LeaderboardTable({
                                 sortDirection={sortDirection}
                                 onSort={onSort}
                                 align="right"
-                                darkMode={darkMode}
                             />
                             <SortableHeader
                                 label="Best Streak"
@@ -122,20 +105,15 @@ const LeaderboardTable = memo(function LeaderboardTable({
                                 sortDirection={sortDirection}
                                 onSort={onSort}
                                 align="right"
-                                darkMode={darkMode}
                             />
                         </tr>
                     </thead>
-                    <tbody
-                        className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-100'}`}
-                    >
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                         {entries.map((entry) => (
                             <LeaderboardRow
                                 key={entry.user_id}
                                 entry={entry}
                                 isCurrentUser={entry.username === currentUsername}
-                                theme={theme}
-                                darkMode={darkMode}
                             />
                         ))}
                     </tbody>

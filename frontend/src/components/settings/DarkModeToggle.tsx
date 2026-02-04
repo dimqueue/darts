@@ -1,14 +1,13 @@
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from '../ui/BoxIcon';
 import Card from '../ui/Card';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface DarkModeToggleProps {
-    darkMode: boolean;
     onToggle: () => void;
 }
 
-export default function DarkModeToggle({ darkMode, onToggle }: DarkModeToggleProps) {
-    const { theme } = useTheme();
+export default function DarkModeToggle({ onToggle }: DarkModeToggleProps) {
+    const { theme, darkMode } = useTheme();
 
     return (
         <Card>
@@ -23,12 +22,10 @@ export default function DarkModeToggle({ darkMode, onToggle }: DarkModeTogglePro
                         <Sun className={`w-5 h-5 ${theme.textColor}`} aria-hidden="true" />
                     )}
                     <div>
-                        <h2 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                        <h2 className="font-semibold text-gray-800 dark:text-white">
                             Dark Mode
                         </h2>
-                        <p
-                            className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                        >
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                             {darkMode
                                 ? 'Currently using dark theme'
                                 : 'Currently using light theme'}

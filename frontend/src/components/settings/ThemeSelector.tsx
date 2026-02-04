@@ -1,4 +1,4 @@
-import { Palette } from 'lucide-react';
+import { Palette } from '../ui/BoxIcon';
 import Card from '../ui/Card';
 import { useTheme, THEMES } from '../../contexts/ThemeContext';
 
@@ -23,9 +23,7 @@ export default function ThemeSelector({ selectedTheme, onThemeChange }: ThemeSel
                     className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`}
                     aria-hidden="true"
                 />
-                <h2
-                    className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}
-                >
+                <h2 className="font-semibold text-gray-800 dark:text-white">
                     Color Theme
                 </h2>
             </div>
@@ -39,24 +37,20 @@ export default function ThemeSelector({ selectedTheme, onThemeChange }: ThemeSel
                             onClick={() => onThemeChange(name)}
                             className={`p-4 rounded-xl border-2 transition-all duration-200 ${
                                 isSelected
-                                    ? `${selectedThemeObj.borderColor} ring-2 ring-offset-2 ${darkMode ? 'ring-offset-gray-800' : 'ring-offset-white'} ${
+                                    ? `${selectedThemeObj.borderColor} ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ${
                                           name === 'purple'
                                               ? 'ring-violet-300'
                                               : name === 'blue'
                                                 ? 'ring-blue-300'
                                                 : 'ring-emerald-300'
                                       }`
-                                    : darkMode
-                                      ? 'border-gray-600 hover:border-gray-500'
-                                      : 'border-gray-200 hover:border-gray-300'
+                                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                             }`}
                             role="radio"
                             aria-checked={isSelected}
                         >
                             <div className={`h-12 rounded-lg mb-2 ${themeColors[name]}`} />
-                            <p
-                                className={`font-medium capitalize ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}
-                            >
+                            <p className="font-medium capitalize text-gray-700 dark:text-gray-200">
                                 {name}
                             </p>
                         </button>

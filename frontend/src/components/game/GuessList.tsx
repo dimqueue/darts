@@ -1,7 +1,6 @@
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw } from '../ui/BoxIcon';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
-import { useTheme } from '../../contexts/ThemeContext';
 import { getDistanceColor } from '../../utils/colors';
 import type { Guess } from '../../types/game';
 
@@ -11,7 +10,6 @@ interface GuessListProps {
 }
 
 export default function GuessList({ guesses, onNewGame }: GuessListProps) {
-    const { darkMode } = useTheme();
     const validGuesses = guesses.filter((g) => g.distance >= 0);
 
     const sortedGuesses = validGuesses.slice().sort((a, b) => {
@@ -23,9 +21,7 @@ export default function GuessList({ guesses, onNewGame }: GuessListProps) {
     return (
         <Card>
             <div className="flex items-center justify-between mb-4">
-                <h3
-                    className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}
-                >
+                <h3 className="font-semibold text-gray-700 dark:text-gray-200">
                     Your Guesses ({validGuesses.filter((g) => g.distance > 0).length})
                 </h3>
                 <Button
@@ -48,7 +44,7 @@ export default function GuessList({ guesses, onNewGame }: GuessListProps) {
                     {sortedGuesses.map((guess, index) => (
                         <li
                             key={guess.id || index}
-                            className={`flex items-center justify-between p-3 rounded-xl ${getDistanceColor(guess.distance, darkMode)}`}
+                            className={`flex items-center justify-between p-3 rounded-xl ${getDistanceColor(guess.distance)}`}
                         >
                             <span className="font-medium">{guess.guess_word}</span>
                             <span className="font-bold">

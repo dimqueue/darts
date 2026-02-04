@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/* BoxIcon: make icon fill its container */
+.bx-icon {
+    font-size: inherit;
+    width: 1em;
+    height: 1em;
+    line-height: 1;
+}
+
+/* Size utilities for BoxIcon containers - sets font-size to match w-X/h-X */
+.w-3 > .bx-icon, .h-3 > .bx-icon { font-size: 0.75rem; }
+.w-4 > .bx-icon, .h-4 > .bx-icon { font-size: 1rem; }
+.w-5 > .bx-icon, .h-5 > .bx-icon { font-size: 1.25rem; }
+.w-6 > .bx-icon, .h-6 > .bx-icon { font-size: 1.5rem; }
+.w-7 > .bx-icon, .h-7 > .bx-icon { font-size: 1.75rem; }
+.w-8 > .bx-icon, .h-8 > .bx-icon { font-size: 2rem; }
+.w-10 > .bx-icon, .h-10 > .bx-icon { font-size: 2.5rem; }
+.w-12 > .bx-icon, .h-12 > .bx-icon { font-size: 3rem; }
+
+/* Responsive sizes */
+@media (min-width: 640px) {
+    .sm\:w-4 > .bx-icon, .sm\:h-4 > .bx-icon { font-size: 1rem; }
+    .sm\:w-5 > .bx-icon, .sm\:h-5 > .bx-icon { font-size: 1.25rem; }
+    .sm\:w-6 > .bx-icon, .sm\:h-6 > .bx-icon { font-size: 1.5rem; }
+    .sm\:w-8 > .bx-icon, .sm\:h-8 > .bx-icon { font-size: 2rem; }
+}
+@media (min-width: 768px) {
+    .md\:w-4 > .bx-icon, .md\:h-4 > .bx-icon { font-size: 1rem; }
+    .md\:w-5 > .bx-icon, .md\:h-5 > .bx-icon { font-size: 1.25rem; }
+    .md\:w-6 > .bx-icon, .md\:h-6 > .bx-icon { font-size: 1.5rem; }
+    .md\:w-8 > .bx-icon, .md\:h-8 > .bx-icon { font-size: 2rem; }
+}
+
 html {
     background-color: #f3e8ff;
     overflow-y: scroll;
@@ -9,6 +41,12 @@ html {
 
 html.dark {
     background-color: #111827;
+}
+
+/* Disable all transitions during dark mode toggle for instant switch */
+html.no-transitions,
+html.no-transitions * {
+    transition: none !important;
 }
 
 @keyframes slide-up {

@@ -10,8 +10,7 @@ import {
     Palette,
     Moon,
     Sun,
-    // Circle,
-} from 'lucide-react';
+} from '../ui/BoxIcon';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGame } from '../../contexts/GameContext';
 import { useTheme, THEMES } from '../../contexts/ThemeContext';
@@ -54,7 +53,7 @@ export default function Navbar() {
 
     return (
         <nav
-            className={`sticky top-0 z-50 shadow-md transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}
+            className="sticky top-0 z-50 shadow-md bg-white dark:bg-gray-900"
             aria-label="Main navigation"
         >
             <div className="max-w-6xl mx-auto px-2 sm:px-4">
@@ -65,9 +64,7 @@ export default function Navbar() {
                             className={`w-6 h-6 sm:w-8 sm:h-8 ${darkMode ? theme.textColorDark : theme.textColor}`}
                             aria-hidden="true"
                         />
-                        <span
-                            className={`text-lg sm:text-xl font-bold hidden xs:inline ${darkMode ? 'text-white' : 'text-gray-800'}`}
-                        >
+                        <span className="text-lg sm:text-xl font-bold hidden xs:inline text-gray-800 dark:text-white">
                             Darts
                         </span>
                     </NavLink>
@@ -84,9 +81,7 @@ export default function Navbar() {
                                         `flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium transition-colors ${
                                             isActive
                                                 ? `${theme.gradient} text-white`
-                                                : darkMode
-                                                  ? 'text-gray-300 hover:bg-gray-800'
-                                                  : 'text-gray-600 hover:bg-gray-100'
+                                                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                                         }`
                                     }
                                 >
@@ -101,7 +96,7 @@ export default function Navbar() {
                     <div className="flex items-center gap-0.5 sm:gap-2 justify-self-end">
                         <button
                             onClick={toggleDarkMode}
-                            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+                            className="p-1.5 sm:p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
                             aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
                         >
                             {darkMode ? (
@@ -114,7 +109,7 @@ export default function Navbar() {
                         <div className="relative" ref={themeMenuRef}>
                             <button
                                 onClick={() => setShowThemeMenu(!showThemeMenu)}
-                                className={`p-1.5 sm:p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+                                className="p-1.5 sm:p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
                                 aria-label="Change theme"
                                 aria-expanded={showThemeMenu}
                             >
@@ -124,7 +119,7 @@ export default function Navbar() {
                             </button>
                             {showThemeMenu && (
                                 <div
-                                    className={`absolute right-0 mt-2 w-40 rounded-xl shadow-lg border py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
+                                    className="absolute right-0 mt-2 w-40 rounded-xl shadow-lg border py-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                                     role="menu"
                                 >
                                     {Object.keys(THEMES).map((name) => (
@@ -134,9 +129,7 @@ export default function Navbar() {
                                                 setTheme(name);
                                                 setShowThemeMenu(false);
                                             }}
-                                            className={`w-full px-4 py-2 text-left flex items-center gap-3 ${
-                                                darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                                            } ${themeName === name ? 'font-semibold' : ''} ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}
+                                            className={`w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 ${themeName === name ? 'font-semibold' : ''} text-gray-700 dark:text-gray-200`}
                                             role="menuitem"
                                         >
                                             <span
@@ -152,7 +145,7 @@ export default function Navbar() {
                         <div className="relative" ref={userMenuRef}>
                             <button
                                 onClick={() => setShowUserMenu(!showUserMenu)}
-                                className={`flex items-center gap-2 p-1.5 sm:px-3 sm:py-2 rounded-lg border-2 ${theme.borderColor} transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'}`}
+                                className={`flex items-center gap-2 p-1.5 sm:px-3 sm:py-2 rounded-lg border-2 ${theme.borderColor} transition-colors hover:bg-gray-50 dark:hover:bg-gray-800`}
                                 aria-label="User menu"
                                 aria-expanded={showUserMenu}
                             >
@@ -160,49 +153,41 @@ export default function Navbar() {
                                     className={`w-4 h-4 sm:w-5 sm:h-5 ${darkMode ? theme.textColorDark : theme.textColor}`}
                                     aria-hidden="true"
                                 />
-                                <span
-                                    className={`font-medium hidden sm:inline ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}
-                                >
+                                <span className="font-medium hidden sm:inline text-gray-700 dark:text-gray-200">
                                     {user?.username || 'User'}
                                 </span>
                             </button>
                             {showUserMenu && (
                                 <div
-                                    className={`absolute right-0 mt-2 w-48 rounded-xl shadow-lg border py-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
+                                    className="absolute right-0 mt-2 w-48 rounded-xl shadow-lg border py-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                                     role="menu"
                                 >
                                     <NavLink
                                         to="/profile"
                                         onClick={() => setShowUserMenu(false)}
-                                        className={`w-full px-4 py-2 text-left flex items-center gap-3 ${darkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-50 text-gray-700'}`}
+                                        className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
                                         role="menuitem"
                                     >
-                                        <User
-                                            className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                                        />
+                                        <User className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                                         <span>Profile</span>
                                     </NavLink>
                                     <NavLink
                                         to="/settings"
                                         onClick={() => setShowUserMenu(false)}
-                                        className={`w-full px-4 py-2 text-left flex items-center gap-3 ${darkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-50 text-gray-700'}`}
+                                        className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
                                         role="menuitem"
                                     >
-                                        <Settings
-                                            className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                                        />
+                                        <Settings className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                                         <span>Settings</span>
                                     </NavLink>
-                                    <hr
-                                        className={`my-2 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}
-                                    />
+                                    <hr className="my-2 border-gray-200 dark:border-gray-700" />
                                     <button
                                         onClick={() => {
                                             clearGame();
                                             logout();
                                             setShowUserMenu(false);
                                         }}
-                                        className={`w-full px-4 py-2 text-left flex items-center gap-3 text-red-500 ${darkMode ? 'hover:bg-red-900/30' : 'hover:bg-red-50'}`}
+                                        className="w-full px-4 py-2 text-left flex items-center gap-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
                                         role="menuitem"
                                     >
                                         <LogOut className="w-5 h-5" />

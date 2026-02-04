@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { X } from '../ui/BoxIcon';
 import Navbar from './Navbar';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,7 +9,6 @@ import { mockWords } from '../../api/mockData';
 
 function DemoToast() {
     const [visible, setVisible] = useState(false);
-    const { darkMode } = useTheme();
     const { user } = useAuth();
     const location = useLocation();
 
@@ -33,11 +32,7 @@ function DemoToast() {
 
     return (
         <div
-            className={`fixed bottom-4 right-4 z-50 max-w-sm rounded-xl shadow-2xl overflow-hidden animate-slide-up ${
-                darkMode
-                    ? 'bg-gray-800 border border-amber-700'
-                    : 'bg-white border border-amber-200'
-            }`}
+            className="fixed bottom-4 right-4 z-50 max-w-sm rounded-xl shadow-2xl overflow-hidden animate-slide-up bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700"
             role="complementary"
             aria-label="Demo mode information"
         >
@@ -52,55 +47,39 @@ function DemoToast() {
                 </button>
             </div>
             <div className="p-4">
-                <p className={`text-sm mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className="text-sm mb-3 text-gray-600 dark:text-gray-300">
                     Try guessing these secret words:
                 </p>
 
-                <p
-                    className={`text-xs font-semibold mb-1.5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                >
+                <p className="text-xs font-semibold mb-1.5 text-gray-500 dark:text-gray-400">
                     English:
                 </p>
                 <div className="flex flex-wrap gap-1.5 mb-3">
                     {mockWords.en.map((word) => (
                         <span
                             key={word}
-                            className={`px-2 py-0.5 rounded text-xs font-mono ${
-                                darkMode
-                                    ? 'bg-amber-900/50 text-amber-300'
-                                    : 'bg-amber-100 text-amber-800'
-                            }`}
+                            className="px-2 py-0.5 rounded text-xs font-mono bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300"
                         >
                             {word}
                         </span>
                     ))}
                 </div>
 
-                <p
-                    className={`text-xs font-semibold mb-1.5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                >
+                <p className="text-xs font-semibold mb-1.5 text-gray-500 dark:text-gray-400">
                     Ukrainian:
                 </p>
                 <div className="flex flex-wrap gap-1.5 mb-3">
                     {mockWords.ua.map((word) => (
                         <span
                             key={word}
-                            className={`px-2 py-0.5 rounded text-xs font-mono ${
-                                darkMode
-                                    ? 'bg-blue-900/50 text-blue-300'
-                                    : 'bg-blue-100 text-blue-800'
-                            }`}
+                            className="px-2 py-0.5 rounded text-xs font-mono bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300"
                         >
                             {word}
                         </span>
                     ))}
                 </div>
 
-                <p
-                    className={`text-xs mt-2 pt-2 border-t ${
-                        darkMode ? 'text-gray-400 border-gray-700' : 'text-gray-500 border-gray-200'
-                    }`}
-                >
+                <p className="text-xs mt-2 pt-2 border-t text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700">
                     Change language in Game Modes to try Ukrainian words
                 </p>
             </div>
@@ -117,7 +96,7 @@ export default function Layout({ children }: LayoutProps) {
 
     return (
         <div
-            className={`min-h-screen bg-gradient-to-br transition-colors duration-300 ${darkMode ? theme.bgGradientDark : theme.bgGradient}`}
+            className={`min-h-screen bg-gradient-to-br ${darkMode ? theme.bgGradientDark : theme.bgGradient}`}
         >
             <Navbar />
             <a

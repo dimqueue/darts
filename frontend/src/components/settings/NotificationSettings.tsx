@@ -1,4 +1,4 @@
-import { Bell } from 'lucide-react';
+import { Bell } from '../ui/BoxIcon';
 import Card from '../ui/Card';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -24,15 +24,13 @@ export default function NotificationSettings({
                     className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`}
                     aria-hidden="true"
                 />
-                <h2
-                    className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}
-                >
+                <h2 className="font-semibold text-gray-800 dark:text-white">
                     Notifications
                 </h2>
             </div>
             <div className="space-y-4">
                 <label className="flex items-center justify-between cursor-pointer">
-                    <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>
+                    <span className="text-gray-700 dark:text-gray-200">
                         Sound Effects
                     </span>
                     <input
@@ -43,7 +41,7 @@ export default function NotificationSettings({
                     />
                 </label>
                 <label className="flex items-center justify-between cursor-pointer">
-                    <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>
+                    <span className="text-gray-700 dark:text-gray-200">
                         Email Notifications
                     </span>
                     <input

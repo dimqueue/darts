@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { Send } from 'lucide-react';
+import { Send } from '../ui/BoxIcon';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Save } from 'lucide-react';
+import { Settings, Save } from '../components/ui/BoxIcon';
 import api from '@/api';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
@@ -91,21 +91,17 @@ export default function SettingsPage() {
                             aria-hidden="true"
                         />
                         <div>
-                            <h1
-                                className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}
-                            >
+                            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
                                 Settings
                             </h1>
-                            <p
-                                className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                            >
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Customize your experience
                             </p>
                         </div>
                     </div>
                 </Card>
 
-                <DarkModeToggle darkMode={darkMode} onToggle={() => setDarkMode(!darkMode)} />
+                <DarkModeToggle onToggle={() => setDarkMode(!darkMode)} />
 
                 <ThemeSelector
                     selectedTheme={settings.theme}

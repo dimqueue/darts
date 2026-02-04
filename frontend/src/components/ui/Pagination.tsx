@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from './BoxIcon';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface PaginationProps {
@@ -8,7 +8,7 @@ interface PaginationProps {
 }
 
 export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
-    const { theme, darkMode } = useTheme();
+    const { theme } = useTheme();
 
     if (totalPages <= 1) return null;
 
@@ -31,13 +31,9 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
     const buttonBase =
         'px-3 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
-    const navButtonClass = darkMode
-        ? 'hover:bg-gray-700 text-gray-300'
-        : 'hover:bg-gray-100 text-gray-700';
+    const navButtonClass = 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300';
 
-    const inactivePageClass = darkMode
-        ? 'hover:bg-gray-700 text-gray-300'
-        : 'hover:bg-gray-100 text-gray-700';
+    const inactivePageClass = 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300';
 
     return (
         <nav className="flex items-center justify-center gap-2" aria-label="Pagination">

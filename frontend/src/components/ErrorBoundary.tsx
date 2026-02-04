@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { RefreshCw, AlertTriangle, Home } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Home } from './ui/BoxIcon';
 
 interface Props {
     children: ReactNode;

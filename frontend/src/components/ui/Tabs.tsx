@@ -12,12 +12,10 @@ interface TabsProps {
 }
 
 export default function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
-    const { theme, darkMode } = useTheme();
+    const { theme } = useTheme();
 
-    const containerClass = darkMode ? 'bg-gray-800' : 'bg-gray-100';
-    const inactiveClass = darkMode
-        ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
-        : 'text-gray-600 hover:text-gray-900 hover:bg-white/50';
+    const containerClass = 'bg-gray-100 dark:bg-gray-800';
+    const inactiveClass = 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-700/50';
 
     return (
         <div className={`flex gap-1 p-1 rounded-xl ${containerClass}`} role="tablist">

@@ -1,14 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Clock, Zap, Infinity as InfinityIcon, Play } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
+import { Trophy, Clock, Zap, InfinityIcon, Play, type BoxIconType } from '../components/ui/BoxIcon';
 import Layout from '../components/layout/Layout';
-import type { LucideIcon } from 'lucide-react';
 
 interface GameMode {
     id: string;
     name: string;
     description: string;
-    icon: LucideIcon;
+    icon: BoxIconType;
     available: boolean;
     path: string;
     gradient: string;
@@ -54,7 +52,6 @@ const GAME_MODES: GameMode[] = [
 ];
 
 export default function GameModesPage() {
-    const { darkMode } = useTheme();
     const navigate = useNavigate();
 
     const handleModeSelect = (mode: GameMode) => {
@@ -66,9 +63,7 @@ export default function GameModesPage() {
     return (
         <Layout>
             <div className="max-w-2xl mx-auto w-full">
-                <h1
-                    className={`text-2xl font-bold mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}
-                >
+                <h1 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">
                     Game Modes
                 </h1>
 
@@ -80,21 +75,15 @@ export default function GameModesPage() {
                                 key={mode.id}
                                 onClick={() => handleModeSelect(mode)}
                                 disabled={!mode.available}
-                                className={`group relative p-5 rounded-2xl text-left transition-all duration-300 overflow-hidden border ${
-                                    darkMode
-                                        ? 'bg-gray-800/80 border-gray-700 shadow-lg shadow-black/20'
-                                        : 'bg-white border-gray-100 shadow-card'
-                                } ${
+                                className={`group relative p-5 rounded-2xl text-left transition-all duration-300 overflow-hidden border bg-white dark:bg-gray-800/80 border-gray-100 dark:border-gray-700 shadow-card dark:shadow-lg dark:shadow-black/20 ${
                                     mode.available
-                                        ? darkMode
-                                            ? 'hover:bg-gray-800 hover:border-gray-600 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30 cursor-pointer'
-                                            : 'hover:shadow-xl hover:-translate-y-1 cursor-pointer'
+                                        ? 'hover:shadow-xl hover:-translate-y-1 dark:hover:bg-gray-800 dark:hover:border-gray-600 dark:hover:shadow-xl dark:hover:shadow-black/30 cursor-pointer'
                                         : 'opacity-50'
                                 }`}
                                 aria-disabled={!mode.available}
                             >
                                 <div
-                                    className={`absolute -right-6 -top-6 w-24 h-24 rounded-full bg-gradient-to-br ${mode.gradient} ${darkMode ? 'opacity-20' : 'opacity-10'}`}
+                                    className={`absolute -right-6 -top-6 w-24 h-24 rounded-full bg-gradient-to-br ${mode.gradient} opacity-10 dark:opacity-20`}
                                     aria-hidden="true"
                                 />
 
@@ -104,32 +93,26 @@ export default function GameModesPage() {
                                     <Icon className="w-6 h-6" aria-hidden="true" />
                                 </div>
 
-                                <h3
-                                    className={`font-bold mb-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}
-                                >
+                                <h3 className="font-bold mb-1 text-gray-800 dark:text-white">
                                     {mode.name}
                                 </h3>
-                                <p
-                                    className={`text-sm leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                                >
+                                <p className="text-sm leading-relaxed text-gray-500 dark:text-gray-400">
                                     {mode.description}
                                 </p>
 
                                 <div className="mt-4 flex items-center justify-between">
                                     {mode.available ? (
-                                        <span
-                                            className={`inline-flex items-center gap-1 text-sm font-medium bg-gradient-to-r ${mode.gradient} bg-clip-text text-transparent`}
-                                        >
+                                        <span className="inline-flex items-center gap-1 text-sm font-medium">
                                             <Play
                                                 className="w-4 h-4 text-orange-500"
                                                 aria-hidden="true"
                                             />
-                                            Play now
+                                            <span className={`bg-gradient-to-r ${mode.gradient} bg-clip-text text-transparent`}>
+                                                Play now
+                                            </span>
                                         </span>
                                     ) : (
-                                        <span
-                                            className={`text-xs font-medium px-2 py-1 rounded-full ${darkMode ? 'text-gray-500 bg-gray-700' : 'text-gray-400 bg-gray-100'}`}
-                                        >
+                                        <span className="text-xs font-medium px-2 py-1 rounded-full text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700">
                                             Coming soon
                                         </span>
                                     )}

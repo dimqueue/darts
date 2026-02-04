@@ -1,4 +1,4 @@
-import { Trophy, Target, TrendingUp, Flame } from 'lucide-react';
+import { Trophy, Target, TrendingUp, Flame } from '../ui/BoxIcon';
 import StatCard from '../ui/StatCard';
 import type { StatisticsData } from '../../types/api';
 

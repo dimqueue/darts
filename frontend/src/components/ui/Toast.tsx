@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from './BoxIcon';
 import { useToast } from '../../contexts/ToastContext';
 import type { ToastItem } from '../../types';
 

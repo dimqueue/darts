@@ -1,4 +1,4 @@
-import { User, Edit2, Save } from 'lucide-react';
+import { User, Edit2, Save } from '../ui/BoxIcon';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -34,7 +34,7 @@ export default function ProfileHeader({
     onSave,
     onEditFormChange,
 }: ProfileHeaderProps) {
-    const { theme, darkMode } = useTheme();
+    const { theme } = useTheme();
 
     return (
         <Card>
@@ -46,18 +46,14 @@ export default function ProfileHeader({
                         <User className="w-10 h-10 text-white" aria-hidden="true" />
                     </div>
                     <div>
-                        <h1
-                            className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}
-                        >
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
                             {profile?.name || username}
                         </h1>
-                        <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>
+                        <p className="text-gray-500 dark:text-gray-400">
                             @{profile?.username || username}
                         </p>
                         {profile?.country_code && (
-                            <p
-                                className={`text-sm mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}
-                            >
+                            <p className="text-sm mt-1 text-gray-400 dark:text-gray-500">
                                 {profile.country_code}
                             </p>
                         )}
@@ -99,7 +95,7 @@ export default function ProfileHeader({
                 </div>
             ) : (
                 profile?.bio && (
-                    <p className={`mt-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <p className="mt-4 text-gray-600 dark:text-gray-300">
                         {profile.bio}
                     </p>
                 )

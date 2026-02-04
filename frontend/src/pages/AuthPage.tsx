@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, Trophy } from 'lucide-react';
+import { LogIn, Trophy } from '../components/ui/BoxIcon';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import api from '@/api';
@@ -54,7 +54,7 @@ export default function AuthPage() {
 
     return (
         <div
-            className={`min-h-screen bg-gradient-to-br transition-colors duration-300 ${darkMode ? theme.bgGradientDark : theme.bgGradient} flex items-center justify-center p-4`}
+            className={`min-h-screen bg-gradient-to-br ${darkMode ? theme.bgGradientDark : theme.bgGradient} flex items-center justify-center p-4`}
         >
             <Card className="w-full max-w-md" padding="p-8">
                 <div className="flex items-center justify-center mb-6">
@@ -62,16 +62,12 @@ export default function AuthPage() {
                         className={`w-12 h-12 ${darkMode ? theme.textColorDark : theme.textColor} mr-3`}
                         aria-hidden="true"
                     />
-                    <h1
-                        className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}
-                    >
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
                         Darts Game
                     </h1>
                 </div>
 
-                <h2
-                    className={`text-xl font-semibold text-center mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
-                >
+                <h2 className="text-xl font-semibold text-center mb-6 text-gray-700 dark:text-gray-300">
                     {isSignUp ? 'Create Account' : 'Welcome Back'}
                 </h2>
 

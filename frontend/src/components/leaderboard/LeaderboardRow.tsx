@@ -1,38 +1,32 @@
 import { Link } from 'react-router-dom';
 import { memo } from 'react';
-import type { Theme } from '../../types';
+import { useTheme } from '../../contexts/ThemeContext';
 import type { LeaderboardEntry } from '../../types/api';
 import { getCountryFlag } from '../../config/constants';
 
 interface LeaderboardRowProps {
     entry: LeaderboardEntry;
     isCurrentUser: boolean;
-    theme: Theme;
-    darkMode: boolean;
 }
 
 const LeaderboardRow = memo(function LeaderboardRow({
     entry,
     isCurrentUser,
-    theme,
-    darkMode,
 }: LeaderboardRowProps) {
+    const { theme, darkMode } = useTheme();
     const flag = getCountryFlag(entry.country_code);
 
+    // Keep ternary for isCurrentUser - uses theme colors
+    const rowClass = isCurrentUser
+        ? darkMode
+            ? `${theme.lightBgDark} border-l-4 ${theme.borderColor} font-semibold`
+            : `${theme.lightBg} border-l-4 ${theme.borderColor} font-semibold`
+        : 'hover:bg-gray-50 dark:hover:bg-gray-700';
+
     return (
-        <tr
-            className={`transition-colors ${
-                isCurrentUser
-                    ? darkMode
-                        ? `${theme.lightBgDark} border-l-4 ${theme.borderColor} font-semibold`
-                        : `${theme.lightBg} border-l-4 ${theme.borderColor} font-semibold`
-                    : darkMode
-                      ? 'hover:bg-gray-700'
-                      : 'hover:bg-gray-50'
-            }`}
-        >
+        <tr className={rowClass}>
             <td className="px-6 py-4">
-                <span className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <span className="font-medium text-gray-600 dark:text-gray-300">
                     #{entry.rank}
                 </span>
             </td>
@@ -47,33 +41,29 @@ const LeaderboardRow = memo(function LeaderboardRow({
                         {entry.username?.[0]?.toUpperCase() || '?'}
                     </div>
                     <div>
-                        <p
-                            className={`font-medium flex items-center gap-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}
-                        >
+                        <p className="font-medium flex items-center gap-1 text-gray-800 dark:text-white">
                             {flag && <span>{flag}</span>}
                             {entry.name || entry.username}
                         </p>
-                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                             @{entry.username}
                         </p>
                     </div>
                 </Link>
             </td>
-            <td
-                className={`px-6 py-4 text-right font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}
-            >
+            <td className="px-6 py-4 text-right font-semibold text-gray-800 dark:text-white">
                 {entry.total_score?.toLocaleString() || 0}
             </td>
-            <td className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-300">
                 {entry.total_wins || 0}
             </td>
-            <td className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-300">
                 {entry.win_rate || 0}%
             </td>
-            <td className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-300">
                 {entry.average_guesses?.toFixed(1) || '-'}
             </td>
-            <td className={`px-6 py-4 text-right ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-300">
                 {entry.best_win_streak || 0}
             </td>
         </tr>

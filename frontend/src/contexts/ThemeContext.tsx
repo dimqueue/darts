@@ -100,6 +100,25 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         }
     }, [darkMode]);
 
+    // Helper to toggle dark class with instant transition
+    const applyDarkMode = (value: boolean) => {
+        // Disable transitions temporarily for instant switch
+        document.documentElement.classList.add('no-transitions');
+
+        if (value) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
+        // Force reflow to apply changes immediately
+        document.documentElement.offsetHeight;
+
+        // Re-enable transitions after a frame
+        requestAnimationFrame(() => {
+            document.documentElement.classList.remove('no-transitions');
+        });
+    };
 
     const setTheme = (name: string) => {
         if (THEMES[name]) {
@@ -111,11 +130,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     const toggleDarkMode = () => {
         const newValue = !darkMode;
         localStorage.setItem('darkMode', String(newValue));
+        applyDarkMode(newValue);
         setDarkMode(newValue);
     };
 
     const setDarkModeValue = (value: boolean) => {
         localStorage.setItem('darkMode', String(value));
+        applyDarkMode(value);
         setDarkMode(value);
     };
 
