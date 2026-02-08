@@ -8,7 +8,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
     return (
-        <div className="min-h-screen bg-theme-page">
+        <div className="h-screen flex flex-col bg-theme-page overflow-hidden">
             <Navbar />
             <a
                 href="#main-content"
@@ -16,9 +16,14 @@ export default function Layout({ children }: LayoutProps) {
             >
                 Skip to main content
             </a>
-            <main id="main-content" className="container mx-auto px-4 py-8 max-w-6xl">
-                {children}
-            </main>
+            <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
+                <main
+                    id="main-content"
+                    className="container mx-auto px-4 py-6 max-w-6xl"
+                >
+                    {children}
+                </main>
+            </div>
             <DemoToast />
         </div>
     );

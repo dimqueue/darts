@@ -15,7 +15,7 @@ export default function Navbar() {
 
     return (
         <nav
-            className="sticky top-0 z-50 shadow-md bg-white dark:bg-gray-900"
+            className="shrink-0 z-50 shadow-md bg-white dark:bg-gray-900"
             aria-label="Main navigation"
         >
             <div className="max-w-6xl mx-auto px-2 sm:px-4">
