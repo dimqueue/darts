@@ -15,12 +15,12 @@ const LeaderboardRow = memo(function LeaderboardRow({
     const flag = getCountryFlag(entry.country_code);
 
     const rowClass = isCurrentUser
-        ? 'bg-theme-light-bg border-l-4 border-theme-border font-semibold'
-        : 'hover:bg-gray-50 dark:hover:bg-gray-700';
+        ? 'bg-theme-light-bg shadow-[inset_4px_0_0_var(--theme-border)] font-semibold'
+        : 'hover:bg-theme-hover-bg';
 
     return (
-        <tr className={rowClass}>
-            <td className="px-6 py-4">
+        <tr className={`${rowClass} align-middle`}>
+            <td className="px-6 py-4 text-center">
                 <span className="font-medium text-gray-600 dark:text-gray-300">
                     #{entry.rank}
                 </span>
@@ -46,19 +46,19 @@ const LeaderboardRow = memo(function LeaderboardRow({
                     </div>
                 </Link>
             </td>
-            <td className="px-6 py-4 text-right font-semibold text-gray-800 dark:text-white">
+            <td className="px-6 py-4 text-center font-semibold text-gray-800 dark:text-white">
                 {entry.total_score?.toLocaleString() || 0}
             </td>
-            <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-300">
+            <td className="px-6 py-4 text-center text-gray-600 dark:text-gray-300">
                 {entry.total_wins || 0}
             </td>
-            <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-300">
+            <td className="px-6 py-4 text-center text-gray-600 dark:text-gray-300">
                 {entry.win_rate || 0}%
             </td>
-            <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-300">
+            <td className="px-6 py-4 text-center text-gray-600 dark:text-gray-300">
                 {entry.average_guesses?.toFixed(1) || '-'}
             </td>
-            <td className="px-6 py-4 text-right text-gray-600 dark:text-gray-300">
+            <td className="px-6 py-4 text-center text-gray-600 dark:text-gray-300">
                 {entry.best_win_streak || 0}
             </td>
         </tr>

@@ -7,7 +7,7 @@ interface SortableHeaderProps {
     sortBy: string;
     sortDirection: 'asc' | 'desc';
     onSort: (field: string) => void;
-    align?: 'left' | 'right';
+    align?: 'left' | 'center' | 'right';
 }
 
 export default memo(function SortableHeader({
@@ -16,18 +16,22 @@ export default memo(function SortableHeader({
     sortBy,
     sortDirection,
     onSort,
-    align = 'left',
+    align = 'center',
 }: SortableHeaderProps) {
     const isActive = sortBy === field;
-    const alignClass = align === 'right' ? 'text-right justify-end' : 'text-left';
+    const alignMap = {
+        left: 'text-left',
+        center: 'text-center justify-center',
+        right: 'text-right justify-end',
+    };
 
     return (
         <th
-            className={`px-6 py-4 text-xs font-semibold uppercase cursor-pointer select-none ${alignClass} text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600`}
+            className={`px-6 py-4 text-xs font-semibold uppercase cursor-pointer select-none ${alignMap[align]} text-gray-500 dark:text-gray-400 hover:bg-theme-hover-bg`}
             onClick={() => onSort(field)}
             aria-sort={isActive ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
         >
-            <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : ''}`}>
+            <div className={`flex items-center gap-1 ${alignMap[align]}`}>
                 {label}
                 {isActive &&
                     (sortDirection === 'asc' ? (

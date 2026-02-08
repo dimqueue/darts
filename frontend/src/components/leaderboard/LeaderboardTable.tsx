@@ -55,12 +55,12 @@ const LeaderboardTable = memo(function LeaderboardTable({
     }
 
     return (
-        <Card padding="p-0">
+        <Card padding="p-0" className="overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full">
-                    <thead className="border-b bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                    <thead className="border-b border-black/5 dark:border-white/5 bg-theme-light-bg">
                         <tr>
-                            <th className="px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                            <th className="px-6 py-4 text-center text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
                                 Rank
                             </th>
                             <th className="px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
@@ -72,7 +72,6 @@ const LeaderboardTable = memo(function LeaderboardTable({
                                 sortBy={sortBy}
                                 sortDirection={sortDirection}
                                 onSort={onSort}
-                                align="right"
                             />
                             <SortableHeader
                                 label="Wins"
@@ -80,7 +79,6 @@ const LeaderboardTable = memo(function LeaderboardTable({
                                 sortBy={sortBy}
                                 sortDirection={sortDirection}
                                 onSort={onSort}
-                                align="right"
                             />
                             <SortableHeader
                                 label="Win Rate"
@@ -88,7 +86,6 @@ const LeaderboardTable = memo(function LeaderboardTable({
                                 sortBy={sortBy}
                                 sortDirection={sortDirection}
                                 onSort={onSort}
-                                align="right"
                             />
                             <SortableHeader
                                 label="Avg Guesses"
@@ -96,7 +93,6 @@ const LeaderboardTable = memo(function LeaderboardTable({
                                 sortBy={sortBy}
                                 sortDirection={sortDirection}
                                 onSort={onSort}
-                                align="right"
                             />
                             <SortableHeader
                                 label="Best Streak"
@@ -104,11 +100,10 @@ const LeaderboardTable = memo(function LeaderboardTable({
                                 sortBy={sortBy}
                                 sortDirection={sortDirection}
                                 onSort={onSort}
-                                align="right"
                             />
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tbody className="divide-y divide-black/5 dark:divide-white/5">
                         {entries.map((entry) => (
                             <LeaderboardRow
                                 key={entry.user_id}
