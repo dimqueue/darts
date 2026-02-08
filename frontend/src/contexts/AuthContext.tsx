@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import type { User } from '../types';
+import { STORAGE_KEYS } from '../config/constants';
 
 interface AuthContextValue {
     token: string | null;
@@ -14,16 +15,16 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function getInitialToken(): string | null {
-    return localStorage.getItem('token');
+    return localStorage.getItem(STORAGE_KEYS.TOKEN);
 }
 
 function getInitialUser(): User | null {
-    const savedUser = localStorage.getItem('user');
+    const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
     if (savedUser) {
         try {
             return JSON.parse(savedUser);
         } catch {
-            localStorage.removeItem('user');
+            localStorage.removeItem(STORAGE_KEYS.USER);
         }
     }
     return null;
@@ -38,35 +39,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<User | null>(getInitialUser);
     const [loading] = useState(false);
 
-    const login = (newToken: string, userData: User) => {
-        localStorage.setItem('token', newToken);
-        localStorage.setItem('user', JSON.stringify(userData));
+    const login = useCallback((newToken: string, userData: User) => {
+        localStorage.setItem(STORAGE_KEYS.TOKEN, newToken);
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
         setToken(newToken);
         setUser(userData);
-    };
+    }, []);
 
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+    const logout = useCallback(() => {
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER);
         setToken(null);
         setUser(null);
-    };
+    }, []);
 
-    const updateUser = (userData: Partial<User>) => {
-        const updatedUser = { ...user, ...userData } as User;
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        setUser(updatedUser);
-    };
+    const updateUser = useCallback((userData: Partial<User>) => {
+        setUser((prev) => {
+            const updatedUser = { ...prev, ...userData } as User;
+            localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser));
+            return updatedUser;
+        });
+    }, []);
 
-    const value: AuthContextValue = {
-        token,
-        user,
-        isAuthenticated: !!token,
-        loading,
-        login,
-        logout,
-        updateUser,
-    };
+    const value = useMemo<AuthContextValue>(
+        () => ({
+            token,
+            user,
+            isAuthenticated: !!token,
+            loading,
+            login,
+            logout,
+            updateUser,
+        }),
+        [token, user, loading, login, logout, updateUser]
+    );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

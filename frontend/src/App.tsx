@@ -6,6 +6,7 @@ import { GameProvider } from './contexts/GameContext';
 import { ToastProvider } from './contexts/ToastContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastContainer } from './components/ui/Toast';
+import LoadingSpinner from './components/ui/LoadingSpinner';
 
 import AuthPage from './pages/AuthPage';
 import GamePage from './pages/GamePage';
@@ -18,15 +19,19 @@ interface RouteWrapperProps {
     children: ReactNode;
 }
 
+function RouteLoadingFallback() {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-theme-page">
+            <LoadingSpinner />
+        </div>
+    );
+}
+
 function ProtectedRoute({ children }: RouteWrapperProps) {
     const { isAuthenticated, loading } = useAuth();
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800">
-                <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full" />
-            </div>
-        );
+        return <RouteLoadingFallback />;
     }
 
     if (!isAuthenticated) {
@@ -40,11 +45,7 @@ function PublicRoute({ children }: RouteWrapperProps) {
     const { isAuthenticated, loading } = useAuth();
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800">
-                <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full" />
-            </div>
-        );
+        return <RouteLoadingFallback />;
     }
 
     if (isAuthenticated) {

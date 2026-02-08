@@ -3,13 +3,7 @@ import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import ErrorAlert from '../ui/ErrorAlert';
-import { useTheme } from '../../contexts/ThemeContext';
-import type { ProfileData } from '../../types/api';
-
-interface EditFormData {
-    bio: string;
-    country_code: string;
-}
+import type { ProfileData, EditFormData } from '../../types/api';
 
 interface ProfileHeaderProps {
     profile: ProfileData | null;
@@ -34,14 +28,12 @@ export default function ProfileHeader({
     onSave,
     onEditFormChange,
 }: ProfileHeaderProps) {
-    const { theme } = useTheme();
-
     return (
         <Card>
             <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                     <div
-                        className={`w-20 h-20 ${theme.gradient} rounded-full flex items-center justify-center`}
+                        className="w-20 h-20 bg-theme-gradient rounded-full flex items-center justify-center"
                     >
                         <User className="w-10 h-10 text-white" aria-hidden="true" />
                     </div>

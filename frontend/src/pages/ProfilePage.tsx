@@ -9,12 +9,7 @@ import {
     DetailedStats,
     LanguageStats,
 } from '../components/profile';
-import type { ProfileData, StatisticsData, LanguageStatsData } from '../types/api';
-
-interface EditFormData {
-    bio: string;
-    country_code: string;
-}
+import type { ProfileData, StatisticsData, LanguageStatsData, EditFormData } from '../types/api';
 
 export default function ProfilePage() {
     const { user, updateUser } = useAuth();

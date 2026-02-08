@@ -1,4 +1,5 @@
 import config from '../config/env';
+import { STORAGE_KEYS } from '../config/constants';
 import {
     ApiError,
     type AuthResponse,
@@ -28,7 +29,7 @@ class RealApiClient {
     }
 
     private getToken(): string | null {
-        return localStorage.getItem('token');
+        return localStorage.getItem(STORAGE_KEYS.TOKEN);
     }
 
     private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
@@ -54,8 +55,8 @@ class RealApiClient {
 
             const isAuthEndpoint = endpoint.startsWith('/auth/');
             if (response.status === 401 && !isAuthEndpoint) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
+                localStorage.removeItem(STORAGE_KEYS.TOKEN);
+                localStorage.removeItem(STORAGE_KEYS.USER);
                 window.location.href = '/auth';
                 throw new ApiError('Session expired. Please log in again.', 'UNAUTHORIZED', 401);
             }
@@ -209,9 +210,9 @@ class RealApiClient {
     }
 
     clearAllData(): void {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('theme');
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER);
+        localStorage.removeItem(STORAGE_KEYS.THEME);
     }
 }
 

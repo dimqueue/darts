@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Trophy, Target, TrendingUp, Flame } from '../ui/BoxIcon';
 import StatCard from '../ui/StatCard';
 import type { StatisticsData } from '../../types/api';
@@ -6,7 +7,7 @@ interface StatsGridProps {
     stats: StatisticsData | null;
 }
 
-export default function StatsGrid({ stats }: StatsGridProps) {
+export default memo(function StatsGrid({ stats }: StatsGridProps) {
     const winRate =
         stats && stats.total_games > 0
             ? ((stats.total_wins / stats.total_games) * 100).toFixed(1)
@@ -24,4 +25,4 @@ export default function StatsGrid({ stats }: StatsGridProps) {
             />
         </div>
     );
-}
+});

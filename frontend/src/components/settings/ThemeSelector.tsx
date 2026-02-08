@@ -1,62 +1,38 @@
 import { Palette } from '../ui/BoxIcon';
-import Card from '../ui/Card';
-import { useTheme, THEMES } from '../../contexts/ThemeContext';
+import SettingsSection from './SettingsSection';
+import { THEME_OPTIONS, type ThemeName } from '../../config/constants';
 
 interface ThemeSelectorProps {
-    selectedTheme: string;
-    onThemeChange: (theme: string) => void;
+    selectedTheme: ThemeName;
+    onThemeChange: (theme: ThemeName) => void;
 }
 
-const themeColors: Record<string, string> = {
-    purple: 'bg-gradient-purple',
-    blue: 'bg-gradient-blue',
-    green: 'bg-gradient-green',
-};
-
 export default function ThemeSelector({ selectedTheme, onThemeChange }: ThemeSelectorProps) {
-    const { theme, darkMode } = useTheme();
-
     return (
-        <Card>
-            <div className="flex items-center gap-3 mb-4">
-                <Palette
-                    className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`}
-                    aria-hidden="true"
-                />
-                <h2 className="font-semibold text-gray-800 dark:text-white">
-                    Color Theme
-                </h2>
-            </div>
+        <SettingsSection icon={Palette} title="Color Theme">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" role="radiogroup" aria-label="Color theme">
-                {Object.keys(THEMES).map((name) => {
-                    const isSelected = selectedTheme === name;
-                    const selectedThemeObj = THEMES[name];
+                {THEME_OPTIONS.map((opt) => {
+                    const isSelected = selectedTheme === opt.name;
                     return (
                         <button
-                            key={name}
-                            onClick={() => onThemeChange(name)}
+                            key={opt.name}
+                            onClick={() => onThemeChange(opt.name)}
                             className={`p-4 rounded-xl border-2 transition-all duration-200 ${
                                 isSelected
-                                    ? `${selectedThemeObj.borderColor} ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ${
-                                          name === 'purple'
-                                              ? 'ring-violet-300'
-                                              : name === 'blue'
-                                                ? 'ring-blue-300'
-                                                : 'ring-emerald-300'
-                                      }`
+                                    ? `${opt.border} ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ${opt.ring}`
                                     : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                             }`}
                             role="radio"
                             aria-checked={isSelected}
                         >
-                            <div className={`h-12 rounded-lg mb-2 ${themeColors[name]}`} />
+                            <div className={`h-12 rounded-lg mb-2 ${opt.preview}`} />
                             <p className="font-medium capitalize text-gray-700 dark:text-gray-200">
-                                {name}
+                                {opt.name}
                             </p>
                         </button>
                     );
                 })}
             </div>
-        </Card>
+        </SettingsSection>
     );
 }

@@ -1,5 +1,3 @@
-import { useTheme } from '../../contexts/ThemeContext';
-
 interface Tab {
     id: string;
     label: string;
@@ -12,8 +10,6 @@ interface TabsProps {
 }
 
 export default function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
-    const { theme } = useTheme();
-
     const containerClass = 'bg-gray-100 dark:bg-gray-800';
     const inactiveClass = 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-700/50';
 
@@ -25,7 +21,7 @@ export default function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
                     onClick={() => onTabChange(tab.id)}
                     className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                         activeTab === tab.id
-                            ? `${theme.gradient} text-white shadow-sm`
+                            ? 'bg-theme-gradient text-white shadow-sm'
                             : inactiveClass
                     }`}
                     role="tab"

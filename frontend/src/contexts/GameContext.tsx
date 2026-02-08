@@ -1,11 +1,10 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
+import { STORAGE_KEYS } from '../config/constants';
 import type { GameState } from '../types/game';
 
-const STORAGE_KEY_PREFIX = 'darts_game_cache_';
-
 function getStorageKey(userId: number | undefined): string | null {
-    return userId ? `${STORAGE_KEY_PREFIX}${userId}` : null;
+    return userId ? `${STORAGE_KEYS.GAME_CACHE_PREFIX}${userId}` : null;
 }
 
 function getInitialGameState(userId: number | undefined): GameState | null {
@@ -83,16 +82,13 @@ export function GameProvider({ children }: GameProviderProps) {
         return gameState?.gameId || null;
     }, [gameState]);
 
+    const value = useMemo<GameContextValue>(
+        () => ({ gameState, saveGame, clearGame, hasActiveGame, getCachedGameId }),
+        [gameState, saveGame, clearGame, hasActiveGame, getCachedGameId]
+    );
+
     return (
-        <GameContext.Provider
-            value={{
-                gameState,
-                saveGame,
-                clearGame,
-                hasActiveGame,
-                getCachedGameId,
-            }}
-        >
+        <GameContext.Provider value={value}>
             {children}
         </GameContext.Provider>
     );

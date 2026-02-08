@@ -1,17 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Globe } from '../components/ui/BoxIcon';
 import api from '@/api';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 import Layout from '../components/layout/Layout';
 import Pagination from '../components/ui/Pagination';
+import LanguageSelect from '../components/ui/LanguageSelect';
 import { RankNavigation, LeaderboardTable } from '../components/leaderboard';
 import { LANGUAGES_WITH_ALL, PAGINATION } from '../config/constants';
 import type { LeaderboardEntry, RankData } from '../types/api';
 
 export default function LeaderboardPage() {
     const { user } = useAuth();
-    const { theme } = useTheme();
     const [activeTab, setActiveTab] = useState('global');
     const [language, setLanguage] = useState('');
     const [data, setData] = useState<{ users: LeaderboardEntry[]; total: number }>({
@@ -98,30 +96,15 @@ export default function LeaderboardPage() {
                 />
 
                 <div className="flex items-center justify-end">
-                    <div className="flex items-center gap-2">
-                        <Globe
-                            className="w-5 h-5 text-gray-400 dark:text-gray-500"
-                            aria-hidden="true"
-                        />
-                        <label htmlFor="language-filter" className="sr-only">
-                            Filter by language
-                        </label>
-                        <select
-                            id="language-filter"
-                            value={language}
-                            onChange={(e) => {
-                                setLanguage(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            className={`px-3 py-2 border-2 rounded-xl ${theme.focusBorder} focus:outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-white border-gray-200 dark:border-gray-600`}
-                        >
-                            {LANGUAGES_WITH_ALL.map((lang) => (
-                                <option key={lang.code} value={lang.code}>
-                                    {lang.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <LanguageSelect
+                        id="language-filter"
+                        value={language}
+                        onChange={(val) => {
+                            setLanguage(val);
+                            setCurrentPage(1);
+                        }}
+                        languages={LANGUAGES_WITH_ALL}
+                    />
                 </div>
 
                 <LeaderboardTable

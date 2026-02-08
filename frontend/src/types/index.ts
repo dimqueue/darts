@@ -12,24 +12,6 @@ export interface User {
     created_at?: string;
 }
 
-export interface Theme {
-    name: string;
-    primary: string;
-    secondary: string;
-    gradient: string;
-    bgGradient: string;
-    bgGradientDark: string;
-    meshBg: string;
-    focusBorder: string;
-    textColor: string;
-    textColorDark: string;
-    borderColor: string;
-    hoverBg: string;
-    hoverBgDark: string;
-    lightBg: string;
-    lightBgDark: string;
-}
-
 export interface ToastItem {
     id: number;
     message: string;

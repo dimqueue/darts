@@ -1,19 +1,23 @@
+// TODO: Consider replacing with MSW (Mock Service Worker) for more realistic mocking
+// TODO: Move mockNames/mockUsernames arrays to a separate fixtures file to reduce this file's size (~462 lines)
 import { getRandomWord, calculateDistance } from './mockData';
-import type {
-    AuthResponse,
-    SignUpResponse,
-    ProfileData,
-    ProfileUpdateData,
-    SettingsData,
-    StatisticsData,
-    LanguageStatsData,
-    LeaderboardResponse,
-    LeaderboardEntry,
-    RankData,
-    PublicProfileData,
-    ApiResponse,
+import {
+    ApiError,
+    type AuthResponse,
+    type SignUpResponse,
+    type ProfileData,
+    type ProfileUpdateData,
+    type SettingsData,
+    type StatisticsData,
+    type LanguageStatsData,
+    type LeaderboardResponse,
+    type LeaderboardEntry,
+    type RankData,
+    type PublicProfileData,
+    type ApiResponse,
 } from '../types/api';
 import type { Game, Guess, GuessResult } from '../types/game';
+import { STORAGE_KEYS } from '../config/constants';
 
 interface MockUser {
     id: number;
@@ -39,7 +43,7 @@ class MockApiClient {
     async signUp(username: string, password: string, name: string = ''): Promise<SignUpResponse> {
         await this.delay();
         if (this.users.has(username)) {
-            throw new Error('Username already exists');
+            throw new ApiError('Username already exists', 'USER_EXISTS', 409);
         }
         const user: MockUser = {
             id: this.nextUserId++,
@@ -56,7 +60,7 @@ class MockApiClient {
         await this.delay();
         const user = this.users.get(username);
         if (!user || user.password !== password) {
-            throw new Error('Invalid credentials');
+            throw new ApiError('Invalid credentials', 'UNAUTHORIZED', 401);
         }
         return { token: `mock-token-${user.id}`, user_id: user.id };
     }
@@ -84,14 +88,14 @@ class MockApiClient {
     async getGameById(gameId: number): Promise<Game> {
         await this.delay();
         const game = this.games.get(gameId);
-        if (!game) throw new Error('Game not found');
+        if (!game) throw new ApiError('Game not found', 'GAME_NOT_FOUND', 404);
         return game;
     }
 
     async updateGame(gameId: number, data: Partial<Game>): Promise<Game> {
         await this.delay();
         const game = this.games.get(gameId);
-        if (!game) throw new Error('Game not found');
+        if (!game) throw new ApiError('Game not found', 'GAME_NOT_FOUND', 404);
         Object.assign(game, data);
         return game;
     }
@@ -107,7 +111,7 @@ class MockApiClient {
     async abandonGame(gameId: number): Promise<{ message: string }> {
         await this.delay();
         const game = this.games.get(gameId);
-        if (!game) throw new Error('Game not found');
+        if (!game) throw new ApiError('Game not found', 'GAME_NOT_FOUND', 404);
         game.status = 'abandoned';
         return { message: 'Game abandoned' };
     }
@@ -147,7 +151,7 @@ class MockApiClient {
         await this.delay();
         const gameGuesses = this.guesses.get(gameId) || [];
         const guess = gameGuesses.find((g) => g.id === guessId);
-        if (!guess) throw new Error('Guess not found');
+        if (!guess) throw new ApiError('Guess not found', 'NOT_FOUND', 404);
         return guess;
     }
 
@@ -163,7 +167,7 @@ class MockApiClient {
         let currentUser: { id?: number; username?: string; name?: string; email?: string } | null =
             null;
         try {
-            const savedUser = localStorage.getItem('user');
+            const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
             }
@@ -258,7 +262,7 @@ class MockApiClient {
 
         let currentUser: { id?: number; username?: string; name?: string } | null = null;
         try {
-            const savedUser = localStorage.getItem('user');
+            const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
             }
@@ -454,8 +458,10 @@ class MockApiClient {
         this.games.clear();
         this.guesses.clear();
         this.targetWords.clear();
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER);
+        localStorage.removeItem(STORAGE_KEYS.THEME);
+        localStorage.removeItem(STORAGE_KEYS.DARK_MODE);
     }
 }
 

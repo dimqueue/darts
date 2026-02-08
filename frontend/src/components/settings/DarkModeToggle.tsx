@@ -1,5 +1,5 @@
 import { Moon, Sun } from '../ui/BoxIcon';
-import Card from '../ui/Card';
+import SettingsSection from './SettingsSection';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface DarkModeToggleProps {
@@ -7,35 +7,20 @@ interface DarkModeToggleProps {
 }
 
 export default function DarkModeToggle({ onToggle }: DarkModeToggleProps) {
-    const { theme, darkMode } = useTheme();
+    const { darkMode } = useTheme();
 
     return (
-        <Card>
+        <SettingsSection icon={darkMode ? Moon : Sun} title="Dark Mode">
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    {darkMode ? (
-                        <Moon
-                            className={`w-5 h-5 ${theme.textColorDark}`}
-                            aria-hidden="true"
-                        />
-                    ) : (
-                        <Sun className={`w-5 h-5 ${theme.textColor}`} aria-hidden="true" />
-                    )}
-                    <div>
-                        <h2 className="font-semibold text-gray-800 dark:text-white">
-                            Dark Mode
-                        </h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {darkMode
-                                ? 'Currently using dark theme'
-                                : 'Currently using light theme'}
-                        </p>
-                    </div>
-                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {darkMode
+                        ? 'Currently using dark theme'
+                        : 'Currently using light theme'}
+                </p>
                 <button
                     onClick={onToggle}
                     className={`relative w-14 h-8 rounded-full transition-colors duration-300 ${
-                        darkMode ? theme.gradient : 'bg-gray-300'
+                        darkMode ? 'bg-theme-gradient' : 'bg-gray-300'
                     }`}
                     role="switch"
                     aria-checked={darkMode}
@@ -48,6 +33,6 @@ export default function DarkModeToggle({ onToggle }: DarkModeToggleProps) {
                     />
                 </button>
             </div>
-        </Card>
+        </SettingsSection>
     );
 }

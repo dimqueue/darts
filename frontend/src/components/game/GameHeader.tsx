@@ -1,6 +1,7 @@
-import { Trophy, Globe } from '../ui/BoxIcon';
+import { memo } from 'react';
+import { Trophy } from '../ui/BoxIcon';
 import Card from '../ui/Card';
-import { useTheme } from '../../contexts/ThemeContext';
+import LanguageSelect from '../ui/LanguageSelect';
 import { LANGUAGES } from '../../config/constants';
 
 interface GameHeaderProps {
@@ -8,15 +9,13 @@ interface GameHeaderProps {
     onLanguageChange: (language: string) => void;
 }
 
-export default function GameHeader({ language, onLanguageChange }: GameHeaderProps) {
-    const { theme, darkMode } = useTheme();
-
+export default memo(function GameHeader({ language, onLanguageChange }: GameHeaderProps) {
     return (
         <Card>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <Trophy
-                        className={`w-8 h-8 ${darkMode ? theme.textColorDark : theme.textColor}`}
+                        className="w-8 h-8 text-theme-text"
                     />
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -27,28 +26,13 @@ export default function GameHeader({ language, onLanguageChange }: GameHeaderPro
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Globe
-                        className="w-5 h-5 text-gray-400 dark:text-gray-500"
-                        aria-hidden="true"
-                    />
-                    <label htmlFor="language-select" className="sr-only">
-                        Select language
-                    </label>
-                    <select
-                        id="language-select"
-                        value={language}
-                        onChange={(e) => onLanguageChange(e.target.value)}
-                        className={`px-3 py-2 border-2 rounded-xl ${theme.focusBorder} focus:outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-white border-gray-200 dark:border-gray-600`}
-                    >
-                        {LANGUAGES.map((lang) => (
-                            <option key={lang.code} value={lang.code}>
-                                {lang.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                <LanguageSelect
+                    id="language-select"
+                    value={language}
+                    onChange={onLanguageChange}
+                    languages={LANGUAGES}
+                />
             </div>
         </Card>
     );
-}
+});

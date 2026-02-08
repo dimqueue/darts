@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { AlertCircle } from './BoxIcon';
 
 interface ErrorAlertProps {
@@ -5,7 +6,7 @@ interface ErrorAlertProps {
     className?: string;
 }
 
-export default function ErrorAlert({ message, className = '' }: ErrorAlertProps) {
+export default memo(function ErrorAlert({ message, className = '' }: ErrorAlertProps) {
     if (!message) return null;
 
     return (
@@ -17,4 +18,4 @@ export default function ErrorAlert({ message, className = '' }: ErrorAlertProps)
             <span>{message}</span>
         </div>
     );
-}
+});

@@ -16,15 +16,12 @@ export default {
         },
         extend: {
             colors: {
-                primary: {
-                    purple: '#8B5CF6',
-                    blue: '#3B82F6',
-                    green: '#10B981',
-                },
-                secondary: {
-                    purple: '#A78BFA',
-                    blue: '#60A5FA',
-                    green: '#34D399',
+                theme: {
+                    text: 'var(--theme-text)',
+                    border: 'var(--theme-border)',
+                    'hover-bg': 'var(--theme-hover-bg)',
+                    'light-bg': 'var(--theme-light-bg)',
+                    primary: 'var(--theme-primary)',
                 },
             },
             backgroundImage: {

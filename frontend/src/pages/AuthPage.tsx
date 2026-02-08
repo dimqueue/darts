@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, Trophy } from '../components/ui/BoxIcon';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 import api from '@/api';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -17,7 +16,6 @@ export default function AuthPage() {
     const [loading, setLoading] = useState(false);
 
     const { login } = useAuth();
-    const { theme, darkMode } = useTheme();
     const navigate = useNavigate();
 
     const handleSubmit = async () => {
@@ -54,12 +52,12 @@ export default function AuthPage() {
 
     return (
         <div
-            className={`min-h-screen bg-gradient-to-br ${darkMode ? theme.bgGradientDark : theme.bgGradient} flex items-center justify-center p-4`}
+            className="min-h-screen bg-theme-page flex items-center justify-center p-4"
         >
             <Card className="w-full max-w-md" padding="p-8">
                 <div className="flex items-center justify-center mb-6">
                     <Trophy
-                        className={`w-12 h-12 ${darkMode ? theme.textColorDark : theme.textColor} mr-3`}
+                        className="w-12 h-12 text-theme-text mr-3"
                         aria-hidden="true"
                     />
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
@@ -105,7 +103,7 @@ export default function AuthPage() {
                 <div className="mt-6 text-center">
                     <button
                         onClick={() => setIsSignUp(!isSignUp)}
-                        className={`${darkMode ? theme.textColorDark : theme.textColor} hover:underline text-sm`}
+                        className="text-theme-text hover:underline text-sm"
                     >
                         {isSignUp
                             ? 'Already have an account? Sign In'

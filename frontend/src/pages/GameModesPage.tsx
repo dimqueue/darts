@@ -1,16 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Clock, Zap, InfinityIcon, Play, type BoxIconType } from '../components/ui/BoxIcon';
+import { Trophy, Clock, Zap, InfinityIcon, Play } from '../components/ui/BoxIcon';
 import Layout from '../components/layout/Layout';
-
-interface GameMode {
-    id: string;
-    name: string;
-    description: string;
-    icon: BoxIconType;
-    available: boolean;
-    path: string;
-    gradient: string;
-}
+import type { GameMode } from '../types/game';
 
 const GAME_MODES: GameMode[] = [
     {

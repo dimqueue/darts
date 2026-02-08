@@ -1,3 +1,6 @@
+import type { ThemeName } from '../config/constants';
+import type { User } from './index';
+
 export interface ApiResponse<T> {
     data?: T;
     message?: string;
@@ -12,14 +15,7 @@ export interface SignUpResponse {
     message: string;
 }
 
-export interface ProfileData {
-    id: number;
-    username: string;
-    name?: string;
-    email?: string;
-    avatar_url?: string | null;
-    bio?: string;
-    country_code?: string;
+export interface ProfileData extends User {
     total_games?: number;
     total_wins?: number;
     total_losses?: number;
@@ -34,9 +30,11 @@ export interface ProfileUpdateData {
     country_code?: string;
 }
 
+export type EditFormData = Required<ProfileUpdateData>;
+
 export interface SettingsData {
     preferred_language: string;
-    theme: string;
+    theme: ThemeName;
     sound_enabled: boolean;
     email_notifications: boolean;
     show_profile_public: boolean;

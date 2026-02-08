@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { memo } from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
 import type { LeaderboardEntry } from '../../types/api';
 import { getCountryFlag } from '../../config/constants';
 
@@ -13,14 +12,10 @@ const LeaderboardRow = memo(function LeaderboardRow({
     entry,
     isCurrentUser,
 }: LeaderboardRowProps) {
-    const { theme, darkMode } = useTheme();
     const flag = getCountryFlag(entry.country_code);
 
-    // Keep ternary for isCurrentUser - uses theme colors
     const rowClass = isCurrentUser
-        ? darkMode
-            ? `${theme.lightBgDark} border-l-4 ${theme.borderColor} font-semibold`
-            : `${theme.lightBg} border-l-4 ${theme.borderColor} font-semibold`
+        ? 'bg-theme-light-bg border-l-4 border-theme-border font-semibold'
         : 'hover:bg-gray-50 dark:hover:bg-gray-700';
 
     return (
@@ -36,7 +31,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
                     className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                 >
                     <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold ${theme.gradient}`}
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold bg-theme-gradient"
                     >
                         {entry.username?.[0]?.toUpperCase() || '?'}
                     </div>

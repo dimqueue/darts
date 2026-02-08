@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Card from '../ui/Card';
 import type { StatisticsData } from '../../types/api';
 
@@ -5,7 +6,7 @@ interface DetailedStatsProps {
     stats: StatisticsData | null;
 }
 
-export default function DetailedStats({ stats }: DetailedStatsProps) {
+export default memo(function DetailedStats({ stats }: DetailedStatsProps) {
     const statItems = [
         { label: 'Current Streak', value: stats?.current_win_streak || 0 },
         { label: 'Avg. Guesses', value: stats?.average_guesses?.toFixed(1) || '0.0' },
@@ -37,4 +38,4 @@ export default function DetailedStats({ stats }: DetailedStatsProps) {
             </div>
         </Card>
     );
-}
+});

@@ -1,5 +1,5 @@
+import { memo, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from './BoxIcon';
-import { useTheme } from '../../contexts/ThemeContext';
 
 interface PaginationProps {
     currentPage: number;
@@ -7,12 +7,10 @@ interface PaginationProps {
     onPageChange: (page: number) => void;
 }
 
-export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
-    const { theme } = useTheme();
-
+export default memo(function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
     if (totalPages <= 1) return null;
 
-    const getPageNumbers = (): number[] => {
+    const pageNumbers = useMemo(() => {
         const pages: number[] = [];
         const showPages = 5;
         let start = Math.max(1, currentPage - Math.floor(showPages / 2));
@@ -26,7 +24,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
             pages.push(i);
         }
         return pages;
-    };
+    }, [currentPage, totalPages]);
 
     const buttonBase =
         'px-3 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
@@ -46,13 +44,13 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
                 <ChevronLeft className="w-5 h-5" />
             </button>
 
-            {getPageNumbers().map((page) => (
+            {pageNumbers.map((page) => (
                 <button
                     key={page}
                     onClick={() => onPageChange(page)}
                     className={`${buttonBase} ${
                         page === currentPage
-                            ? `${theme.gradient} text-white`
+                            ? 'bg-theme-gradient text-white'
                             : inactivePageClass
                     }`}
                     aria-label={`Page ${page}`}
@@ -72,4 +70,4 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
             </button>
         </nav>
     );
-}
+});

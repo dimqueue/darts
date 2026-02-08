@@ -1,10 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="purple">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Darts</title>
     <script src="/env-config.js"></script>
+    <script>
+      // Apply saved theme/dark mode before first paint to prevent flash
+      // Keys must match STORAGE_KEYS in src/config/constants.ts
+      (function() {
+        var theme = localStorage.getItem('theme');
+        if (theme && ['purple','blue','green'].indexOf(theme) !== -1) {
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+        if (localStorage.getItem('darkMode') === 'true') {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app-wrapper">

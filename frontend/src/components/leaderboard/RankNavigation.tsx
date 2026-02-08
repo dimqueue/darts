@@ -1,6 +1,5 @@
 import { Trophy } from '../ui/BoxIcon';
 import Card from '../ui/Card';
-import { useTheme } from '../../contexts/ThemeContext';
 import type { RankData } from '../../types/api';
 
 interface RankNavigationProps {
@@ -14,8 +13,6 @@ export default function RankNavigation({
     activeTab,
     onTabChange,
 }: RankNavigationProps) {
-    const { theme, darkMode } = useTheme();
-
     const stats = [
         { id: 'global', label: 'Global', value: ranks?.global_rank },
         { id: 'monthly', label: 'Monthly', value: ranks?.monthly_rank },
@@ -26,7 +23,7 @@ export default function RankNavigation({
     return (
         <Card>
             <div className="flex items-center gap-3 mb-4">
-                <Trophy className={`w-8 h-8 ${darkMode ? theme.textColorDark : theme.textColor}`} />
+                <Trophy className="w-8 h-8 text-theme-text" />
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
                         Leaderboard
@@ -45,7 +42,7 @@ export default function RankNavigation({
                             onClick={() => onTabChange(stat.id)}
                             className={`px-3 sm:px-4 py-3 sm:py-4 rounded-xl text-center border-2 transition-all cursor-pointer ${
                                 isActive
-                                    ? `${theme.borderColor} ${theme.gradient} text-white shadow-lg`
+                                    ? 'border-theme-border bg-theme-gradient text-white shadow-lg'
                                     : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600'
                             }`}
                             role="tab"

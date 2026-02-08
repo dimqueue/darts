@@ -18,7 +18,7 @@ import {
 import type { SettingsData } from '../types/api';
 
 export default function SettingsPage() {
-    const { themeName, setTheme, theme, darkMode, setDarkMode } = useTheme();
+    const { themeName, setTheme, darkMode, setDarkMode } = useTheme();
     const toast = useToast();
     const [settings, setSettings] = useState<SettingsData>({
         preferred_language: 'en',
@@ -68,8 +68,8 @@ export default function SettingsPage() {
 
     const handleChange = <K extends keyof SettingsData>(key: K, value: SettingsData[K]) => {
         setSettings({ ...settings, [key]: value });
-        if (key === 'theme' && typeof value === 'string') {
-            setTheme(value);
+        if (key === 'theme') {
+            setTheme(value as SettingsData['theme']);
         }
     };
 
@@ -87,7 +87,7 @@ export default function SettingsPage() {
                 <Card>
                     <div className="flex items-center gap-3">
                         <Settings
-                            className={`w-8 h-8 ${darkMode ? theme.textColorDark : theme.textColor}`}
+                            className="w-8 h-8 text-theme-text"
                             aria-hidden="true"
                         />
                         <div>

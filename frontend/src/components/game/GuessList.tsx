@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { RotateCcw } from '../ui/BoxIcon';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
@@ -9,7 +10,7 @@ interface GuessListProps {
     onNewGame: () => void;
 }
 
-export default function GuessList({ guesses, onNewGame }: GuessListProps) {
+export default memo(function GuessList({ guesses, onNewGame }: GuessListProps) {
     const validGuesses = guesses.filter((g) => g.distance >= 0);
 
     const sortedGuesses = validGuesses.slice().sort((a, b) => {
@@ -60,4 +61,4 @@ export default function GuessList({ guesses, onNewGame }: GuessListProps) {
             )}
         </Card>
     );
-}
+});

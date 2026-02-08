@@ -1,5 +1,5 @@
+import { memo } from 'react';
 import type { BoxIconType } from './BoxIcon';
-import { useTheme } from '../../contexts/ThemeContext';
 
 interface StatCardProps {
     label: string;
@@ -7,14 +7,12 @@ interface StatCardProps {
     icon?: BoxIconType;
 }
 
-export default function StatCard({ label, value, icon: Icon }: StatCardProps) {
-    const { theme } = useTheme();
-
+export default memo(function StatCard({ label, value, icon: Icon }: StatCardProps) {
     return (
         <div className="rounded-xl p-4 shadow-card border bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-3">
                 {Icon && (
-                    <div className={`p-2 rounded-lg ${theme.gradient}`}>
+                    <div className="p-2 rounded-lg bg-theme-gradient">
                         <Icon className="w-5 h-5 text-white" />
                     </div>
                 )}
@@ -29,4 +27,4 @@ export default function StatCard({ label, value, icon: Icon }: StatCardProps) {
             </div>
         </div>
     );
-}
+});

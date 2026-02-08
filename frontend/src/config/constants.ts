@@ -45,6 +45,15 @@ export const PATTERNS = {
     COUNTRY_CODE: /^[A-Z]{2}$/,
 } as const;
 
+export const THEME_OPTIONS = [
+    { name: 'purple', swatch: 'bg-purple-500', preview: 'bg-gradient-purple', ring: 'ring-violet-300', border: 'border-violet-500' },
+    { name: 'blue', swatch: 'bg-blue-500', preview: 'bg-gradient-blue', ring: 'ring-blue-300', border: 'border-blue-500' },
+    { name: 'green', swatch: 'bg-green-500', preview: 'bg-gradient-green', ring: 'ring-emerald-300', border: 'border-emerald-500' },
+] as const;
+
+export type ThemeName = (typeof THEME_OPTIONS)[number]['name'];
+
+// THEME and DARK_MODE keys are also used in index.html inline script — keep in sync
 export const STORAGE_KEYS = {
     TOKEN: 'token',
     USER: 'user',

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Card from '../ui/Card';
 import type { LanguageStatsData } from '../../types/api';
 
@@ -5,7 +6,7 @@ interface LanguageStatsProps {
     languageStats: LanguageStatsData[];
 }
 
-export default function LanguageStats({ languageStats }: LanguageStatsProps) {
+export default memo(function LanguageStats({ languageStats }: LanguageStatsProps) {
     if (languageStats.length === 0) return null;
 
     return (
@@ -49,4 +50,4 @@ export default function LanguageStats({ languageStats }: LanguageStatsProps) {
             </div>
         </Card>
     );
-}
+});

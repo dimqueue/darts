@@ -1,67 +1,13 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { Theme } from '../types';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import { STORAGE_KEYS, THEME_OPTIONS, type ThemeName } from '../config/constants';
+export type { ThemeName };
 
-export const THEMES: Record<string, Theme> = {
-    purple: {
-        name: 'purple',
-        primary: '#8B5CF6',
-        secondary: '#A78BFA',
-        gradient: 'bg-gradient-purple',
-        bgGradient: 'from-violet-100 via-purple-100 to-fuchsia-100',
-        bgGradientDark: 'from-gray-900 via-violet-950 to-gray-900',
-        meshBg: 'bg-mesh-purple',
-        focusBorder: 'focus:border-violet-500',
-        textColor: 'text-violet-600',
-        textColorDark: 'text-violet-400',
-        borderColor: 'border-violet-500',
-        hoverBg: 'hover:bg-violet-50',
-        hoverBgDark: 'hover:bg-violet-900/30',
-        lightBg: 'bg-violet-50',
-        lightBgDark: 'bg-violet-900/20',
-    },
-    blue: {
-        name: 'blue',
-        primary: '#3B82F6',
-        secondary: '#60A5FA',
-        gradient: 'bg-gradient-blue',
-        bgGradient: 'from-blue-100 via-sky-100 to-cyan-100',
-        bgGradientDark: 'from-gray-900 via-blue-950 to-gray-900',
-        meshBg: 'bg-mesh-blue',
-        focusBorder: 'focus:border-blue-500',
-        textColor: 'text-blue-600',
-        textColorDark: 'text-blue-400',
-        borderColor: 'border-blue-500',
-        hoverBg: 'hover:bg-blue-50',
-        hoverBgDark: 'hover:bg-blue-900/30',
-        lightBg: 'bg-blue-50',
-        lightBgDark: 'bg-blue-900/20',
-    },
-    green: {
-        name: 'green',
-        primary: '#10B981',
-        secondary: '#34D399',
-        gradient: 'bg-gradient-green',
-        bgGradient: 'from-emerald-50 via-green-50 to-teal-50',
-        bgGradientDark: 'from-gray-900 via-emerald-950 to-gray-900',
-        meshBg: 'bg-mesh-green',
-        focusBorder: 'focus:border-emerald-500',
-        textColor: 'text-emerald-600',
-        textColorDark: 'text-emerald-400',
-        borderColor: 'border-emerald-500',
-        hoverBg: 'hover:bg-emerald-50',
-        hoverBgDark: 'hover:bg-emerald-900/30',
-        lightBg: 'bg-emerald-50',
-        lightBgDark: 'bg-emerald-900/20',
-    },
-};
-
-const DEFAULT_THEME = 'purple';
+const THEME_NAMES = THEME_OPTIONS.map((opt) => opt.name);
+const DEFAULT_THEME: ThemeName = 'purple';
 
 interface ThemeContextValue {
-    themeName: string;
-    theme: Theme;
-    setTheme: (name: string) => void;
-    themes: typeof THEMES;
+    themeName: ThemeName;
+    setTheme: (name: ThemeName) => void;
     darkMode: boolean;
     toggleDarkMode: () => void;
     setDarkMode: (value: boolean) => void;
@@ -73,25 +19,41 @@ interface ThemeProviderProps {
     children: ReactNode;
 }
 
+function isValidTheme(name: string): name is ThemeName {
+    return (THEME_NAMES as string[]).includes(name);
+}
+
 export function ThemeProvider({ children }: ThemeProviderProps) {
-    const [themeName, setThemeName] = useState(DEFAULT_THEME);
+    const [themeName, setThemeName] = useState<ThemeName>(DEFAULT_THEME);
     const [darkMode, setDarkMode] = useState(false);
 
+    // On mount: restore saved theme + dark mode, apply to DOM
     useEffect(() => {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme && THEMES[savedTheme]) {
+        const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME);
+        if (savedTheme && isValidTheme(savedTheme)) {
             setThemeName(savedTheme);
+            document.documentElement.dataset.theme = savedTheme;
+        } else {
+            document.documentElement.dataset.theme = DEFAULT_THEME;
         }
 
-        const savedDarkMode = localStorage.getItem('darkMode');
+        const savedDarkMode = localStorage.getItem(STORAGE_KEYS.DARK_MODE);
         if (savedDarkMode !== null) {
-            setDarkMode(savedDarkMode === 'true');
+            const isDark = savedDarkMode === 'true';
+            setDarkMode(isDark);
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+            }
         } else {
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             setDarkMode(prefersDark);
+            if (prefersDark) {
+                document.documentElement.classList.add('dark');
+            }
         }
     }, []);
 
+    // Sync dark class with state
     useEffect(() => {
         if (darkMode) {
             document.documentElement.classList.add('dark');
@@ -100,9 +62,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         }
     }, [darkMode]);
 
-    // Helper to toggle dark class with instant transition
-    const applyDarkMode = (value: boolean) => {
-        // Disable transitions temporarily for instant switch
+    const applyDarkMode = useCallback((value: boolean) => {
         document.documentElement.classList.add('no-transitions');
 
         if (value) {
@@ -111,46 +71,45 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
             document.documentElement.classList.remove('dark');
         }
 
-        // Force reflow to apply changes immediately
+        // Force reflow so class changes apply before transitions re-enable
         document.documentElement.offsetHeight;
 
-        // Re-enable transitions after a frame
         requestAnimationFrame(() => {
             document.documentElement.classList.remove('no-transitions');
         });
-    };
+    }, []);
 
-    const setTheme = (name: string) => {
-        if (THEMES[name]) {
-            localStorage.setItem('theme', name);
-            setThemeName(name);
-        }
-    };
+    const setTheme = useCallback((name: ThemeName) => {
+        localStorage.setItem(STORAGE_KEYS.THEME, name);
+        document.documentElement.dataset.theme = name;
+        setThemeName(name);
+    }, []);
 
-    const toggleDarkMode = () => {
-        const newValue = !darkMode;
-        localStorage.setItem('darkMode', String(newValue));
-        applyDarkMode(newValue);
-        setDarkMode(newValue);
-    };
+    const toggleDarkMode = useCallback(() => {
+        setDarkMode((prev) => {
+            const newValue = !prev;
+            localStorage.setItem(STORAGE_KEYS.DARK_MODE, String(newValue));
+            applyDarkMode(newValue);
+            return newValue;
+        });
+    }, [applyDarkMode]);
 
-    const setDarkModeValue = (value: boolean) => {
-        localStorage.setItem('darkMode', String(value));
+    const setDarkModeValue = useCallback((value: boolean) => {
+        localStorage.setItem(STORAGE_KEYS.DARK_MODE, String(value));
         applyDarkMode(value);
         setDarkMode(value);
-    };
+    }, [applyDarkMode]);
 
-    const theme = THEMES[themeName];
-
-    const value: ThemeContextValue = {
-        themeName,
-        theme,
-        setTheme,
-        themes: THEMES,
-        darkMode,
-        toggleDarkMode,
-        setDarkMode: setDarkModeValue,
-    };
+    const value = useMemo<ThemeContextValue>(
+        () => ({
+            themeName,
+            setTheme,
+            darkMode,
+            toggleDarkMode,
+            setDarkMode: setDarkModeValue,
+        }),
+        [themeName, setTheme, darkMode, toggleDarkMode, setDarkModeValue]
+    );
 
     return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

@@ -1,5 +1,4 @@
 import { forwardRef, useId } from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
 
 interface InputProps {
     label?: string;
@@ -31,7 +30,6 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     },
     ref
 ) {
-    const { theme } = useTheme();
     const generatedId = useId();
     const inputId = providedId || generatedId;
     const errorId = error ? `${inputId}-error` : undefined;
@@ -62,7 +60,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
                     ${
                         error
                             ? 'border-red-500 focus:border-red-500'
-                            : `border-gray-300 dark:border-gray-600 ${theme.focusBorder}`
+                            : 'border-gray-300 dark:border-gray-600 focus:border-theme-border'
                     }
                     ${
                         disabled

@@ -1,6 +1,5 @@
 import { Globe, ChevronDown } from '../ui/BoxIcon';
-import Card from '../ui/Card';
-import { useTheme } from '../../contexts/ThemeContext';
+import SettingsSection from './SettingsSection';
 import { LANGUAGES } from '../../config/constants';
 
 interface LanguageSettingsProps {
@@ -12,19 +11,8 @@ export default function LanguageSettings({
     preferredLanguage,
     onLanguageChange,
 }: LanguageSettingsProps) {
-    const { theme, darkMode } = useTheme();
-
     return (
-        <Card>
-            <div className="flex items-center gap-3 mb-4">
-                <Globe
-                    className={`w-5 h-5 ${darkMode ? theme.textColorDark : theme.textColor}`}
-                    aria-hidden="true"
-                />
-                <h2 className="font-semibold text-gray-800 dark:text-white">
-                    Preferred Language
-                </h2>
-            </div>
+        <SettingsSection icon={Globe} title="Preferred Language">
             <div className="relative">
                 <label htmlFor="preferred-language" className="sr-only">
                     Preferred language
@@ -33,7 +21,7 @@ export default function LanguageSettings({
                     id="preferred-language"
                     value={preferredLanguage}
                     onChange={(e) => onLanguageChange(e.target.value)}
-                    className={`w-full px-4 py-3 pr-10 border-2 rounded-xl ${theme.focusBorder} focus:outline-none appearance-none cursor-pointer transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-white border-gray-200 dark:border-gray-600 [&>option]:bg-white dark:[&>option]:bg-gray-700`}
+                    className="w-full px-4 py-3 pr-10 border-2 rounded-xl focus:border-theme-border focus:outline-none appearance-none cursor-pointer transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-white border-gray-200 dark:border-gray-600 [&>option]:bg-white dark:[&>option]:bg-gray-700"
                 >
                     {LANGUAGES.map((lang) => (
                         <option key={lang.code} value={lang.code}>
@@ -46,6 +34,6 @@ export default function LanguageSettings({
                     aria-hidden="true"
                 />
             </div>
-        </Card>
+        </SettingsSection>
     );
 }

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { ChevronUp, ChevronDown } from '../ui/BoxIcon';
 
 interface SortableHeaderProps {
@@ -9,7 +10,7 @@ interface SortableHeaderProps {
     align?: 'left' | 'right';
 }
 
-export default function SortableHeader({
+export default memo(function SortableHeader({
     label,
     field,
     sortBy,
@@ -37,4 +38,4 @@ export default function SortableHeader({
             </div>
         </th>
     );
-}
+});

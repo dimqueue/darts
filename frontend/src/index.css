@@ -2,6 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme tokens */
+[data-theme="purple"] {
+    --theme-primary: #8B5CF6;
+    --theme-text: #7c3aed;
+    --theme-border: #8b5cf6;
+    --theme-hover-bg: #f5f3ff;
+    --theme-light-bg: #f5f3ff;
+    --theme-gradient: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 50%, #C4B5FD 100%);
+    --theme-bg-page: linear-gradient(to bottom right, #ede9fe, #f3e8ff, #fdf4ff);
+    --theme-html-bg: #f3e8ff;
+}
+.dark[data-theme="purple"] {
+    --theme-text: #a78bfa;
+    --theme-hover-bg: rgba(76, 29, 149, 0.3);
+    --theme-light-bg: rgba(76, 29, 149, 0.2);
+    --theme-bg-page: linear-gradient(to bottom right, #111827, #2e1065, #111827);
+    --theme-html-bg: #111827;
+}
+
+[data-theme="blue"] {
+    --theme-primary: #3B82F6;
+    --theme-text: #2563eb;
+    --theme-border: #3b82f6;
+    --theme-hover-bg: #eff6ff;
+    --theme-light-bg: #eff6ff;
+    --theme-gradient: linear-gradient(135deg, #3B82F6 0%, #60A5FA 50%, #93C5FD 100%);
+    --theme-bg-page: linear-gradient(to bottom right, #dbeafe, #e0f2fe, #cffafe);
+    --theme-html-bg: #dbeafe;
+}
+.dark[data-theme="blue"] {
+    --theme-text: #60a5fa;
+    --theme-hover-bg: rgba(30, 58, 138, 0.3);
+    --theme-light-bg: rgba(30, 58, 138, 0.2);
+    --theme-bg-page: linear-gradient(to bottom right, #111827, #172554, #111827);
+    --theme-html-bg: #111827;
+}
+
+[data-theme="green"] {
+    --theme-primary: #10B981;
+    --theme-text: #059669;
+    --theme-border: #10b981;
+    --theme-hover-bg: #ecfdf5;
+    --theme-light-bg: #ecfdf5;
+    --theme-gradient: linear-gradient(135deg, #10B981 0%, #34D399 50%, #6EE7B7 100%);
+    --theme-bg-page: linear-gradient(to bottom right, #d1fae5, #dcfce7, #ccfbf1);
+    --theme-html-bg: #d1fae5;
+}
+.dark[data-theme="green"] {
+    --theme-text: #34d399;
+    --theme-hover-bg: rgba(6, 78, 59, 0.3);
+    --theme-light-bg: rgba(6, 78, 59, 0.2);
+    --theme-bg-page: linear-gradient(to bottom right, #111827, #064e3b, #111827);
+    --theme-html-bg: #111827;
+}
+
+@layer utilities {
+    .bg-theme-gradient { background-image: var(--theme-gradient); }
+    .bg-theme-page { background-image: var(--theme-bg-page); }
+    .accent-theme { accent-color: var(--theme-primary); }
+}
+
 /* BoxIcon: make icon fill its container */
 .bx-icon {
     font-size: inherit;
@@ -35,12 +96,12 @@
 }
 
 html {
-    background-color: #f3e8ff;
+    background-color: var(--theme-html-bg, #f3e8ff);
     overflow-y: scroll;
 }
 
 html.dark {
-    background-color: #111827;
+    background-color: var(--theme-html-bg, #111827);
 }
 
 /* Disable all transitions during dark mode toggle for instant switch */
