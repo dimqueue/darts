@@ -1,13 +1,26 @@
 import { useState, useEffect, useRef } from 'react';
+import { useParams, Navigate } from 'react-router-dom';
 import api from '@/api';
 import { useGame } from '../contexts/GameContext';
 import Layout from '../components/layout/Layout';
 import { GamePageSkeleton } from '../components/ui/Skeleton';
 import { GameHeader, GuessInput, GuessList, WinMessage } from '../components/game';
 import { TIMEOUTS, GAME, PATTERNS, ERROR_CODES, getErrorMessage } from '../config/constants';
-import type { Guess, GameStatus } from '../types/game';
+import { isValidGameMode } from '../config/gameModes';
+import type { Guess, GameStatus, GameModeId } from '../types/game';
 
 export default function GamePage() {
+    const { mode: modeParam } = useParams<{ mode: string }>();
+
+    if (!isValidGameMode(modeParam)) {
+        return <Navigate to="/home" replace />;
+    }
+
+    return <GamePageInner gameMode={modeParam} />;
+}
+
+function GamePageInner({ gameMode }: { gameMode: GameModeId }) {
+
     const [gameId, setGameId] = useState<number | null>(null);
     const [guesses, setGuesses] = useState<Guess[]>([]);
     const [inputWord, setInputWord] = useState('');
@@ -17,45 +30,99 @@ export default function GamePage() {
     const [language, setLanguage] = useState('en');
     const [gameStatus, setGameStatus] = useState<GameStatus>('in_progress');
     const initializedRef = useRef(false);
+    const currentModeRef = useRef(gameMode);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const { saveGame } = useGame();
+    const { saveGame, getCachedGameId, clearGame } = useGame();
+
+    const getCachedGameIdRef = useRef(getCachedGameId);
+    const clearGameRef = useRef(clearGame);
+    getCachedGameIdRef.current = getCachedGameId;
+    clearGameRef.current = clearGame;
+
+    useEffect(() => {
+        if (currentModeRef.current !== gameMode) {
+            currentModeRef.current = gameMode;
+            initializedRef.current = false;
+            setGameId(null);
+            setGuesses([]);
+            setInputWord('');
+            setError('');
+            setGameStatus('in_progress');
+            setInitializing(true);
+        }
+    }, [gameMode]);
 
     useEffect(() => {
         if (gameId && !initializing) {
-            saveGame({ gameId, guesses, language, status: gameStatus });
+            saveGame({ gameId, guesses, language, status: gameStatus, mode: gameMode });
         }
-    }, [gameId, guesses, language, gameStatus, initializing, saveGame]);
+    }, [gameId, guesses, language, gameStatus, initializing, saveGame, gameMode]);
 
     useEffect(() => {
         if (initializedRef.current) return;
         initializedRef.current = true;
 
-        const loadActiveGame = async () => {
-            try {
-                const response = await api.getActiveGame();
-                const activeGame = response.data;
+        const loadGame = async () => {
+            const cachedId = getCachedGameIdRef.current(gameMode);
 
-                if (activeGame) {
-                    setGameId(activeGame.id);
-                    setLanguage(activeGame.language || 'en');
-                    setGameStatus(activeGame.status);
-
-                    const guessesResponse = await api.getAllGuessByGame(activeGame.id);
-                    setGuesses(guessesResponse.data || []);
+            const restoreGame = (game: { id: number; language?: string; status: GameStatus }) => {
+                setGameId(game.id);
+                setLanguage(game.language || 'en');
+                setGameStatus(game.status);
+                return api.getAllGuessByGame(game.id).then((res) => {
+                    setGuesses(res.data || []);
                     setInitializing(false);
                     setTimeout(() => inputRef.current?.focus(), TIMEOUTS.FOCUS_DELAY);
-                } else {
-                    await startNewGame('en', false);
+                });
+            };
+
+            try {
+                if (cachedId) {
+                    try {
+                        const game = await api.getGameById(cachedId);
+                        if (game.status === 'in_progress') {
+                            await restoreGame(game);
+                            return;
+                        }
+                        clearGameRef.current(gameMode);
+                    } catch {
+                        clearGameRef.current(gameMode);
+                    }
                 }
+
+                if (gameMode === 'competitive') {
+                    const response = await api.getActiveGame();
+                    if (response.data) {
+                        await restoreGame(response.data);
+                        return;
+                    }
+                }
+
+                await createFreshGame('en');
             } catch (err) {
-                console.error('Failed to load active game:', err);
-                await startNewGame('en', false);
+                console.error('Failed to load game:', err);
+                await createFreshGame('en');
             }
         };
 
-        loadActiveGame();
-    }, []);
+        const createFreshGame = async (lang: string) => {
+            try {
+                const game = await api.createGame(lang, gameMode);
+                setGameId(game.id);
+                setGuesses([]);
+                setGameStatus('in_progress');
+                setLanguage(lang);
+            } catch (err) {
+                setError('Failed to start game: ' + (err as Error).message);
+            } finally {
+                setInitializing(false);
+                setTimeout(() => inputRef.current?.focus(), TIMEOUTS.FOCUS_DELAY);
+            }
+        };
+
+        loadGame();
+    }, [gameMode]);
 
     const startNewGame = async (lang: string = language, abandonCurrent: boolean = true) => {
         setInitializing(true);
@@ -63,9 +130,10 @@ export default function GamePage() {
         try {
             if (abandonCurrent && gameId && gameStatus === 'in_progress') {
                 await api.abandonGame(gameId).catch(() => {});
+                clearGame(gameMode);
             }
 
-            const game = await api.createGame(lang);
+            const game = await api.createGame(lang, gameMode);
             setGameId(game.id);
             setGuesses([]);
             setGameStatus('in_progress');
@@ -166,7 +234,11 @@ export default function GamePage() {
     return (
         <Layout>
             <div className="max-w-2xl mx-auto space-y-6">
-                <GameHeader language={language} onLanguageChange={startNewGame} />
+                <GameHeader
+                    language={language}
+                    onLanguageChange={startNewGame}
+                    mode={gameMode}
+                />
 
                 {gameStatus === 'won' && (
                     <WinMessage guessCount={guesses.filter((g) => g.distance > 0).length} />

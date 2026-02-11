@@ -9,8 +9,8 @@ import { ToastContainer } from './components/ui/Toast';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 import AuthPage from './pages/AuthPage';
+import HomePage from './pages/HomePage';
 import GamePage from './pages/GamePage';
-import GameModesPage from './pages/GameModesPage';
 import ProfilePage from './pages/ProfilePage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import SettingsPage from './pages/SettingsPage';
@@ -49,7 +49,7 @@ function PublicRoute({ children }: RouteWrapperProps) {
     }
 
     if (isAuthenticated) {
-        return <Navigate to="/game" replace />;
+        return <Navigate to="/home" replace />;
     }
 
     return <>{children}</>;
@@ -68,7 +68,15 @@ function AppRoutes() {
             />
 
             <Route
-                path="/game"
+                path="/home"
+                element={
+                    <ProtectedRoute>
+                        <HomePage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/game/:mode"
                 element={
                     <ProtectedRoute>
                         <GamePage />
@@ -76,12 +84,8 @@ function AppRoutes() {
                 }
             />
             <Route
-                path="/modes"
-                element={
-                    <ProtectedRoute>
-                        <GameModesPage />
-                    </ProtectedRoute>
-                }
+                path="/game"
+                element={<Navigate to="/game/competitive" replace />}
             />
             <Route
                 path="/profile"
@@ -108,8 +112,8 @@ function AppRoutes() {
                 }
             />
 
-            <Route path="/" element={<Navigate to="/game" replace />} />
-            <Route path="*" element={<Navigate to="/game" replace />} />
+            <Route path="/" element={<Navigate to="/home" replace />} />
+            <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
     );
 }

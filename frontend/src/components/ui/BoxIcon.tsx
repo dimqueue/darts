@@ -23,7 +23,6 @@ function createBoxIcon(iconClass: string): IconComponent {
 // Navigation & UI
 export const Target = createBoxIcon('bxs-bullseye');
 export const Crosshair = createBoxIcon('bx-crosshair');
-export const Layers = createBoxIcon('bxs-layer');
 export const Crown = createBoxIcon('bxs-crown');
 export const User = createBoxIcon('bxs-user');
 export const Settings = createBoxIcon('bxs-cog');
@@ -64,6 +63,10 @@ export const AlertCircle = createBoxIcon('bxs-error-circle');
 export const AlertTriangle = createBoxIcon('bxs-error');
 export const CheckCircle = createBoxIcon('bxs-check-circle');
 export const Info = createBoxIcon('bxs-info-circle');
+
+// Multiplayer
+export const Shield = createBoxIcon('bxs-shield');
+export const Group = createBoxIcon('bx-group');
 
 // Stats
 export const TrendingUp = createBoxIcon('bx-trending-up');

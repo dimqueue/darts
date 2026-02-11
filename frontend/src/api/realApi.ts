@@ -14,7 +14,7 @@ import {
     type PublicProfileData,
     type ApiResponse,
 } from '../types/api';
-import type { Game, Guess, GuessResult } from '../types/game';
+import type { Game, GameModeId, Guess, GuessResult } from '../types/game';
 
 interface RequestOptions extends RequestInit {
     headers?: Record<string, string>;
@@ -107,10 +107,10 @@ class RealApiClient {
         });
     }
 
-    async createGame(language: string): Promise<Game> {
+    async createGame(language: string, mode?: GameModeId): Promise<Game> {
         return this.request('/api/games', {
             method: 'POST',
-            body: JSON.stringify({ language }),
+            body: JSON.stringify({ language, ...(mode && { mode }) }),
         });
     }
 
@@ -118,8 +118,9 @@ class RealApiClient {
         return this.request('/api/games', { method: 'GET' });
     }
 
-    async getActiveGame(): Promise<ApiResponse<Game | null>> {
-        return this.request('/api/games/active', { method: 'GET' });
+    async getActiveGame(mode?: GameModeId): Promise<ApiResponse<Game | null>> {
+        const query = mode ? `?mode=${mode}` : '';
+        return this.request(`/api/games/active${query}`, { method: 'GET' });
     }
 
     async getGameById(gameId: number): Promise<Game> {

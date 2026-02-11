@@ -7,7 +7,7 @@ import { useClickOutside } from '../../hooks/useClickOutside';
 
 export default memo(function UserMenu() {
     const { user, logout } = useAuth();
-    const { clearGame } = useGame();
+    const { clearAllGames } = useGame();
     const [open, setOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -55,7 +55,7 @@ export default memo(function UserMenu() {
                     <hr className="my-2 border-gray-200 dark:border-gray-700" />
                     <button
                         onClick={() => {
-                            clearGame();
+                            clearAllGames();
                             logout();
                             setOpen(false);
                         }}

@@ -1,12 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { Target, Crosshair, Layers, Crown, Moon, Sun } from '../ui/BoxIcon';
+import { Target, Home, Crown, Moon, Sun } from '../ui/BoxIcon';
 import { useTheme } from '../../contexts/ThemeContext';
 import ThemeMenu from './ThemeMenu';
 import UserMenu from './UserMenu';
 
 const navLinks = [
-    { to: '/game', label: 'Play', icon: Crosshair },
-    { to: '/modes', label: 'Modes', icon: Layers },
+    { to: '/home', label: 'Home', icon: Home },
     { to: '/leaderboard', label: 'Leaderboard', icon: Crown },
 ] as const;
 
@@ -21,7 +20,7 @@ export default function Navbar() {
             <div className="max-w-6xl mx-auto px-2 sm:px-4">
                 <div className="grid grid-cols-3 items-center h-14 sm:h-16">
                     {/* Left: Logo */}
-                    <NavLink to="/game" className="flex items-center gap-1 sm:gap-2 justify-self-start">
+                    <NavLink to="/home" className="flex items-center gap-1 sm:gap-2 justify-self-start">
                         <Target
                             className="w-6 h-6 sm:w-8 sm:h-8 text-theme-text"
                             aria-hidden="true"
